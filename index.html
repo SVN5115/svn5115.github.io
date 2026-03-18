@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 비즈니스 플래너</title>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <style>
+        :root { --main-bg: #f8f9fa; }
+        body { font-family: 'Malgun Gothic', sans-serif; background: var(--main-bg); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { display: flex; width: 98%; max-width: 1800px; height: 96vh; gap: 15px; }
+        #calendar-container { flex: 2.5; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; transition: flex 0.2s; }
+        #calendar-container.full-width { flex: 1; }
+        .container.popup-closed { width: 85% !important; max-width: 1300px !important; margin: 0 auto; }
+        #calendar { flex: 1; }
+
+        /* 셀 높이는 JS에서 너비와 동일하게 설정 (정사각형) */
+        .fc .fc-daygrid-day-frame { cursor: pointer; overflow: hidden; position: relative; }
+        .fc .fc-daygrid-day-top { display: flex !important; align-items: center !important; padding: 4px !important; flex-direction: row !important; position: relative; }
+        .fc .fc-daygrid-day-number { font-weight: bold; text-decoration: none !important; padding: 0 !important; font-size: 14px; }
+        .fc .fc-day-sat .fc-daygrid-day-number { color: #0000ff !important; }
+        .fc .fc-day-sun .fc-daygrid-day-number { color: #ff0000 !important; }
+
+        /* FullCalendar 내부 여백 요소 완전 제거 */
+        .fc .fc-daygrid-day-events { display: none !important; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+        .fc .fc-daygrid-day-bg { display: none !important; }
+        .fc .fc-daygrid-day-bottom { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
+        .fc .fc-daygrid-event-harness { display: none !important; }
+
+        /* 일정 태그 영역 */
+        .cell-todos {
+            padding: 0 2px 0 2px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .cell-todo-item:last-child {
+            margin-bottom: 6px;
+        }
+        .cell-todo-item {
+            font-size: 9px;
+            border-radius: 2px;
+            padding: 0 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 13px;
+            height: 13px;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+        .cell-todo-c0 { background: #dbeafe; color: #1e40af; }
+        .cell-todo-c1 { background: #e2e8f0; color: #374151; }
+        /* +N 배지: 셀 우측 상단 고정 */
+        .cell-todo-more {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            color: #fff;
+            background: #999;
+            border-radius: 2px;
+            padding: 0 3px;
+            line-height: 13px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* V 체크박스 */
+        .v-box { width: 16px; height: 16px; border: 1px solid #ccc; margin-right: 6px; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; flex-shrink: 0; }
+        .v-box.is-checked { border-color: #000; background: #eee; }
+        .day-v-checkmark-svg { display: none; width: 11px; height: 11px; fill: #000; }
+        .v-box.is-checked .day-v-checkmark-svg { display: block; }
+
+        /* 공휴일 배지 */
+        .holiday-label { position: absolute; top: 4px; right: 6px; font-size: 10px; color: #ff0000; font-weight: bold; }
+
+        .fc-daygrid-day.selected-day { background-color: #f0f7ff !important; }
+
+        /* 우측 패널 */
+        .todo-section { flex: 1; background: white; padding: 25px; border-radius: 12px; border: 1px solid #eee; display: flex; flex-direction: column; }
+        #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
+        .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        .input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .todo-list { list-style: none; padding: 0; overflow-y: auto; flex-grow: 1; }
+        .todo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+        .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="calendar-container"><div id="calendar"></div></div>
+    <div class="todo-section" id="todo-section" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3 style="margin:0;">일정 상세</h3>
+            <button id="close-todo-btn" style="background:none; border:none; font-size:18px; cursor:pointer; color:#888; line-height:1; padding:2px 6px;">&#x2715;</button>
+        </div>
+        <div id="selected-date-display">날짜를 선택하세요</div>
+        <div class="input-group">
+            <input type="text" id="todo-input" placeholder="새 일정 입력...">
+            <button id="add-btn">추가</button>
+        </div>
+        <ul id="todo-list" class="todo-list"></ul>
+    </div>
+</div>
+<script>
+    var activeDate = localStorage.getItem('activeDate') || "";
+    var todos = JSON.parse(localStorage.getItem('cal_todos')) || {};
+    var calendar;
+
+    var holidays = {
+        '2026-01-01':'신정',
+        '2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴',
+        '2026-03-01':'삼일절','2026-03-02':'대체공휴일(삼일절)',
+        '2026-05-05':'어린이날',
+        '2026-05-24':'부처님오신날','2026-05-25':'대체공휴일(부처님오신날)',
+        '2026-06-06':'현충일',
+        '2026-07-17':'제헌절',
+        '2026-08-15':'광복절','2026-08-17':'대체공휴일(광복절)',
+        '2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴',
+        '2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)',
+        '2026-10-09':'한글날',
+        '2026-12-25':'성탄절',
+
+        '2027-01-01':'신정',
+        '2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴','2027-02-09':'대체공휴일(설날)',
+        '2027-03-01':'삼일절',
+        '2027-05-05':'어린이날',
+        '2027-05-13':'부처님오신날',
+        '2027-06-06':'현충일','2027-06-07':'대체공휴일(현충일)',
+        '2027-07-17':'제헌절','2027-07-19':'대체공휴일(제헌절)',
+        '2027-08-15':'광복절','2027-08-16':'대체공휴일(광복절)',
+        '2027-09-14':'추석 연휴','2027-09-15':'추석','2027-09-16':'추석 연휴',
+        '2027-10-03':'개천절','2027-10-04':'대체공휴일(개천절)',
+        '2027-10-09':'한글날','2027-10-11':'대체공휴일(한글날)',
+        '2027-12-25':'성탄절','2027-12-27':'대체공휴일(성탄절)',
+
+        '2028-01-01':'신정',
+        '2028-01-26':'설날 연휴','2028-01-27':'설날','2028-01-28':'설날 연휴',
+        '2028-03-01':'삼일절',
+        '2028-04-12':'국회의원선거',
+        '2028-05-02':'부처님오신날',
+        '2028-05-05':'어린이날',
+        '2028-06-06':'현충일',
+        '2028-07-17':'제헌절',
+        '2028-08-15':'광복절',
+        '2028-10-02':'추석 연휴','2028-10-03':'추석·개천절','2028-10-04':'추석 연휴','2028-10-05':'대체공휴일(개천절)',
+        '2028-10-09':'한글날',
+        '2028-12-25':'성탄절',
+
+        '2029-01-01':'신정',
+        '2029-02-12':'설날 연휴','2029-02-13':'설날','2029-02-14':'설날 연휴',
+        '2029-03-01':'삼일절',
+        '2029-05-05':'어린이날','2029-05-07':'대체공휴일(어린이날)',
+        '2029-05-20':'부처님오신날','2029-05-21':'대체공휴일(부처님오신날)',
+        '2029-06-06':'현충일',
+        '2029-07-17':'제헌절',
+        '2029-08-15':'광복절',
+        '2029-09-21':'추석 연휴','2029-09-22':'추석','2029-09-23':'추석 연휴','2029-09-24':'대체공휴일(추석)',
+        '2029-10-03':'개천절',
+        '2029-10-09':'한글날',
+        '2029-12-25':'성탄절',
+
+        '2030-01-01':'신정',
+        '2030-02-02':'설날 연휴','2030-02-03':'설날','2030-02-04':'설날 연휴','2030-02-05':'대체공휴일(설날)',
+        '2030-03-01':'삼일절',
+        '2030-05-05':'어린이날','2030-05-06':'대체공휴일(어린이날)',
+        '2030-05-09':'부처님오신날',
+        '2030-06-06':'현충일',
+        '2030-07-17':'제헌절',
+        '2030-08-15':'광복절',
+        '2030-09-11':'추석 연휴','2030-09-12':'추석','2030-09-13':'추석 연휴',
+        '2030-10-03':'개천절',
+        '2030-10-09':'한글날',
+        '2030-12-25':'성탄절'
+    };
+
+    var MAX_VISIBLE = 5; // 팝업 닫힘: 5개, 팝업 열림: 5개
+    var vIconSvg = '<svg class="day-v-checkmark-svg" viewBox="0 0 12 12"><path d="M10.2,2.3L4.7,7.8L1.8,4.9L0.5,6.2L4.7,10.4L11.5,3.6L10.2,2.3z"/></svg>';
+
+    /* 셀 높이를 달력 전체 높이 / 행수로 계산해 한 화면에 꽉 차게 */
+    function applyCellSquare() {
+        var calEl = document.getElementById('calendar');
+        var firstCell = document.querySelector('.fc-daygrid-day');
+        if (!calEl || !firstCell) return;
+
+        // 헤더(툴바+요일행) 높이 제외
+        var toolbar = calEl.querySelector('.fc-header-toolbar');
+        var colHeader = calEl.querySelector('.fc-col-header');
+        var toolbarH = toolbar ? toolbar.offsetHeight : 0;
+        var colHeaderH = colHeader ? colHeader.offsetHeight : 0;
+
+        // 행 개수 계산
+        var rows = calEl.querySelectorAll('.fc-daygrid-body tr');
+        var rowCount = rows.length || 6;
+
+        var totalH = calEl.offsetHeight;
+        var availH = totalH - toolbarH - colHeaderH - 2; // 2px 여유
+        var cellH = Math.floor(availH / rowCount);
+
+        document.querySelectorAll('.fc-daygrid-day-frame').forEach(function(frame) {
+            frame.style.setProperty('height', cellH + 'px', 'important');
+        });
+    }
+
+    /* 공휴일 날짜 숫자 색상 강제 적용 */
+    function applyHolidayColors() {
+        Object.keys(holidays).forEach(function(dateStr) {
+            var cell = document.querySelector('.fc-daygrid-day[data-date="' + dateStr + '"]');
+            if (!cell) return;
+            var numEl = cell.querySelector('.fc-daygrid-day-number');
+            if (numEl) {
+                numEl.setAttribute('style', 'color:#ff0000!important;font-weight:bold;text-decoration:none;padding:0;');
+            }
+        });
+    }
+
+    /* 특정 날짜의 달력 셀에 일정 태그 다시 그리기 */
+    function renderCellTodos(dateStr) {
+        var cell = document.querySelector('.fc-daygrid-day[data-date="' + dateStr + '"]');
+        if (!cell) return;
+
+        /* 기존 cell-todos 영역 제거 */
+        var old = cell.querySelector('.cell-todos');
+        if (old) old.parentNode.removeChild(old);
+
+        var items = todos[dateStr] || [];
+        if (items.length === 0) return;
+
+        var frame = cell.querySelector('.fc-daygrid-day-frame');
+        var wrap = document.createElement('div');
+        wrap.className = 'cell-todos';
+        wrap.style.gap = (MAX_VISIBLE <= 5 ? '7px' : '4px');
+
+        var visible = items.slice(0, MAX_VISIBLE);
+        var extra = items.length - MAX_VISIBLE;
+
+        visible.forEach(function(t, idx) {
+            var tag = document.createElement('div');
+            tag.className = 'cell-todo-item cell-todo-c' + (idx % 2);
+            tag.title = t.text;
+            tag.textContent = t.text;
+            wrap.appendChild(tag);
+        });
+
+        frame.appendChild(wrap);
+
+        /* +N 배지는 frame 기준 절대위치로 따로 추가 */
+        if (extra > 0) {
+            var more = document.createElement('div');
+            more.className = 'cell-todo-more';
+            more.textContent = '+' + extra;
+            frame.appendChild(more);
+        }
+    }
+
+    /* 현재 보이는 모든 날짜 셀 일정 갱신 */
+    function renderAllCellTodos() {
+        Object.keys(todos).forEach(function(dateStr) {
+            renderCellTodos(dateStr);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'dayGridMonth',
+            initialDate: '2026-03-18',
+            locale: 'ko',
+            height: '100%',
+            headerToolbar: { left: 'title', center: '', right: 'today prev,next' },
+
+            dayCellDidMount: function(arg) {
+                var topEl = arg.el.querySelector('.fc-daygrid-day-top');
+                var isHoliday = !!holidays[arg.dateStr];
+
+                /* V 박스 */
+                var vBox = document.createElement('div');
+                vBox.className = 'v-box';
+                vBox.innerHTML = vIconSvg;
+                if (activeDate === arg.dateStr) vBox.classList.add('is-checked');
+                topEl.prepend(vBox);
+
+                /* 공휴일 배지 */
+                if (isHoliday) {
+                    var label = document.createElement('span');
+                    label.className = 'holiday-label';
+                    label.innerText = holidays[arg.dateStr];
+                    topEl.appendChild(label);
+                }
+            },
+
+            datesSet: function() {
+                setTimeout(function() {
+                    applyCellSquare();
+                    applyHolidayColors();
+                    renderAllCellTodos();
+                }, 50);
+            },
+
+            dateClick: function(info) {
+                document.querySelectorAll('.v-box').forEach(function(box){ box.classList.remove('is-checked'); });
+                var currentVBox = info.dayEl.querySelector('.v-box');
+                if (activeDate === info.dateStr) {
+                    activeDate = "";
+                } else {
+                    activeDate = info.dateStr;
+                    if (currentVBox) currentVBox.classList.add('is-checked');
+                }
+                localStorage.setItem('activeDate', activeDate);
+                if (activeDate === "") {
+                    // 체크박스 비활성화 → 상세창 숨김, 일정 6개
+                    MAX_VISIBLE = 6;
+                    document.querySelectorAll('.cell-todos').forEach(function(el){ el.style.gap = '2px'; });
+                    document.getElementById('todo-section').style.display = 'none';
+                    document.getElementById('calendar-container').classList.add('full-width');
+                    document.querySelector('.container').classList.add('popup-closed');
+                    document.getElementById('selected-date-display').innerText = '날짜를 선택하세요';
+                    document.getElementById('todo-list').innerHTML = '';
+                    document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
+                    setTimeout(function(){
+                        calendar.updateSize();
+                        setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); }, 100);
+                    }, 50);
+                } else {
+                    // 체크박스 활성화 → 상세창 표시, 일정 5개
+                    MAX_VISIBLE = 5;
+                    document.querySelector('.cell-todos') && document.querySelectorAll('.cell-todos').forEach(function(el){ el.style.gap = '4px'; });
+                    document.getElementById('todo-section').style.display = 'flex';
+                    document.getElementById('calendar-container').classList.remove('full-width');
+                    document.querySelector('.container').classList.remove('popup-closed');
+                    setTimeout(function(){
+                        calendar.updateSize();
+                        setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); }, 100);
+                    }, 50);
+                    updateDisplay(info.dateStr, info.dayEl);
+                }
+            }
+        });
+
+        calendar.render();
+        window.addEventListener('resize', function() {
+            setTimeout(function() { calendar.updateSize(); setTimeout(applyCellSquare, 100); }, 50);
+        });
+        if (activeDate) {
+            document.getElementById('todo-section').style.display = 'flex';
+            document.getElementById('calendar-container').classList.remove('full-width');
+            updateDisplay(activeDate);
+        }
+
+        document.getElementById('close-todo-btn').onclick = function() {
+            // 체크박스 해제
+            document.querySelectorAll('.v-box').forEach(function(box){ box.classList.remove('is-checked'); });
+            activeDate = "";
+            localStorage.setItem('activeDate', activeDate);
+            MAX_VISIBLE = 6;
+            document.getElementById('todo-section').style.display = 'none';
+            document.getElementById('calendar-container').classList.add('full-width');
+            document.querySelector('.container').classList.add('popup-closed');
+            document.getElementById('selected-date-display').innerText = '날짜를 선택하세요';
+            document.getElementById('todo-list').innerHTML = '';
+            document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
+            setTimeout(function(){
+                calendar.updateSize();
+                setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); }, 100);
+            }, 50);
+        };
+
+        function updateDisplay(dateStr, el) {
+            document.getElementById('selected-date-display').innerText = dateStr;
+            document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
+            if (el) el.classList.add('selected-day');
+            else {
+                var target = document.querySelector('[data-date="' + dateStr + '"]');
+                if (target) target.classList.add('selected-day');
+            }
+            renderList(dateStr);
+        }
+
+        document.getElementById('add-btn').onclick = function() {
+            var input = document.getElementById('todo-input');
+            var date = document.getElementById('selected-date-display').innerText;
+            if (!input.value.trim() || date === '날짜를 선택하세요') return;
+            if (!todos[date]) todos[date] = [];
+            todos[date].push({ text: input.value });
+            localStorage.setItem('cal_todos', JSON.stringify(todos));
+            renderList(date);
+            renderCellTodos(date);  /* 달력 셀도 즉시 갱신 */
+            input.value = '';
+        };
+
+        function renderList(date) {
+            var listEl = document.getElementById('todo-list');
+            listEl.innerHTML = '';
+            (todos[date] || []).forEach(function(t, i) {
+                var li = document.createElement('li');
+                li.className = 'todo-item';
+                li.innerHTML = '<span>' + t.text + '</span><button class="delete-btn" onclick="removeItem(\'' + date + '\',' + i + ')">&#x2715;</button>';
+                listEl.appendChild(li);
+            });
+        }
+
+        window.removeItem = function(date, i) {
+            todos[date].splice(i, 1);
+            if (todos[date].length === 0) delete todos[date];
+            localStorage.setItem('cal_todos', JSON.stringify(todos));
+            renderList(date);
+            renderCellTodos(date);  /* 달력 셀도 즉시 갱신 */
+        };
+    });
+</script>
+</body>
+</html>
