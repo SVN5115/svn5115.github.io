@@ -9,11 +9,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
-        :root { --indigo:#6366f1; --indigo-d:#4f46e5; --green:#10b981; --amber:#f59e0b; }
         *{ box-sizing:border-box; }
         body{ font-family:'Malgun Gothic',sans-serif; background:#f0f2f5; margin:0; }
 
-        /* ════════════ 로그인/회원가입 화면 ════════════ */
+        /* ════════════ 로그인/회원가입 ════════════ */
         #auth-screen{
             display:flex; align-items:center; justify-content:center; min-height:100vh;
             background:linear-gradient(135deg,#e0e7ff 0%,#f0fdf4 100%);
@@ -26,21 +25,15 @@
         }
         .auth-logo { font-size:32px; margin-bottom:6px; text-align:center; }
         .auth-title{ font-size:22px; font-weight:bold; color:#1e293b; margin-bottom:2px; text-align:center; }
-        .auth-sub  { font-size:12px; color:#94a3b8; margin-bottom:24px; text-align:center; }
-
-        /* 공유 안내 배지 */
+        .auth-sub  { font-size:12px; color:#94a3b8; margin-bottom:20px; text-align:center; }
         .shared-badge{
             display:flex; align-items:center; gap:6px; justify-content:center;
             background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
-            padding:7px 12px; margin-bottom:20px; font-size:11px; color:#065f46;
-            font-weight:bold;
+            padding:7px 12px; margin-bottom:20px; font-size:11px; color:#065f46; font-weight:bold;
         }
-
-        /* 탭 */
         .auth-tabs{ display:flex; background:#f1f5f9; border-radius:10px; padding:3px; margin-bottom:22px; }
         .auth-tab{ flex:1; text-align:center; padding:8px; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; color:#64748b; transition:all 0.2s; border:none; background:none; font-family:'Malgun Gothic',sans-serif; }
         .auth-tab.active{ background:white; color:#6366f1; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
-
         .auth-form{ display:none; }
         .auth-form.active{ display:block; }
         .af-label{ font-size:11px; font-weight:bold; color:#475569; margin-bottom:5px; display:block; }
@@ -54,31 +47,13 @@
         .af-success{ font-size:12px; color:#22c55e; margin-top:10px; min-height:18px; text-align:center; }
         .af-pw-hint{ font-size:10px; color:#94a3b8; margin-top:-8px; margin-bottom:12px; }
 
-        .fb-setup-bar{ margin-top:20px; border-top:1px solid #f1f5f9; padding-top:14px; font-size:11px; color:#94a3b8; text-align:center; }
-        .fb-setup-bar span{ color:#6366f1; text-decoration:underline; cursor:pointer; }
-        #setup-panel{ display:none; margin-top:14px; background:#f8fafc; border-radius:10px; padding:16px 14px 12px; border:1px solid #e2e8f0; }
-        #setup-panel.visible{ display:block; }
-        .sp-title{ font-size:12px; font-weight:bold; color:#334155; margin-bottom:8px; }
-        .sp-desc{ font-size:11px; color:#64748b; margin-bottom:12px; line-height:1.7; }
-        .sp-desc a{ color:#6366f1; }
-        .sp-field{ margin-bottom:8px; }
-        .sp-field label{ font-size:10px; font-weight:bold; color:#64748b; display:block; margin-bottom:3px; }
-        .sp-field input{ width:100%; padding:7px 9px; border:1px solid #d1d5db; border-radius:5px; font-size:11px; font-family:'Malgun Gothic',sans-serif; outline:none; }
-        .sp-field input:focus{ border-color:#6366f1; }
-        .sp-actions{ display:flex; gap:6px; margin-top:10px; justify-content:flex-end; }
-        .sp-save { padding:6px 14px; background:#6366f1; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer; font-family:'Malgun Gothic',sans-serif; }
-        .sp-save:hover{ background:#4f46e5; }
-        .sp-reset{ padding:6px 10px; background:none; border:1px solid #fca5a5; border-radius:5px; font-size:11px; cursor:pointer; color:#ef4444; font-family:'Malgun Gothic',sans-serif; }
-
         /* ════════════ 앱 화면 ════════════ */
         #app-screen{ display:flex; height:100vh; flex-direction:column; }
         #app-screen.hidden{ display:none; }
-
         #app-topbar{ height:46px; background:white; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
         .topbar-left{ display:flex; align-items:center; gap:10px; }
         .topbar-logo{ font-size:18px; }
         .topbar-name{ font-size:14px; font-weight:bold; color:#1e293b; }
-        /* 실시간 공유 표시 */
         .topbar-shared{ font-size:11px; color:#065f46; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:5px; padding:2px 8px; }
         #sync-status{ font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
         #sync-dot{ width:7px; height:7px; border-radius:50%; background:#94a3b8; display:inline-block; transition:background 0.3s; }
@@ -209,7 +184,7 @@
 
 <div id="loading-overlay">
     <div class="loading-spinner"></div>
-    <div class="loading-text" id="loading-text">불러오는 중...</div>
+    <div class="loading-text" id="loading-text">연결 중...</div>
 </div>
 
 <!-- ══ 로그인/회원가입 ══ -->
@@ -218,10 +193,7 @@
         <div class="auth-logo">📅</div>
         <div class="auth-title">비즈니스 플래너</div>
         <div class="auth-sub">팀 공유 일정 관리 시스템</div>
-
-        <div class="shared-badge">
-            🤝 로그인한 모든 멤버가 동일한 일정을 공유합니다
-        </div>
+        <div class="shared-badge">🤝 로그인한 모든 멤버가 동일한 일정을 공유합니다</div>
 
         <div class="auth-tabs">
             <button class="auth-tab active" id="tab-login"  onclick="switchTab('login')">로그인</button>
@@ -252,27 +224,6 @@
             <button class="af-btn" id="su-btn">회원가입</button>
             <div class="af-error"   id="su-error"></div>
             <div class="af-success" id="su-success"></div>
-        </div>
-
-        <div class="fb-setup-bar">
-            Firebase 설정이 필요하신가요? <span id="toggle-setup">설정 열기</span>
-        </div>
-        <div id="setup-panel">
-            <div class="sp-title">🔥 Firebase 설정 <small style="font-weight:normal;color:#94a3b8;">(최초 1회)</small></div>
-            <div class="sp-desc">
-                <a href="https://console.firebase.google.com/" target="_blank">Firebase 콘솔</a> →
-                프로젝트 생성 → 웹 앱 추가 → 값 복사<br>
-                • Authentication → 이메일/비밀번호 <b>사용 설정</b><br>
-                • Firestore Database → <b>테스트 모드</b>로 생성
-            </div>
-            <div class="sp-field"><label>API Key</label>    <input id="sp-apiKey"    placeholder="AIzaSy..."></div>
-            <div class="sp-field"><label>Auth Domain</label><input id="sp-authDomain" placeholder="your-app.firebaseapp.com"></div>
-            <div class="sp-field"><label>Project ID</label> <input id="sp-projectId"  placeholder="your-project-id"></div>
-            <div class="sp-field"><label>App ID</label>     <input id="sp-appId"      placeholder="1:123456:web:abc..."></div>
-            <div class="sp-actions">
-                <button class="sp-reset" id="sp-reset-btn">초기화</button>
-                <button class="sp-save"  id="sp-save-btn">저장 및 적용</button>
-            </div>
         </div>
     </div>
 </div>
@@ -341,32 +292,30 @@
 </div>
 
 <script>
-/* ─── Firebase 초기화 ─── */
-var db=null, auth=null, currentUser=null, currentUserName='', saveTimer=null;
-/* 공유 데이터는 단일 문서에 저장 */
-var SHARED_DOC = 'shared/planner';
+/* ══════════════════════════════════════
+   Firebase 설정 (하드코딩)
+══════════════════════════════════════ */
+var FB_CONFIG = {
+    apiKey    : "AIzaSyBrlSDuGtN_JBYT2RDhBlhQOMB8mS-ZlZo",
+    authDomain: "callender-f3c16.firebaseapp.com",
+    projectId : "callender-f3c16",
+    appId     : "1:240436170123:web:ff2cb02ae84872bfb6b38e"
+};
 
-function initFirebase(cfg){
-    try{
-        if(firebase.apps.length) firebase.apps.forEach(function(a){ try{a.delete();}catch(e){} });
-        firebase.initializeApp(cfg);
-        auth=firebase.auth();
-        db=firebase.firestore();
-        return true;
-    }catch(e){ console.error(e); return false; }
-}
-function tryAutoInit(){
-    var cfg=JSON.parse(localStorage.getItem('fb_cfg')||'null');
-    if(cfg&&cfg.apiKey) return initFirebase(cfg);
-    return false;
-}
+var db=null, auth=null, currentUser=null, saveTimer=null;
+var SHARED_DOC='shared/planner';
+var unsubscribe=null;
 
-/* ─── 앱 상태 (공유) ─── */
+firebase.initializeApp(FB_CONFIG);
+auth = firebase.auth();
+db   = firebase.firestore();
+
+/* ══════════════════════════════════════
+   앱 상태
+══════════════════════════════════════ */
 var activeDate="", todos={}, wpData={routine:[],expense:[],report:[]};
 var calendar, MAX_VISIBLE=5;
 var vIconSvg='<svg class="day-v-checkmark-svg" viewBox="0 0 12 12"><path d="M10.2,2.3L4.7,7.8L1.8,4.9L0.5,6.2L4.7,10.4L11.5,3.6L10.2,2.3z"/></svg>';
-/* 실시간 리스너 해제용 */
-var unsubscribe=null;
 
 var holidays={
     '2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴',
@@ -388,7 +337,7 @@ var holidays={
     '2030-09-12':'추석','2030-10-03':'개천절','2030-10-09':'한글날','2030-12-25':'성탄절'
 };
 
-/* ─── 동기화 ─── */
+/* ── 동기화 ── */
 function setSyncStatus(state,label){
     var dot=document.getElementById('sync-dot'), lbl=document.getElementById('sync-label');
     if(dot) dot.className=state; if(lbl) lbl.textContent=label;
@@ -396,31 +345,27 @@ function setSyncStatus(state,label){
 function scheduleSave(payload){
     clearTimeout(saveTimer); setSyncStatus('syncing','저장 중...');
     saveTimer=setTimeout(function(){
-        if(!db) return;
-        /* 공유 문서에 저장 */
         db.doc(SHARED_DOC).set(payload,{merge:true})
             .then(function(){ setSyncStatus('synced','저장됨'); })
             .catch(function(e){ console.error(e); setSyncStatus('error','저장 실패'); });
     },600);
 }
-function saveWp()    { scheduleSave({wpData:wpData}); }
-function saveTodos() { scheduleSave({todos:todos}); }
-function saveActiveDate(){ /* activeDate는 로컬만 */ localStorage.setItem('pl_activeDate_shared', activeDate); }
+function saveWp()        { scheduleSave({wpData:wpData}); }
+function saveTodos()     { scheduleSave({todos:todos}); }
+function saveActiveDate(){ localStorage.setItem('pl_activeDate_shared', activeDate); }
 
-/* ─── 실시간 리스너로 공유 데이터 구독 ─── */
+/* ── 실시간 공유 구독 ── */
 function subscribeShared(){
-    if(!db) return;
     setSyncStatus('syncing','연결 중...');
     if(unsubscribe) unsubscribe();
     unsubscribe=db.doc(SHARED_DOC).onSnapshot(function(snap){
         var d=snap.exists?snap.data():{};
         var changed=false;
-        if(d.todos  && JSON.stringify(d.todos)  !==JSON.stringify(todos))  { todos=d.todos;   changed=true; }
-        if(d.wpData && JSON.stringify(d.wpData) !==JSON.stringify(wpData)) { wpData=d.wpData; changed=true; }
+        if(d.todos  && JSON.stringify(d.todos) !==JSON.stringify(todos))  { todos=d.todos;   changed=true; }
+        if(d.wpData && JSON.stringify(d.wpData)!==JSON.stringify(wpData)) { wpData=d.wpData; changed=true; }
         if(changed){
             ['routine','expense','report'].forEach(function(k){ renderSection(k); });
             renderAllCellTodos();
-            /* 열려있는 날짜 리스트 갱신 */
             var curDate=document.getElementById('selected-date-display').innerText;
             if(curDate&&curDate!=='날짜를 선택하세요') renderList(curDate);
         }
@@ -428,7 +373,7 @@ function subscribeShared(){
     },function(e){ console.error(e); setSyncStatus('error','연결 오류'); });
 }
 
-/* ─── 화면 전환 ─── */
+/* ── 화면 전환 ── */
 function showAuthScreen(){
     document.getElementById('loading-overlay').classList.add('hidden');
     document.getElementById('auth-screen').classList.remove('hidden');
@@ -449,7 +394,7 @@ window.switchTab=function(tab){
     document.getElementById('su-success').textContent='';
 };
 
-/* ─── 섹션 렌더 ─── */
+/* ── 섹션 렌더 ── */
 function renderSection(key){
     var container=document.getElementById('groups-'+key);
     container.innerHTML='';
@@ -527,7 +472,7 @@ function saveForm(key){
 function showRoutine(){ document.getElementById('routine-panel').classList.remove('hidden'); document.getElementById('todo-section').classList.add('hidden'); }
 function showTodo()   { document.getElementById('routine-panel').classList.add('hidden');    document.getElementById('todo-section').classList.remove('hidden'); }
 
-/* ─── 캘린더 유틸 ─── */
+/* ── 캘린더 유틸 ── */
 function applyCellSquare(){
     var calEl=document.getElementById('calendar'); if(!calEl) return;
     var toolbar=calEl.querySelector('.fc-header-toolbar'), colHeader=calEl.querySelector('.fc-col-header');
@@ -555,35 +500,14 @@ function renderCellTodos(dateStr){
 function renderAllCellTodos(){ Object.keys(todos).forEach(renderCellTodos); }
 function refreshCalendar(){ setTimeout(function(){ calendar.updateSize(); setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); },100); },50); }
 
-/* ─── DOMContentLoaded ─── */
+/* ── DOMContentLoaded ── */
 document.addEventListener('DOMContentLoaded', function(){
-
-    /* Firebase 설정 */
-    document.getElementById('toggle-setup').onclick=function(){
-        var p=document.getElementById('setup-panel'), open=p.classList.contains('visible');
-        p.classList.toggle('visible',!open);
-        this.textContent=open?'설정 열기':'설정 닫기';
-        if(!open){ var cfg=JSON.parse(localStorage.getItem('fb_cfg')||'null')||{}; document.getElementById('sp-apiKey').value=cfg.apiKey||''; document.getElementById('sp-authDomain').value=cfg.authDomain||''; document.getElementById('sp-projectId').value=cfg.projectId||''; document.getElementById('sp-appId').value=cfg.appId||''; }
-    };
-    document.getElementById('sp-reset-btn').onclick=function(){
-        localStorage.removeItem('fb_cfg'); db=null; auth=null;
-        ['sp-apiKey','sp-authDomain','sp-projectId','sp-appId'].forEach(function(id){ document.getElementById(id).value=''; });
-        document.getElementById('li-error').textContent='설정이 초기화되었습니다.';
-    };
-    document.getElementById('sp-save-btn').onclick=function(){
-        var cfg={ apiKey:document.getElementById('sp-apiKey').value.trim(), authDomain:document.getElementById('sp-authDomain').value.trim(), projectId:document.getElementById('sp-projectId').value.trim(), appId:document.getElementById('sp-appId').value.trim() };
-        if(!cfg.apiKey||!cfg.projectId){ document.getElementById('li-error').textContent='API Key와 Project ID를 입력하세요.'; return; }
-        localStorage.setItem('fb_cfg',JSON.stringify(cfg));
-        if(initFirebase(cfg)){ document.getElementById('li-error').textContent='✅ 연결 완료! 로그인 또는 회원가입하세요.'; document.getElementById('setup-panel').classList.remove('visible'); document.getElementById('toggle-setup').textContent='설정 열기'; setupAuthListener(); }
-        else{ document.getElementById('li-error').textContent='초기화 실패. 설정값을 확인하세요.'; }
-    };
 
     /* 로그인 */
     document.getElementById('li-btn').onclick=function(){
         var btn=this, email=document.getElementById('li-email').value.trim(), pw=document.getElementById('li-pw').value, errEl=document.getElementById('li-error');
         errEl.textContent='';
         if(!email||!pw){ errEl.textContent='이메일과 비밀번호를 입력하세요.'; return; }
-        if(!auth){ errEl.textContent='먼저 Firebase 설정을 완료하세요.'; return; }
         btn.disabled=true; btn.textContent='로그인 중...';
         auth.signInWithEmailAndPassword(email,pw).catch(function(e){
             var msg=e.code==='auth/invalid-credential'||e.code==='auth/user-not-found'||e.code==='auth/wrong-password'?'이메일 또는 비밀번호가 틀렸습니다.':'로그인 실패: '+e.message;
@@ -601,21 +525,14 @@ document.addEventListener('DOMContentLoaded', function(){
         var pw2  =document.getElementById('su-pw2').value;
         var errEl=document.getElementById('su-error'), okEl=document.getElementById('su-success');
         errEl.textContent=''; okEl.textContent='';
-        if(!name)         { errEl.textContent='이름을 입력하세요.'; return; }
+        if(!name)            { errEl.textContent='이름을 입력하세요.'; return; }
         if(!email||!pw||!pw2){ errEl.textContent='모든 항목을 입력하세요.'; return; }
-        if(pw.length<6)   { errEl.textContent='비밀번호는 6자 이상이어야 합니다.'; return; }
-        if(pw!==pw2)      { errEl.textContent='비밀번호가 일치하지 않습니다.'; return; }
-        if(!auth)         { errEl.textContent='먼저 Firebase 설정을 완료하세요.'; return; }
+        if(pw.length<6)      { errEl.textContent='비밀번호는 6자 이상이어야 합니다.'; return; }
+        if(pw!==pw2)         { errEl.textContent='비밀번호가 일치하지 않습니다.'; return; }
         btn.disabled=true; btn.textContent='가입 중...';
         auth.createUserWithEmailAndPassword(email,pw)
-            .then(function(cred){
-                /* 표시 이름 저장 */
-                return cred.user.updateProfile({displayName:name});
-            })
-            .then(function(){
-                okEl.textContent='✅ 가입 완료! 자동으로 로그인됩니다.';
-                btn.disabled=false; btn.textContent='회원가입';
-            })
+            .then(function(cred){ return cred.user.updateProfile({displayName:name}); })
+            .then(function(){ okEl.textContent='✅ 가입 완료! 자동으로 로그인됩니다.'; btn.disabled=false; btn.textContent='회원가입'; })
             .catch(function(e){
                 var msg=e.code==='auth/email-already-in-use'?'이미 사용 중인 이메일입니다.':e.code==='auth/invalid-email'?'이메일 형식이 올바르지 않습니다.':'가입 실패: '+e.message;
                 errEl.textContent=msg; btn.disabled=false; btn.textContent='회원가입';
@@ -626,14 +543,13 @@ document.addEventListener('DOMContentLoaded', function(){
     /* 로그아웃 */
     document.getElementById('logout-btn').onclick=function(){
         if(unsubscribe){ unsubscribe(); unsubscribe=null; }
-        if(auth) auth.signOut();
+        auth.signOut();
     };
 
     /* 캘린더 */
     var calendarInited=false;
     function initCalendar(){
         if(calendarInited) return; calendarInited=true;
-        /* activeDate는 로컬에서 복원 */
         var localAD=localStorage.getItem('pl_activeDate_shared')||'';
         if(localAD) activeDate=localAD;
         calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{
@@ -664,8 +580,6 @@ document.addEventListener('DOMContentLoaded', function(){
         if(target) target.classList.add('selected-day');
         renderList(dateStr);
     }
-
-    /* 일정 목록: 작성자 이름 표시 */
     function renderList(date){
         var listEl=document.getElementById('todo-list'); listEl.innerHTML='';
         (todos[date]||[]).forEach(function(t,i){
@@ -690,9 +604,9 @@ document.addEventListener('DOMContentLoaded', function(){
         if(!todos[date]) todos[date]=[];
         todos[date].push({
             text:input.value,
-            author: currentUser?currentUser.email:'',
-            authorName: currentUser?(currentUser.displayName||currentUser.email):'',
-            addedAt: new Date().toISOString()
+            author:currentUser?currentUser.email:'',
+            authorName:currentUser?(currentUser.displayName||currentUser.email):'',
+            addedAt:new Date().toISOString()
         });
         saveTodos(); renderList(date); renderCellTodos(date); input.value='';
     }
@@ -716,44 +630,29 @@ document.addEventListener('DOMContentLoaded', function(){
     });
 
     /* Auth 상태 감지 */
-    var authListenerSet=false;
-    function setupAuthListener(){
-        if(authListenerSet||!auth) return; authListenerSet=true;
-        auth.onAuthStateChanged(function(user){
-            if(user){
-                currentUser=user;
-                currentUserName=user.displayName||user.email;
-                document.getElementById('user-email').textContent=currentUserName;
-                document.getElementById('loading-text').textContent='공유 데이터에 연결 중...';
-                document.getElementById('loading-overlay').classList.remove('hidden');
-                todos={}; wpData={routine:[],expense:[],report:[]};
-                showAppScreen();
-                initCalendar();
-                subscribeShared(); /* 실시간 구독 시작 */
-                ['routine','expense','report'].forEach(function(k){ renderSection(k); });
-                var localAD=localStorage.getItem('pl_activeDate_shared')||'';
-                if(localAD){ activeDate=localAD; showTodo(); updateDisplay(localAD); } else{ showRoutine(); }
-                refreshCalendar();
-                document.getElementById('li-btn').disabled=false; document.getElementById('li-btn').textContent='로그인';
-            } else {
-                currentUser=null; currentUserName='';
-                if(unsubscribe){ unsubscribe(); unsubscribe=null; }
-                todos={}; wpData={routine:[],expense:[],report:[]};
-                showAuthScreen();
-            }
-        });
-    }
-
-    /* 자동 초기화 */
-    if(tryAutoInit()){
-        setupAuthListener();
-    } else {
-        document.getElementById('loading-overlay').classList.add('hidden');
-        document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('setup-panel').classList.add('visible');
-        document.getElementById('toggle-setup').textContent='설정 닫기';
-        document.getElementById('li-error').textContent='먼저 Firebase 설정을 입력하고 저장하세요.';
-    }
+    auth.onAuthStateChanged(function(user){
+        if(user){
+            currentUser=user;
+            document.getElementById('user-email').textContent=user.displayName||user.email;
+            document.getElementById('loading-text').textContent='공유 데이터에 연결 중...';
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            todos={}; wpData={routine:[],expense:[],report:[]};
+            showAppScreen();
+            initCalendar();
+            subscribeShared();
+            ['routine','expense','report'].forEach(function(k){ renderSection(k); });
+            var localAD=localStorage.getItem('pl_activeDate_shared')||'';
+            if(localAD){ activeDate=localAD; showTodo(); updateDisplay(localAD); } else{ showRoutine(); }
+            refreshCalendar();
+            document.getElementById('li-btn').disabled=false;
+            document.getElementById('li-btn').textContent='로그인';
+        } else {
+            currentUser=null;
+            if(unsubscribe){ unsubscribe(); unsubscribe=null; }
+            todos={}; wpData={routine:[],expense:[],report:[]};
+            showAuthScreen();
+        }
+    });
 });
 </script>
 </body>
