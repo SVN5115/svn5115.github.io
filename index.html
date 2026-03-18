@@ -8,94 +8,187 @@
     <style>
         :root { --main-bg: #f8f9fa; }
         body { font-family: 'Malgun Gothic', sans-serif; background: var(--main-bg); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .container { display: flex; width: 98%; max-width: 1800px; height: 96vh; gap: 15px; }
-        #calendar-container { flex: 2.5; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; transition: flex 0.2s; }
-        #calendar-container.full-width { flex: 1; }
-        .container.popup-closed { width: 85% !important; max-width: 1300px !important; margin: 0 auto; }
+        .container { display: flex; width: 98%; max-width: 2400px; height: 96vh; gap: 15px; }
+        #calendar-container { flex: 4; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-width: 0; }
         #calendar { flex: 1; }
+        .side-panel { width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 
-        /* 셀 높이는 JS에서 너비와 동일하게 설정 (정사각형) */
+        #routine-panel { display: flex; flex-direction: column; flex: 1; gap: 10px; min-height: 0; }
+        #routine-panel.hidden { display: none; }
+
+        .wp-section { flex: 1; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 10px; padding: 11px 12px 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        #sec-routine { border-top: 3px solid #6366f1; }
+        #sec-expense { border-top: 3px solid #10b981; }
+        #sec-report  { border-top: 3px solid #f59e0b; }
+
+        .wp-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-shrink: 0; }
+        .wp-section-label { font-size: 12px; font-weight: bold; color: #334155; display: flex; align-items: center; gap: 4px; }
+        #sec-routine .wp-section-label::before { content: '🔁'; }
+        #sec-expense .wp-section-label::before { content: '💰'; }
+        #sec-report  .wp-section-label::before { content: '📋'; }
+
+        .wp-plus-btn { width: 22px; height: 22px; border-radius: 50%; border: none; font-size: 16px; line-height: 1; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
+        #sec-routine .wp-plus-btn { background: #6366f1; } #sec-routine .wp-plus-btn:hover { background: #4f46e5; }
+        #sec-expense .wp-plus-btn { background: #10b981; } #sec-expense .wp-plus-btn:hover { background: #059669; }
+        #sec-report  .wp-plus-btn { background: #f59e0b; } #sec-report  .wp-plus-btn:hover { background: #d97706; }
+
+        /* 인라인 폼 */
+        .wp-add-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 9px 10px 8px; margin-bottom: 8px; flex-shrink: 0; display: none; flex-direction: column; gap: 6px; }
+        .wp-add-form.visible { display: flex; }
+        .wp-add-form label { font-size: 10px; color: #64748b; font-weight: bold; margin-bottom: 1px; }
+        .wp-add-form input, .wp-add-form textarea { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; box-sizing: border-box; resize: none; }
+        .wp-add-form textarea { height: 56px; line-height: 1.5; }
+        #sec-routine .wp-add-form input:focus, #sec-routine .wp-add-form textarea:focus { border-color: #6366f1; }
+        #sec-expense .wp-add-form input:focus, #sec-expense .wp-add-form textarea:focus { border-color: #10b981; }
+        #sec-report  .wp-add-form input:focus, #sec-report  .wp-add-form textarea:focus { border-color: #f59e0b; }
+        .wp-form-actions { display: flex; justify-content: flex-end; gap: 5px; }
+        .wp-form-cancel { padding: 4px 10px; background: none; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
+        .wp-form-cancel:hover { background: #f1f5f9; }
+        .wp-form-save { padding: 4px 12px; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; color: white; font-family: 'Malgun Gothic', sans-serif; }
+        #sec-routine .wp-form-save { background: #6366f1; } #sec-routine .wp-form-save:hover { background: #4f46e5; }
+        #sec-expense .wp-form-save { background: #10b981; } #sec-expense .wp-form-save:hover { background: #059669; }
+        #sec-report  .wp-form-save { background: #f59e0b; } #sec-report  .wp-form-save:hover { background: #d97706; }
+
+        /* 그룹 */
+        .wp-groups { flex: 1; overflow-y: auto; min-height: 0; }
+        .wp-groups::-webkit-scrollbar { width: 4px; }
+        .wp-groups::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+        .wp-group { margin-bottom: 8px; }
+        .wp-group-header { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 5px; margin-bottom: 3px; user-select: none; }
+        #sec-routine .wp-group-header { background: #ede9fe; }
+        #sec-expense .wp-group-header { background: #d1fae5; }
+        #sec-report  .wp-group-header { background: #fef3c7; }
+        .wp-group-toggle { font-size: 9px; color: #888; flex-shrink: 0; cursor: pointer; padding: 0 2px; }
+        .wp-group-title { flex: 1; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        #sec-routine .wp-group-title { color: #4338ca; }
+        #sec-expense .wp-group-title { color: #065f46; }
+        #sec-report  .wp-group-title { color: #92400e; }
+        .wp-group-edit-btn { color: #94a3b8; border: none; background: none; font-size: 11px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+        .wp-group-edit-btn:hover { color: #6366f1; }
+        .wp-group-del-btn { color: #cbd5e1; border: none; background: none; font-size: 12px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+        .wp-group-del-btn:hover { color: #f87171; }
+
+        /* 인라인 수정 폼 */
+        .wp-edit-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 9px 7px; margin: 4px 0 6px 0; display: none; flex-direction: column; gap: 5px; }
+        .wp-edit-form.visible { display: flex; }
+        .wp-edit-form label { font-size: 10px; color: #64748b; font-weight: bold; }
+        .wp-edit-form input, .wp-edit-form textarea { width: 100%; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; box-sizing: border-box; resize: none; }
+        .wp-edit-form textarea { height: 52px; line-height: 1.5; }
+        .wp-edit-actions { display: flex; justify-content: flex-end; gap: 5px; }
+        .wp-edit-cancel { padding: 3px 9px; background: none; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
+        .wp-edit-cancel:hover { background: #f1f5f9; }
+        .wp-edit-save { padding: 3px 10px; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; color: white; font-family: 'Malgun Gothic', sans-serif; }
+        #sec-routine .wp-edit-save { background: #6366f1; }
+        #sec-expense .wp-edit-save { background: #10b981; }
+        #sec-report  .wp-edit-save { background: #f59e0b; }
+
+        /* 항목 목록 */
+        .wp-item-list { list-style: none; padding: 0; margin: 0 0 0 14px; }
+        .wp-item { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f8fafc; font-size: 11px; color: #374151; }
+        .wp-item:last-child { border-bottom: none; }
+        .wp-item input[type="checkbox"] { width: 13px; height: 13px; flex-shrink: 0; cursor: pointer; margin-top: 2px; }
+        #sec-routine .wp-item input[type="checkbox"] { accent-color: #6366f1; }
+        #sec-expense .wp-item input[type="checkbox"] { accent-color: #10b981; }
+        #sec-report  .wp-item input[type="checkbox"] { accent-color: #f59e0b; }
+        .wp-item-text { flex: 1; word-break: break-all; line-height: 1.4; white-space: pre-wrap; }
+        .wp-item-text.done { text-decoration: line-through; color: #9ca3af; }
+        .wp-item-del { color: #ddd; cursor: pointer; border: none; background: none; font-size: 11px; padding: 0 1px; line-height: 1; flex-shrink: 0; }
+        .wp-item-del:hover { color: #f87171; }
+        .wp-empty { color: #c0c8d4; font-size: 11px; text-align: center; padding: 10px 0; }
+
+        /* 일정 상세 */
+        .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
+        .todo-section.hidden { display: none; }
+        #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0; }
+        .input-group { display: flex; gap: 8px; margin-bottom: 20px; flex-shrink: 0; }
+        .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif; }
+        .input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .todo-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
+        .todo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
+
+        /* FullCalendar */
         .fc .fc-daygrid-day-frame { cursor: pointer; overflow: hidden; position: relative; }
         .fc .fc-daygrid-day-top { display: flex !important; align-items: center !important; padding: 4px !important; flex-direction: row !important; position: relative; }
         .fc .fc-daygrid-day-number { font-weight: bold; text-decoration: none !important; padding: 0 !important; font-size: 14px; }
         .fc .fc-day-sat .fc-daygrid-day-number { color: #0000ff !important; }
         .fc .fc-day-sun .fc-daygrid-day-number { color: #ff0000 !important; }
-
-        /* FullCalendar 내부 여백 요소 완전 제거 */
         .fc .fc-daygrid-day-events { display: none !important; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
         .fc .fc-daygrid-day-bg { display: none !important; }
         .fc .fc-daygrid-day-bottom { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
         .fc .fc-daygrid-event-harness { display: none !important; }
-
-        /* 일정 태그 영역 */
-        .cell-todos {
-            padding: 0 2px 0 2px;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .cell-todo-item:last-child {
-            margin-bottom: 6px;
-        }
-        .cell-todo-item {
-            font-size: 9px;
-            border-radius: 2px;
-            padding: 0 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 13px;
-            height: 13px;
-            box-sizing: border-box;
-            cursor: pointer;
-        }
+        .cell-todos { padding: 0 2px; display: flex; flex-direction: column; gap: 2px; }
+        .cell-todo-item:last-child { margin-bottom: 6px; }
+        .cell-todo-item { font-size: 9px; border-radius: 2px; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 13px; height: 13px; box-sizing: border-box; cursor: pointer; }
         .cell-todo-c0 { background: #dbeafe; color: #1e40af; }
         .cell-todo-c1 { background: #e2e8f0; color: #374151; }
-        /* +N 배지: 셀 우측 상단 고정 */
-        .cell-todo-more {
-            position: absolute;
-            top: 3px;
-            right: 3px;
-            font-size: 8px;
-            font-weight: bold;
-            color: #fff;
-            background: #999;
-            border-radius: 2px;
-            padding: 0 3px;
-            line-height: 13px;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        /* V 체크박스 */
+        .cell-todo-more { position: absolute; top: 3px; right: 3px; font-size: 8px; font-weight: bold; color: #fff; background: #999; border-radius: 2px; padding: 0 3px; line-height: 13px; pointer-events: none; z-index: 2; }
         .v-box { width: 16px; height: 16px; border: 1px solid #ccc; margin-right: 6px; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; flex-shrink: 0; }
         .v-box.is-checked { border-color: #000; background: #eee; }
         .day-v-checkmark-svg { display: none; width: 11px; height: 11px; fill: #000; }
         .v-box.is-checked .day-v-checkmark-svg { display: block; }
-
-        /* 공휴일 배지 */
         .holiday-label { position: absolute; top: 4px; right: 6px; font-size: 10px; color: #ff0000; font-weight: bold; }
-
         .fc-daygrid-day.selected-day { background-color: #f0f7ff !important; }
-
-        /* 우측 패널 */
-        .todo-section { flex: 1; background: white; padding: 25px; border-radius: 12px; border: 1px solid #eee; display: flex; flex-direction: column; }
-        #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; }
-        .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
-        .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-        .input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .todo-list { list-style: none; padding: 0; overflow-y: auto; flex-grow: 1; }
-        .todo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
-        .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
     </style>
 </head>
 <body>
 <div class="container">
     <div id="calendar-container"><div id="calendar"></div></div>
-    <div class="todo-section" id="todo-section" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+
+    <!-- 3섹션 패널 -->
+    <div id="routine-panel" class="side-panel">
+        <div class="wp-section" id="sec-routine">
+            <div class="wp-section-header">
+                <div class="wp-section-label">루틴 업무</div>
+                <button class="wp-plus-btn" id="plus-routine">+</button>
+            </div>
+            <div class="wp-add-form" id="form-routine">
+                <div><label>대제목</label><input id="ftitle-routine" placeholder="대제목을 입력하세요"></div>
+                <div><label>내용</label><textarea id="fbody-routine" placeholder="내용을 입력하세요"></textarea></div>
+                <div class="wp-form-actions">
+                    <button class="wp-form-cancel" id="fcancel-routine">취소</button>
+                    <button class="wp-form-save" id="fsave-routine">저장</button>
+                </div>
+            </div>
+            <div class="wp-groups" id="groups-routine"></div>
+        </div>
+        <div class="wp-section" id="sec-expense">
+            <div class="wp-section-header">
+                <div class="wp-section-label">지출 업무</div>
+                <button class="wp-plus-btn" id="plus-expense">+</button>
+            </div>
+            <div class="wp-add-form" id="form-expense">
+                <div><label>대제목</label><input id="ftitle-expense" placeholder="대제목을 입력하세요"></div>
+                <div><label>내용</label><textarea id="fbody-expense" placeholder="내용을 입력하세요"></textarea></div>
+                <div class="wp-form-actions">
+                    <button class="wp-form-cancel" id="fcancel-expense">취소</button>
+                    <button class="wp-form-save" id="fsave-expense">저장</button>
+                </div>
+            </div>
+            <div class="wp-groups" id="groups-expense"></div>
+        </div>
+        <div class="wp-section" id="sec-report">
+            <div class="wp-section-header">
+                <div class="wp-section-label">보고 업무</div>
+                <button class="wp-plus-btn" id="plus-report">+</button>
+            </div>
+            <div class="wp-add-form" id="form-report">
+                <div><label>대제목</label><input id="ftitle-report" placeholder="대제목을 입력하세요"></div>
+                <div><label>내용</label><textarea id="fbody-report" placeholder="내용을 입력하세요"></textarea></div>
+                <div class="wp-form-actions">
+                    <button class="wp-form-cancel" id="fcancel-report">취소</button>
+                    <button class="wp-form-save" id="fsave-report">저장</button>
+                </div>
+            </div>
+            <div class="wp-groups" id="groups-report"></div>
+        </div>
+    </div>
+
+    <!-- 일정 상세 패널 -->
+    <div class="todo-section side-panel hidden" id="todo-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
             <h3 style="margin:0;">일정 상세</h3>
-            <button id="close-todo-btn" style="background:none; border:none; font-size:18px; cursor:pointer; color:#888; line-height:1; padding:2px 6px;">&#x2715;</button>
+            <button id="close-todo-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;line-height:1;padding:2px 6px;">&#x2715;</button>
         </div>
         <div id="selected-date-display">날짜를 선택하세요</div>
         <div class="input-group">
@@ -105,308 +198,321 @@
         <ul id="todo-list" class="todo-list"></ul>
     </div>
 </div>
+
 <script>
     var activeDate = localStorage.getItem('activeDate') || "";
     var todos = JSON.parse(localStorage.getItem('cal_todos')) || {};
-    var calendar;
-
-    var holidays = {
-        '2026-01-01':'신정',
-        '2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴',
-        '2026-03-01':'삼일절','2026-03-02':'대체공휴일(삼일절)',
-        '2026-05-05':'어린이날',
-        '2026-05-24':'부처님오신날','2026-05-25':'대체공휴일(부처님오신날)',
-        '2026-06-06':'현충일',
-        '2026-07-17':'제헌절',
-        '2026-08-15':'광복절','2026-08-17':'대체공휴일(광복절)',
-        '2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴',
-        '2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)',
-        '2026-10-09':'한글날',
-        '2026-12-25':'성탄절',
-
-        '2027-01-01':'신정',
-        '2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴','2027-02-09':'대체공휴일(설날)',
-        '2027-03-01':'삼일절',
-        '2027-05-05':'어린이날',
-        '2027-05-13':'부처님오신날',
-        '2027-06-06':'현충일','2027-06-07':'대체공휴일(현충일)',
-        '2027-07-17':'제헌절','2027-07-19':'대체공휴일(제헌절)',
-        '2027-08-15':'광복절','2027-08-16':'대체공휴일(광복절)',
-        '2027-09-14':'추석 연휴','2027-09-15':'추석','2027-09-16':'추석 연휴',
-        '2027-10-03':'개천절','2027-10-04':'대체공휴일(개천절)',
-        '2027-10-09':'한글날','2027-10-11':'대체공휴일(한글날)',
-        '2027-12-25':'성탄절','2027-12-27':'대체공휴일(성탄절)',
-
-        '2028-01-01':'신정',
-        '2028-01-26':'설날 연휴','2028-01-27':'설날','2028-01-28':'설날 연휴',
-        '2028-03-01':'삼일절',
-        '2028-04-12':'국회의원선거',
-        '2028-05-02':'부처님오신날',
-        '2028-05-05':'어린이날',
-        '2028-06-06':'현충일',
-        '2028-07-17':'제헌절',
-        '2028-08-15':'광복절',
-        '2028-10-02':'추석 연휴','2028-10-03':'추석·개천절','2028-10-04':'추석 연휴','2028-10-05':'대체공휴일(개천절)',
-        '2028-10-09':'한글날',
-        '2028-12-25':'성탄절',
-
-        '2029-01-01':'신정',
-        '2029-02-12':'설날 연휴','2029-02-13':'설날','2029-02-14':'설날 연휴',
-        '2029-03-01':'삼일절',
-        '2029-05-05':'어린이날','2029-05-07':'대체공휴일(어린이날)',
-        '2029-05-20':'부처님오신날','2029-05-21':'대체공휴일(부처님오신날)',
-        '2029-06-06':'현충일',
-        '2029-07-17':'제헌절',
-        '2029-08-15':'광복절',
-        '2029-09-21':'추석 연휴','2029-09-22':'추석','2029-09-23':'추석 연휴','2029-09-24':'대체공휴일(추석)',
-        '2029-10-03':'개천절',
-        '2029-10-09':'한글날',
-        '2029-12-25':'성탄절',
-
-        '2030-01-01':'신정',
-        '2030-02-02':'설날 연휴','2030-02-03':'설날','2030-02-04':'설날 연휴','2030-02-05':'대체공휴일(설날)',
-        '2030-03-01':'삼일절',
-        '2030-05-05':'어린이날','2030-05-06':'대체공휴일(어린이날)',
-        '2030-05-09':'부처님오신날',
-        '2030-06-06':'현충일',
-        '2030-07-17':'제헌절',
-        '2030-08-15':'광복절',
-        '2030-09-11':'추석 연휴','2030-09-12':'추석','2030-09-13':'추석 연휴',
-        '2030-10-03':'개천절',
-        '2030-10-09':'한글날',
-        '2030-12-25':'성탄절'
-    };
-
-    var MAX_VISIBLE = 5; // 팝업 닫힘: 5개, 팝업 열림: 5개
+    var wpData = JSON.parse(localStorage.getItem('cal_wp4')) || { routine: [], expense: [], report: [] };
+    var calendar, MAX_VISIBLE = 5;
     var vIconSvg = '<svg class="day-v-checkmark-svg" viewBox="0 0 12 12"><path d="M10.2,2.3L4.7,7.8L1.8,4.9L0.5,6.2L4.7,10.4L11.5,3.6L10.2,2.3z"/></svg>';
 
-    /* 셀 높이를 달력 전체 높이 / 행수로 계산해 한 화면에 꽉 차게 */
-    function applyCellSquare() {
-        var calEl = document.getElementById('calendar');
-        var firstCell = document.querySelector('.fc-daygrid-day');
-        if (!calEl || !firstCell) return;
+    var holidays = {
+        '2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴',
+        '2026-03-01':'삼일절','2026-03-02':'대체공휴일(삼일절)','2026-05-05':'어린이날',
+        '2026-05-24':'부처님오신날','2026-05-25':'대체공휴일(부처님오신날)','2026-06-06':'현충일',
+        '2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일(광복절)',
+        '2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴',
+        '2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)','2026-10-09':'한글날','2026-12-25':'성탄절',
+        '2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴',
+        '2027-02-09':'대체공휴일(설날)','2027-03-01':'삼일절','2027-05-05':'어린이날',
+        '2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-06-07':'대체공휴일(현충일)',
+        '2027-07-17':'제헌절','2027-07-19':'대체공휴일(제헌절)','2027-08-15':'광복절',
+        '2027-08-16':'대체공휴일(광복절)','2027-09-14':'추석 연휴','2027-09-15':'추석',
+        '2027-09-16':'추석 연휴','2027-10-03':'개천절','2027-10-04':'대체공휴일(개천절)',
+        '2027-10-09':'한글날','2027-10-11':'대체공휴일(한글날)','2027-12-25':'성탄절',
+        '2027-12-27':'대체공휴일(성탄절)','2028-01-01':'신정','2028-01-26':'설날 연휴',
+        '2028-01-27':'설날','2028-01-28':'설날 연휴','2028-03-01':'삼일절','2028-04-12':'국회의원선거',
+        '2028-05-02':'부처님오신날','2028-05-05':'어린이날','2028-06-06':'현충일',
+        '2028-07-17':'제헌절','2028-08-15':'광복절','2028-10-02':'추석 연휴',
+        '2028-10-03':'추석·개천절','2028-10-04':'추석 연휴','2028-10-05':'대체공휴일(개천절)',
+        '2028-10-09':'한글날','2028-12-25':'성탄절','2029-01-01':'신정',
+        '2029-02-12':'설날 연휴','2029-02-13':'설날','2029-02-14':'설날 연휴','2029-03-01':'삼일절',
+        '2029-05-05':'어린이날','2029-05-07':'대체공휴일(어린이날)','2029-05-20':'부처님오신날',
+        '2029-05-21':'대체공휴일(부처님오신날)','2029-06-06':'현충일','2029-07-17':'제헌절',
+        '2029-08-15':'광복절','2029-09-21':'추석 연휴','2029-09-22':'추석','2029-09-23':'추석 연휴',
+        '2029-09-24':'대체공휴일(추석)','2029-10-03':'개천절','2029-10-09':'한글날','2029-12-25':'성탄절',
+        '2030-01-01':'신정','2030-02-02':'설날 연휴','2030-02-03':'설날','2030-02-04':'설날 연휴',
+        '2030-02-05':'대체공휴일(설날)','2030-03-01':'삼일절','2030-05-05':'어린이날',
+        '2030-05-06':'대체공휴일(어린이날)','2030-05-09':'부처님오신날','2030-06-06':'현충일',
+        '2030-07-17':'제헌절','2030-08-15':'광복절','2030-09-11':'추석 연휴','2030-09-12':'추석',
+        '2030-09-13':'추석 연휴','2030-10-03':'개천절','2030-10-09':'한글날','2030-12-25':'성탄절'
+    };
 
-        // 헤더(툴바+요일행) 높이 제외
+    function saveWp() { localStorage.setItem('cal_wp4', JSON.stringify(wpData)); }
+
+    /* ── 섹션 렌더 ── */
+    function renderSection(key) {
+        var container = document.getElementById('groups-' + key);
+        container.innerHTML = '';
+        var groups = wpData[key] || [];
+        if (!groups.length) {
+            var e = document.createElement('div'); e.className = 'wp-empty';
+            e.textContent = '+ 버튼으로 항목을 추가하세요';
+            container.appendChild(e); return;
+        }
+
+        groups.forEach(function(g, gi) {
+            var gDiv = document.createElement('div'); gDiv.className = 'wp-group';
+            gDiv.dataset.gi = gi;
+
+            /* ─ 헤더 ─ */
+            var hdr = document.createElement('div'); hdr.className = 'wp-group-header';
+
+            var tog = document.createElement('span'); tog.className = 'wp-group-toggle';
+            tog.textContent = g.open !== false ? '▼' : '▶';
+            tog.onclick = function() { toggleGroup(key, gi); };
+
+            var ttl = document.createElement('span'); ttl.className = 'wp-group-title';
+            ttl.textContent = g.title;
+            ttl.onclick = function() { toggleGroup(key, gi); };
+
+            /* 수정 버튼 (연필 아이콘) */
+            var editBtn = document.createElement('button'); editBtn.className = 'wp-group-edit-btn';
+            editBtn.innerHTML = '✏️'; editBtn.title = '수정';
+            editBtn.onclick = function(e) {
+                e.stopPropagation();
+                var ef = gDiv.querySelector('.wp-edit-form');
+                var isOpen = ef.classList.contains('visible');
+                /* 같은 섹션 내 다른 수정 폼 모두 닫기 */
+                container.querySelectorAll('.wp-edit-form.visible').forEach(function(f){ f.classList.remove('visible'); });
+                if (!isOpen) {
+                    ef.querySelector('.wp-ei-title').value = g.title;
+                    ef.querySelector('.wp-ei-body').value = g.body || '';
+                    ef.classList.add('visible');
+                    ef.querySelector('.wp-ei-title').focus();
+                }
+            };
+
+            /* 삭제 버튼 */
+            var delBtn = document.createElement('button'); delBtn.className = 'wp-group-del-btn';
+            delBtn.innerHTML = '✕'; delBtn.title = '삭제';
+            (function(capturedKey, capturedGi) {
+                delBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    wpData[capturedKey].splice(capturedGi, 1);
+                    saveWp();
+                    renderSection(capturedKey);
+                };
+            })(key, gi);
+
+            hdr.appendChild(tog); hdr.appendChild(ttl); hdr.appendChild(editBtn); hdr.appendChild(delBtn);
+            gDiv.appendChild(hdr);
+
+            /* ─ 수정 폼 (기본 숨김) ─ */
+            var ef = document.createElement('div'); ef.className = 'wp-edit-form';
+            ef.innerHTML =
+                '<div><label>대제목</label><input class="wp-ei-title" placeholder="대제목"></div>' +
+                '<div><label>내용</label><textarea class="wp-ei-body" placeholder="내용"></textarea></div>' +
+                '<div class="wp-edit-actions">' +
+                    '<button class="wp-edit-cancel">취소</button>' +
+                    '<button class="wp-edit-save">저장</button>' +
+                '</div>';
+            ef.querySelector('.wp-edit-cancel').onclick = function() { ef.classList.remove('visible'); };
+            ef.querySelector('.wp-edit-save').onclick = function() {
+                var newTitle = ef.querySelector('.wp-ei-title').value.trim();
+                var newBody  = ef.querySelector('.wp-ei-body').value.trim();
+                if (!newTitle) { ef.querySelector('.wp-ei-title').focus(); return; }
+                wpData[key][gi].title = newTitle;
+                wpData[key][gi].body  = newBody;
+                wpData[key][gi].checked = {};   /* 체크 초기화 */
+                saveWp(); renderSection(key);
+            };
+            /* Ctrl+Enter 저장 */
+            ef.querySelector('.wp-ei-body').addEventListener('keydown', function(ev) {
+                if (ev.key === 'Enter' && ev.ctrlKey) ef.querySelector('.wp-edit-save').click();
+            });
+            gDiv.appendChild(ef);
+
+            /* ─ 항목 목록 ─ */
+            if (g.open !== false) {
+                var ul = document.createElement('ul'); ul.className = 'wp-item-list';
+                var lines = (g.body || '').split('\n').filter(function(l){ return l.trim(); });
+                lines.forEach(function(line, li) {
+                    var item = document.createElement('li'); item.className = 'wp-item';
+                    var cb = document.createElement('input'); cb.type = 'checkbox';
+                    cb.checked = !!(g.checked && g.checked[li]);
+                    cb.onchange = function() {
+                        if (!wpData[key][gi].checked) wpData[key][gi].checked = {};
+                        wpData[key][gi].checked[li] = cb.checked;
+                        saveWp(); renderSection(key);
+                    };
+                    var span = document.createElement('span');
+                    span.className = 'wp-item-text' + (cb.checked ? ' done' : '');
+                    span.textContent = line;
+                    var idel = document.createElement('button'); idel.className = 'wp-item-del'; idel.innerHTML = '✕';
+                    (function(capturedLi){ idel.onclick = function() {
+                        lines.splice(capturedLi, 1);
+                        wpData[key][gi].body = lines.join('\n');
+                        var nc = {};
+                        lines.forEach(function(_, ni){ var oi = ni < capturedLi ? ni : ni+1; if (g.checked && g.checked[oi]) nc[ni] = true; });
+                        wpData[key][gi].checked = nc;
+                        saveWp(); renderSection(key);
+                    };})(li);
+                    item.appendChild(cb); item.appendChild(span); item.appendChild(idel);
+                    ul.appendChild(item);
+                });
+                gDiv.appendChild(ul);
+            }
+            container.appendChild(gDiv);
+        });
+    }
+
+    function toggleGroup(key, gi) {
+        wpData[key][gi].open = (wpData[key][gi].open === false) ? true : false;
+        saveWp(); renderSection(key);
+    }
+
+    /* ── 추가 폼 ── */
+    function openForm(key) {
+        ['routine','expense','report'].forEach(function(k) {
+            document.getElementById('form-'+k).classList.remove('visible');
+            document.getElementById('ftitle-'+k).value = '';
+            document.getElementById('fbody-'+k).value = '';
+        });
+        document.getElementById('form-'+key).classList.add('visible');
+        document.getElementById('ftitle-'+key).focus();
+    }
+    function closeForm(key) {
+        document.getElementById('form-'+key).classList.remove('visible');
+        document.getElementById('ftitle-'+key).value = '';
+        document.getElementById('fbody-'+key).value = '';
+    }
+    function saveForm(key) {
+        var title = document.getElementById('ftitle-'+key).value.trim();
+        var body  = document.getElementById('fbody-'+key).value.trim();
+        if (!title) { document.getElementById('ftitle-'+key).focus(); return; }
+        wpData[key].push({ title:title, body:body, open:true, checked:{} });
+        saveWp(); renderSection(key); closeForm(key);
+    }
+
+    /* ── 패널 전환 ── */
+    function showRoutine() {
+        document.getElementById('routine-panel').classList.remove('hidden');
+        document.getElementById('todo-section').classList.add('hidden');
+    }
+    function showTodo() {
+        document.getElementById('routine-panel').classList.add('hidden');
+        document.getElementById('todo-section').classList.remove('hidden');
+    }
+
+    /* ── 캘린더 유틸 ── */
+    function applyCellSquare() {
+        var calEl = document.getElementById('calendar'); if (!calEl) return;
         var toolbar = calEl.querySelector('.fc-header-toolbar');
         var colHeader = calEl.querySelector('.fc-col-header');
         var toolbarH = toolbar ? toolbar.offsetHeight : 0;
         var colHeaderH = colHeader ? colHeader.offsetHeight : 0;
-
-        // 행 개수 계산
         var rows = calEl.querySelectorAll('.fc-daygrid-body tr');
         var rowCount = rows.length || 6;
-
-        var totalH = calEl.offsetHeight;
-        var availH = totalH - toolbarH - colHeaderH - 2; // 2px 여유
-        var cellH = Math.floor(availH / rowCount);
-
-        document.querySelectorAll('.fc-daygrid-day-frame').forEach(function(frame) {
-            frame.style.setProperty('height', cellH + 'px', 'important');
+        var cellH = Math.floor((calEl.offsetHeight - toolbarH - colHeaderH - 2) / rowCount);
+        document.querySelectorAll('.fc-daygrid-day-frame').forEach(function(f) {
+            f.style.setProperty('height', cellH+'px', 'important');
         });
     }
-
-    /* 공휴일 날짜 숫자 색상 강제 적용 */
     function applyHolidayColors() {
-        Object.keys(holidays).forEach(function(dateStr) {
-            var cell = document.querySelector('.fc-daygrid-day[data-date="' + dateStr + '"]');
-            if (!cell) return;
-            var numEl = cell.querySelector('.fc-daygrid-day-number');
-            if (numEl) {
-                numEl.setAttribute('style', 'color:#ff0000!important;font-weight:bold;text-decoration:none;padding:0;');
-            }
+        Object.keys(holidays).forEach(function(d) {
+            var cell = document.querySelector('.fc-daygrid-day[data-date="'+d+'"]'); if (!cell) return;
+            var n = cell.querySelector('.fc-daygrid-day-number');
+            if (n) n.setAttribute('style','color:#ff0000!important;font-weight:bold;text-decoration:none;padding:0;');
         });
     }
-
-    /* 특정 날짜의 달력 셀에 일정 태그 다시 그리기 */
     function renderCellTodos(dateStr) {
-        var cell = document.querySelector('.fc-daygrid-day[data-date="' + dateStr + '"]');
-        if (!cell) return;
-
-        /* 기존 cell-todos 영역 제거 */
-        var old = cell.querySelector('.cell-todos');
-        if (old) old.parentNode.removeChild(old);
-
-        var items = todos[dateStr] || [];
-        if (items.length === 0) return;
-
+        var cell = document.querySelector('.fc-daygrid-day[data-date="'+dateStr+'"]'); if (!cell) return;
+        ['cell-todos','cell-todo-more'].forEach(function(cls){ var el=cell.querySelector('.'+cls); if(el) el.parentNode.removeChild(el); });
+        var items = todos[dateStr]||[]; if (!items.length) return;
         var frame = cell.querySelector('.fc-daygrid-day-frame');
-        var wrap = document.createElement('div');
-        wrap.className = 'cell-todos';
-        wrap.style.gap = (MAX_VISIBLE <= 5 ? '7px' : '4px');
-
-        var visible = items.slice(0, MAX_VISIBLE);
-        var extra = items.length - MAX_VISIBLE;
-
-        visible.forEach(function(t, idx) {
-            var tag = document.createElement('div');
-            tag.className = 'cell-todo-item cell-todo-c' + (idx % 2);
-            tag.title = t.text;
-            tag.textContent = t.text;
-            wrap.appendChild(tag);
+        var wrap = document.createElement('div'); wrap.className='cell-todos';
+        items.slice(0,MAX_VISIBLE).forEach(function(t,idx){
+            var tag=document.createElement('div'); tag.className='cell-todo-item cell-todo-c'+(idx%2);
+            tag.title=t.text; tag.textContent=t.text; wrap.appendChild(tag);
         });
-
         frame.appendChild(wrap);
-
-        /* +N 배지는 frame 기준 절대위치로 따로 추가 */
-        if (extra > 0) {
-            var more = document.createElement('div');
-            more.className = 'cell-todo-more';
-            more.textContent = '+' + extra;
-            frame.appendChild(more);
-        }
+        var extra=items.length-MAX_VISIBLE;
+        if(extra>0){ var more=document.createElement('div'); more.className='cell-todo-more'; more.textContent='+'+extra; frame.appendChild(more); }
+    }
+    function renderAllCellTodos(){ Object.keys(todos).forEach(renderCellTodos); }
+    function refreshCalendar(){
+        setTimeout(function(){ calendar.updateSize(); setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); },100); },50);
     }
 
-    /* 현재 보이는 모든 날짜 셀 일정 갱신 */
-    function renderAllCellTodos() {
-        Object.keys(todos).forEach(function(dateStr) {
-            renderCellTodos(dateStr);
-        });
-    }
-
+    /* ── DOMContentLoaded ── */
     document.addEventListener('DOMContentLoaded', function() {
         calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-            initialView: 'dayGridMonth',
-            initialDate: '2026-03-18',
-            locale: 'ko',
-            height: '100%',
-            headerToolbar: { left: 'title', center: '', right: 'today prev,next' },
-
+            initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
+            headerToolbar:{ left:'title', center:'', right:'today prev,next' },
             dayCellDidMount: function(arg) {
                 var topEl = arg.el.querySelector('.fc-daygrid-day-top');
-                var isHoliday = !!holidays[arg.dateStr];
-
-                /* V 박스 */
-                var vBox = document.createElement('div');
-                vBox.className = 'v-box';
-                vBox.innerHTML = vIconSvg;
-                if (activeDate === arg.dateStr) vBox.classList.add('is-checked');
+                var vBox = document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
+                if (activeDate===arg.dateStr) vBox.classList.add('is-checked');
                 topEl.prepend(vBox);
-
-                /* 공휴일 배지 */
-                if (isHoliday) {
-                    var label = document.createElement('span');
-                    label.className = 'holiday-label';
-                    label.innerText = holidays[arg.dateStr];
-                    topEl.appendChild(label);
+                if (holidays[arg.dateStr]) {
+                    var label=document.createElement('span'); label.className='holiday-label'; label.innerText=holidays[arg.dateStr]; topEl.appendChild(label);
                 }
             },
-
-            datesSet: function() {
-                setTimeout(function() {
-                    applyCellSquare();
-                    applyHolidayColors();
-                    renderAllCellTodos();
-                }, 50);
-            },
-
+            datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); },50); },
             dateClick: function(info) {
-                document.querySelectorAll('.v-box').forEach(function(box){ box.classList.remove('is-checked'); });
-                var currentVBox = info.dayEl.querySelector('.v-box');
-                if (activeDate === info.dateStr) {
-                    activeDate = "";
+                document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+                if (activeDate===info.dateStr) {
+                    activeDate=""; localStorage.setItem('activeDate',activeDate);
+                    MAX_VISIBLE=6; showRoutine(); refreshCalendar();
                 } else {
-                    activeDate = info.dateStr;
-                    if (currentVBox) currentVBox.classList.add('is-checked');
-                }
-                localStorage.setItem('activeDate', activeDate);
-                if (activeDate === "") {
-                    // 체크박스 비활성화 → 상세창 숨김, 일정 6개
-                    MAX_VISIBLE = 6;
-                    document.querySelectorAll('.cell-todos').forEach(function(el){ el.style.gap = '2px'; });
-                    document.getElementById('todo-section').style.display = 'none';
-                    document.getElementById('calendar-container').classList.add('full-width');
-                    document.querySelector('.container').classList.add('popup-closed');
-                    document.getElementById('selected-date-display').innerText = '날짜를 선택하세요';
-                    document.getElementById('todo-list').innerHTML = '';
-                    document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-                    setTimeout(function(){
-                        calendar.updateSize();
-                        setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); }, 100);
-                    }, 50);
-                } else {
-                    // 체크박스 활성화 → 상세창 표시, 일정 5개
-                    MAX_VISIBLE = 5;
-                    document.querySelector('.cell-todos') && document.querySelectorAll('.cell-todos').forEach(function(el){ el.style.gap = '4px'; });
-                    document.getElementById('todo-section').style.display = 'flex';
-                    document.getElementById('calendar-container').classList.remove('full-width');
-                    document.querySelector('.container').classList.remove('popup-closed');
-                    setTimeout(function(){
-                        calendar.updateSize();
-                        setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); }, 100);
-                    }, 50);
-                    updateDisplay(info.dateStr, info.dayEl);
+                    activeDate=info.dateStr; localStorage.setItem('activeDate',activeDate);
+                    var vBox=info.dayEl.querySelector('.v-box'); if(vBox) vBox.classList.add('is-checked');
+                    MAX_VISIBLE=5; showTodo(); refreshCalendar(); updateDisplay(info.dateStr,info.dayEl);
                 }
             }
         });
-
         calendar.render();
-        window.addEventListener('resize', function() {
-            setTimeout(function() { calendar.updateSize(); setTimeout(applyCellSquare, 100); }, 50);
+        window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
+
+        if (activeDate) { showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
+
+        ['routine','expense','report'].forEach(function(key) {
+            renderSection(key);
+            document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
+            document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
+            document.getElementById('fsave-'+key).onclick   = function(){ saveForm(key); };
+            document.getElementById('fbody-'+key).addEventListener('keydown', function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
         });
-        if (activeDate) {
-            document.getElementById('todo-section').style.display = 'flex';
-            document.getElementById('calendar-container').classList.remove('full-width');
-            updateDisplay(activeDate);
-        }
 
         document.getElementById('close-todo-btn').onclick = function() {
-            // 체크박스 해제
-            document.querySelectorAll('.v-box').forEach(function(box){ box.classList.remove('is-checked'); });
-            activeDate = "";
-            localStorage.setItem('activeDate', activeDate);
-            MAX_VISIBLE = 6;
-            document.getElementById('todo-section').style.display = 'none';
-            document.getElementById('calendar-container').classList.add('full-width');
-            document.querySelector('.container').classList.add('popup-closed');
-            document.getElementById('selected-date-display').innerText = '날짜를 선택하세요';
-            document.getElementById('todo-list').innerHTML = '';
+            document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+            activeDate=""; localStorage.setItem('activeDate',activeDate); MAX_VISIBLE=6;
+            document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
+            document.getElementById('todo-list').innerHTML='';
             document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-            setTimeout(function(){
-                calendar.updateSize();
-                setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); }, 100);
-            }, 50);
+            showRoutine(); refreshCalendar();
         };
 
-        function updateDisplay(dateStr, el) {
-            document.getElementById('selected-date-display').innerText = dateStr;
+        document.getElementById('add-btn').onclick = addTodo;
+        document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
+        function addTodo() {
+            var input=document.getElementById('todo-input');
+            var date=document.getElementById('selected-date-display').innerText;
+            if (!input.value.trim()||date==='날짜를 선택하세요') return;
+            if (!todos[date]) todos[date]=[];
+            todos[date].push({text:input.value});
+            localStorage.setItem('cal_todos',JSON.stringify(todos));
+            renderList(date); renderCellTodos(date); input.value='';
+        }
+        function updateDisplay(dateStr,el) {
+            document.getElementById('selected-date-display').innerText=dateStr;
             document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-            if (el) el.classList.add('selected-day');
-            else {
-                var target = document.querySelector('[data-date="' + dateStr + '"]');
-                if (target) target.classList.add('selected-day');
-            }
+            var target=el||document.querySelector('[data-date="'+dateStr+'"]');
+            if(target) target.classList.add('selected-day');
             renderList(dateStr);
         }
-
-        document.getElementById('add-btn').onclick = function() {
-            var input = document.getElementById('todo-input');
-            var date = document.getElementById('selected-date-display').innerText;
-            if (!input.value.trim() || date === '날짜를 선택하세요') return;
-            if (!todos[date]) todos[date] = [];
-            todos[date].push({ text: input.value });
-            localStorage.setItem('cal_todos', JSON.stringify(todos));
-            renderList(date);
-            renderCellTodos(date);  /* 달력 셀도 즉시 갱신 */
-            input.value = '';
-        };
-
         function renderList(date) {
-            var listEl = document.getElementById('todo-list');
-            listEl.innerHTML = '';
-            (todos[date] || []).forEach(function(t, i) {
-                var li = document.createElement('li');
-                li.className = 'todo-item';
-                li.innerHTML = '<span>' + t.text + '</span><button class="delete-btn" onclick="removeItem(\'' + date + '\',' + i + ')">&#x2715;</button>';
+            var listEl=document.getElementById('todo-list'); listEl.innerHTML='';
+            (todos[date]||[]).forEach(function(t,i){
+                var li=document.createElement('li'); li.className='todo-item';
+                li.innerHTML='<span>'+t.text+'</span><button class="delete-btn" onclick="removeItem(\''+date+'\','+i+')">&#x2715;</button>';
                 listEl.appendChild(li);
             });
         }
-
-        window.removeItem = function(date, i) {
-            todos[date].splice(i, 1);
-            if (todos[date].length === 0) delete todos[date];
-            localStorage.setItem('cal_todos', JSON.stringify(todos));
-            renderList(date);
-            renderCellTodos(date);  /* 달력 셀도 즉시 갱신 */
+        window.removeItem = function(date,i){
+            todos[date].splice(i,1); if(!todos[date].length) delete todos[date];
+            localStorage.setItem('cal_todos',JSON.stringify(todos)); renderList(date); renderCellTodos(date);
         };
     });
 </script>
