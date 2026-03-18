@@ -3,443 +3,431 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 비즈니스 플래너</title>
+    <title>비즈니스 플래너</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <style>
-        :root { --main-bg: #f8f9fa; }
-        body { font-family: 'Malgun Gothic', sans-serif; background: var(--main-bg); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        :root { --main-bg: #f0f2f5; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Malgun Gothic', sans-serif; background: var(--main-bg); margin: 0; }
 
-        /* ── Firebase 설정 모달 ── */
-        #fb-setup-modal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.45); z-index: 10000;
-            align-items: center; justify-content: center;
-        }
-        #fb-setup-modal.visible { display: flex; }
-        .fb-modal-box {
-            background: white; border-radius: 14px; padding: 28px 28px 22px;
-            width: 420px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-        }
-        .fb-modal-box h2 { margin: 0 0 6px; font-size: 17px; color: #1e293b; }
-        .fb-modal-desc { font-size: 12px; color: #64748b; margin-bottom: 18px; line-height: 1.6; }
-        .fb-modal-desc a { color: #6366f1; }
-        .fb-field { margin-bottom: 11px; }
-        .fb-field label { display: block; font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 4px; }
-        .fb-field input {
-            width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px;
-            font-size: 12px; font-family: 'Malgun Gothic', sans-serif; outline: none; box-sizing: border-box;
-        }
-        .fb-field input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.12); }
-        .fb-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-        .fb-btn-cancel { padding: 7px 16px; background: none; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
-        .fb-btn-save { padding: 7px 20px; background: #6366f1; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
-        .fb-btn-save:hover { background: #4f46e5; }
-        .fb-btn-reset { padding: 7px 14px; background: none; border: 1px solid #fca5a5; border-radius: 6px; font-size: 11px; cursor: pointer; color: #ef4444; font-family: 'Malgun Gothic', sans-serif; }
+        /* ══ 로그인 화면 ══ */
+        #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        #login-screen.hidden { display:none; }
+        .login-card { background:white; border-radius:16px; padding:40px 36px 32px; width:380px; max-width:95vw; box-shadow:0 4px 24px rgba(0,0,0,0.10); }
+        .login-logo  { font-size:28px; margin-bottom:4px; }
+        .login-title { font-size:20px; font-weight:bold; color:#1e293b; margin-bottom:4px; }
+        .login-sub   { font-size:12px; color:#94a3b8; margin-bottom:28px; }
+        .lf-label { font-size:11px; font-weight:bold; color:#475569; margin-bottom:5px; display:block; }
+        .lf-input { width:100%; padding:11px 13px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; font-family:'Malgun Gothic',sans-serif; outline:none; margin-bottom:14px; transition:border-color 0.2s; }
+        .lf-input:focus { border-color:#6366f1; }
+        .lf-btn { width:100%; padding:12px; background:#6366f1; color:white; border:none; border-radius:8px; font-size:14px; font-weight:bold; cursor:pointer; font-family:'Malgun Gothic',sans-serif; margin-top:4px; }
+        .lf-btn:hover { background:#4f46e5; }
+        .lf-btn:disabled { background:#a5b4fc; cursor:not-allowed; }
+        .lf-error { font-size:12px; color:#ef4444; margin-top:10px; min-height:18px; text-align:center; }
+        .lf-divider { border:none; border-top:1px solid #f1f5f9; margin:22px 0 18px; }
+        .lf-setup-toggle { font-size:11px; color:#94a3b8; text-align:center; }
+        .lf-setup-toggle span { color:#6366f1; text-decoration:underline; cursor:pointer; }
 
-        /* ── 상단 설정 버튼 ── */
-        #fb-config-btn {
-            position: fixed; top: 12px; right: 16px; z-index: 500;
-            background: white; border: 1px solid #e2e8f0; border-radius: 6px;
-            padding: 5px 10px; font-size: 11px; cursor: pointer; color: #64748b;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }
-        #fb-config-btn:hover { background: #f8fafc; }
-        #fb-status {
-            display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-            background: #94a3b8; margin-right: 5px; vertical-align: middle;
-        }
-        #fb-status.connected { background: #22c55e; }
+        #setup-panel { display:none; margin-top:18px; background:#f8fafc; border-radius:10px; padding:16px 14px 12px; border:1px solid #e2e8f0; }
+        #setup-panel.visible { display:block; }
+        .sp-title { font-size:12px; font-weight:bold; color:#334155; margin-bottom:10px; }
+        .sp-desc  { font-size:11px; color:#64748b; margin-bottom:12px; line-height:1.6; }
+        .sp-desc a { color:#6366f1; }
+        .sp-field { margin-bottom:8px; }
+        .sp-field label { font-size:10px; font-weight:bold; color:#64748b; display:block; margin-bottom:3px; }
+        .sp-field input { width:100%; padding:7px 9px; border:1px solid #d1d5db; border-radius:5px; font-size:11px; font-family:'Malgun Gothic',sans-serif; outline:none; }
+        .sp-field input:focus { border-color:#6366f1; }
+        .sp-actions { display:flex; gap:6px; margin-top:10px; justify-content:flex-end; }
+        .sp-save  { padding:6px 14px; background:#6366f1; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer; font-family:'Malgun Gothic',sans-serif; }
+        .sp-save:hover { background:#4f46e5; }
+        .sp-reset { padding:6px 10px; background:none; border:1px solid #fca5a5; border-radius:5px; font-size:11px; cursor:pointer; color:#ef4444; font-family:'Malgun Gothic',sans-serif; }
 
-        /* 로딩 */
-        #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 12px; }
-        #loading-overlay.hidden { display: none; }
-        .loading-spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text { font-size: 13px; color: #64748b; }
+        /* ══ 앱 화면 ══ */
+        #app-screen { display:flex; height:100vh; flex-direction:column; }
+        #app-screen.hidden { display:none; }
 
-        /* ── 메인 레이아웃 ── */
-        .container { display: flex; width: 98%; max-width: 2400px; height: 96vh; gap: 15px; }
-        #calendar-container { flex: 4; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-width: 0; }
-        #calendar { flex: 1; }
-        .side-panel { width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
-        #routine-panel { display: flex; flex-direction: column; flex: 1; gap: 10px; min-height: 0; }
-        #routine-panel.hidden { display: none; }
+        #app-topbar { height:44px; background:white; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .topbar-left  { display:flex; align-items:center; gap:10px; }
+        .topbar-appname { font-size:14px; font-weight:bold; color:#1e293b; }
+        #sync-status { font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
+        #sync-dot { width:7px; height:7px; border-radius:50%; background:#94a3b8; display:inline-block; transition:background 0.3s; }
+        #sync-dot.synced  { background:#22c55e; }
+        #sync-dot.syncing { background:#f59e0b; }
+        #sync-dot.error   { background:#ef4444; }
+        .topbar-right { display:flex; align-items:center; gap:8px; }
+        #user-email { font-size:11px; color:#64748b; }
+        .tb-btn { padding:5px 12px; border-radius:6px; border:1px solid #e2e8f0; background:white; font-size:11px; cursor:pointer; color:#64748b; font-family:'Malgun Gothic',sans-serif; }
+        .tb-btn:hover { background:#f8fafc; }
+        .tb-btn.logout { color:#ef4444; border-color:#fca5a5; }
 
-        .wp-section { flex: 1; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 10px; padding: 11px 12px 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-        #sec-routine { border-top: 3px solid #6366f1; }
-        #sec-expense { border-top: 3px solid #10b981; }
-        #sec-report  { border-top: 3px solid #f59e0b; }
-        .wp-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-shrink: 0; }
-        .wp-section-label { font-size: 12px; font-weight: bold; color: #334155; display: flex; align-items: center; gap: 4px; }
-        #sec-routine .wp-section-label::before { content: '🔁'; }
-        #sec-expense .wp-section-label::before { content: '💰'; }
-        #sec-report  .wp-section-label::before { content: '📋'; }
-        .wp-plus-btn { width: 22px; height: 22px; border-radius: 50%; border: none; font-size: 16px; line-height: 1; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
-        #sec-routine .wp-plus-btn { background: #6366f1; } #sec-routine .wp-plus-btn:hover { background: #4f46e5; }
-        #sec-expense .wp-plus-btn { background: #10b981; } #sec-expense .wp-plus-btn:hover { background: #059669; }
-        #sec-report  .wp-plus-btn { background: #f59e0b; } #sec-report  .wp-plus-btn:hover { background: #d97706; }
-        .wp-add-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 9px 10px 8px; margin-bottom: 8px; flex-shrink: 0; display: none; flex-direction: column; gap: 6px; }
-        .wp-add-form.visible { display: flex; }
-        .wp-add-form label { font-size: 10px; color: #64748b; font-weight: bold; margin-bottom: 1px; }
-        .wp-add-form input, .wp-add-form textarea { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; box-sizing: border-box; resize: none; }
-        .wp-add-form textarea { height: 56px; line-height: 1.5; }
-        #sec-routine .wp-add-form input:focus, #sec-routine .wp-add-form textarea:focus { border-color: #6366f1; }
-        #sec-expense .wp-add-form input:focus, #sec-expense .wp-add-form textarea:focus { border-color: #10b981; }
-        #sec-report  .wp-add-form input:focus, #sec-report  .wp-add-form textarea:focus { border-color: #f59e0b; }
-        .wp-form-actions { display: flex; justify-content: flex-end; gap: 5px; }
-        .wp-form-cancel { padding: 4px 10px; background: none; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
-        .wp-form-save { padding: 4px 12px; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; color: white; font-family: 'Malgun Gothic', sans-serif; }
-        #sec-routine .wp-form-save { background: #6366f1; } #sec-routine .wp-form-save:hover { background: #4f46e5; }
-        #sec-expense .wp-form-save { background: #10b981; } #sec-expense .wp-form-save:hover { background: #059669; }
-        #sec-report  .wp-form-save { background: #f59e0b; } #sec-report  .wp-form-save:hover { background: #d97706; }
-        .wp-groups { flex: 1; overflow-y: auto; min-height: 0; }
-        .wp-groups::-webkit-scrollbar { width: 4px; }
-        .wp-groups::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
-        .wp-group { margin-bottom: 8px; }
-        .wp-group-header { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 5px; margin-bottom: 3px; user-select: none; }
-        #sec-routine .wp-group-header { background: #ede9fe; }
-        #sec-expense .wp-group-header { background: #d1fae5; }
-        #sec-report  .wp-group-header { background: #fef3c7; }
-        .wp-group-toggle { font-size: 9px; color: #888; flex-shrink: 0; cursor: pointer; padding: 0 2px; }
-        .wp-group-title { flex: 1; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-        #sec-routine .wp-group-title { color: #4338ca; }
-        #sec-expense .wp-group-title { color: #065f46; }
-        #sec-report  .wp-group-title { color: #92400e; }
-        .wp-group-edit-btn { color: #94a3b8; border: none; background: none; font-size: 11px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
-        .wp-group-edit-btn:hover { color: #6366f1; }
-        .wp-group-del-btn { color: #cbd5e1; border: none; background: none; font-size: 12px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
-        .wp-group-del-btn:hover { color: #f87171; }
-        .wp-edit-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 9px 7px; margin: 4px 0 6px 0; display: none; flex-direction: column; gap: 5px; }
-        .wp-edit-form.visible { display: flex; }
-        .wp-edit-form label { font-size: 10px; color: #64748b; font-weight: bold; }
-        .wp-edit-form input, .wp-edit-form textarea { width: 100%; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; box-sizing: border-box; resize: none; }
-        .wp-edit-form textarea { height: 52px; line-height: 1.5; }
-        .wp-edit-actions { display: flex; justify-content: flex-end; gap: 5px; }
-        .wp-edit-cancel { padding: 3px 9px; background: none; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
-        .wp-edit-save { padding: 3px 10px; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; color: white; font-family: 'Malgun Gothic', sans-serif; }
-        #sec-routine .wp-edit-save { background: #6366f1; }
-        #sec-expense .wp-edit-save { background: #10b981; }
-        #sec-report  .wp-edit-save { background: #f59e0b; }
-        .wp-item-list { list-style: none; padding: 0; margin: 0 0 0 14px; }
-        .wp-item { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f8fafc; font-size: 11px; color: #374151; }
-        .wp-item:last-child { border-bottom: none; }
-        .wp-item input[type="checkbox"] { width: 13px; height: 13px; flex-shrink: 0; cursor: pointer; margin-top: 2px; }
-        #sec-routine .wp-item input[type="checkbox"] { accent-color: #6366f1; }
-        #sec-expense .wp-item input[type="checkbox"] { accent-color: #10b981; }
-        #sec-report  .wp-item input[type="checkbox"] { accent-color: #f59e0b; }
-        .wp-item-text { flex: 1; word-break: break-all; line-height: 1.4; white-space: pre-wrap; }
-        .wp-item-text.done { text-decoration: line-through; color: #9ca3af; }
-        .wp-item-del { color: #ddd; cursor: pointer; border: none; background: none; font-size: 11px; padding: 0 1px; line-height: 1; flex-shrink: 0; }
-        .wp-item-del:hover { color: #f87171; }
-        .wp-empty { color: #c0c8d4; font-size: 11px; text-align: center; padding: 10px 0; }
-        .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
-        .todo-section.hidden { display: none; }
-        #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0; }
-        .input-group { display: flex; gap: 8px; margin-bottom: 20px; flex-shrink: 0; }
-        .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif; }
-        .input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .todo-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
-        .todo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
-        .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
-        .fc .fc-daygrid-day-frame { cursor: pointer; overflow: hidden; position: relative; }
-        .fc .fc-daygrid-day-top { display: flex !important; align-items: center !important; padding: 4px !important; flex-direction: row !important; position: relative; }
-        .fc .fc-daygrid-day-number { font-weight: bold; text-decoration: none !important; padding: 0 !important; font-size: 14px; }
-        .fc .fc-day-sat .fc-daygrid-day-number { color: #0000ff !important; }
-        .fc .fc-day-sun .fc-daygrid-day-number { color: #ff0000 !important; }
-        .fc .fc-daygrid-day-events { display: none !important; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
-        .fc .fc-daygrid-day-bg { display: none !important; }
-        .fc .fc-daygrid-day-bottom { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
-        .fc .fc-daygrid-event-harness { display: none !important; }
-        .cell-todos { padding: 0 2px; display: flex; flex-direction: column; gap: 2px; }
-        .cell-todo-item:last-child { margin-bottom: 6px; }
-        .cell-todo-item { font-size: 9px; border-radius: 2px; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 13px; height: 13px; box-sizing: border-box; cursor: pointer; }
-        .cell-todo-c0 { background: #dbeafe; color: #1e40af; }
-        .cell-todo-c1 { background: #e2e8f0; color: #374151; }
-        .cell-todo-more { position: absolute; top: 3px; right: 3px; font-size: 8px; font-weight: bold; color: #fff; background: #999; border-radius: 2px; padding: 0 3px; line-height: 13px; pointer-events: none; z-index: 2; }
-        .v-box { width: 16px; height: 16px; border: 1px solid #ccc; margin-right: 6px; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; flex-shrink: 0; }
-        .v-box.is-checked { border-color: #000; background: #eee; }
-        .day-v-checkmark-svg { display: none; width: 11px; height: 11px; fill: #000; }
-        .v-box.is-checked .day-v-checkmark-svg { display: block; }
-        .holiday-label { position: absolute; top: 4px; right: 6px; font-size: 10px; color: #ff0000; font-weight: bold; }
-        .fc-daygrid-day.selected-day { background-color: #f0f7ff !important; }
+        #app-body { display:flex; flex:1; gap:15px; padding:15px; min-height:0; }
+        #calendar-container { flex:4; background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; flex-direction:column; min-width:0; }
+        #calendar { flex:1; }
+        .side-panel { width:230px; flex-shrink:0; display:flex; flex-direction:column; gap:10px; }
+        #routine-panel { display:flex; flex-direction:column; flex:1; gap:10px; min-height:0; }
+        #routine-panel.hidden { display:none; }
+
+        .wp-section { flex:1; background:white; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.05); border-radius:10px; padding:11px 12px 8px 12px; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+        #sec-routine { border-top:3px solid #6366f1; }
+        #sec-expense { border-top:3px solid #10b981; }
+        #sec-report  { border-top:3px solid #f59e0b; }
+        .wp-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-shrink:0; }
+        .wp-section-label { font-size:12px; font-weight:bold; color:#334155; display:flex; align-items:center; gap:4px; }
+        #sec-routine .wp-section-label::before { content:'🔁'; }
+        #sec-expense .wp-section-label::before { content:'💰'; }
+        #sec-report  .wp-section-label::before { content:'📋'; }
+        .wp-plus-btn { width:22px; height:22px; border-radius:50%; border:none; font-size:16px; cursor:pointer; color:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; }
+        #sec-routine .wp-plus-btn { background:#6366f1; } #sec-routine .wp-plus-btn:hover { background:#4f46e5; }
+        #sec-expense .wp-plus-btn { background:#10b981; } #sec-expense .wp-plus-btn:hover { background:#059669; }
+        #sec-report  .wp-plus-btn { background:#f59e0b; } #sec-report  .wp-plus-btn:hover { background:#d97706; }
+        .wp-add-form { background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:9px 10px 8px; margin-bottom:8px; flex-shrink:0; display:none; flex-direction:column; gap:6px; }
+        .wp-add-form.visible { display:flex; }
+        .wp-add-form label { font-size:10px; color:#64748b; font-weight:bold; margin-bottom:1px; }
+        .wp-add-form input, .wp-add-form textarea { width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:5px; font-size:11px; font-family:'Malgun Gothic',sans-serif; outline:none; resize:none; }
+        .wp-add-form textarea { height:56px; line-height:1.5; }
+        #sec-routine .wp-add-form input:focus, #sec-routine .wp-add-form textarea:focus { border-color:#6366f1; }
+        #sec-expense .wp-add-form input:focus, #sec-expense .wp-add-form textarea:focus { border-color:#10b981; }
+        #sec-report  .wp-add-form input:focus, #sec-report  .wp-add-form textarea:focus { border-color:#f59e0b; }
+        .wp-form-actions { display:flex; justify-content:flex-end; gap:5px; }
+        .wp-form-cancel { padding:4px 10px; background:none; border:1px solid #d1d5db; border-radius:4px; font-size:11px; cursor:pointer; color:#64748b; font-family:'Malgun Gothic',sans-serif; }
+        .wp-form-save   { padding:4px 12px; border:none; border-radius:4px; font-size:11px; cursor:pointer; color:white; font-family:'Malgun Gothic',sans-serif; }
+        #sec-routine .wp-form-save { background:#6366f1; } #sec-routine .wp-form-save:hover { background:#4f46e5; }
+        #sec-expense .wp-form-save { background:#10b981; } #sec-expense .wp-form-save:hover { background:#059669; }
+        #sec-report  .wp-form-save { background:#f59e0b; } #sec-report  .wp-form-save:hover { background:#d97706; }
+        .wp-groups { flex:1; overflow-y:auto; min-height:0; }
+        .wp-groups::-webkit-scrollbar { width:4px; }
+        .wp-groups::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:2px; }
+        .wp-group { margin-bottom:8px; }
+        .wp-group-header { display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:5px; margin-bottom:3px; user-select:none; }
+        #sec-routine .wp-group-header { background:#ede9fe; }
+        #sec-expense .wp-group-header { background:#d1fae5; }
+        #sec-report  .wp-group-header { background:#fef3c7; }
+        .wp-group-toggle { font-size:9px; color:#888; flex-shrink:0; cursor:pointer; padding:0 2px; }
+        .wp-group-title  { flex:1; font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+        #sec-routine .wp-group-title { color:#4338ca; }
+        #sec-expense .wp-group-title { color:#065f46; }
+        #sec-report  .wp-group-title { color:#92400e; }
+        .wp-group-edit-btn { color:#94a3b8; border:none; background:none; font-size:11px; cursor:pointer; padding:0 2px; line-height:1; flex-shrink:0; }
+        .wp-group-edit-btn:hover { color:#6366f1; }
+        .wp-group-del-btn  { color:#cbd5e1; border:none; background:none; font-size:12px; cursor:pointer; padding:0 2px; line-height:1; flex-shrink:0; }
+        .wp-group-del-btn:hover  { color:#f87171; }
+        .wp-edit-form { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 9px 7px; margin:4px 0 6px 0; display:none; flex-direction:column; gap:5px; }
+        .wp-edit-form.visible { display:flex; }
+        .wp-edit-form label { font-size:10px; color:#64748b; font-weight:bold; }
+        .wp-edit-form input, .wp-edit-form textarea { width:100%; padding:5px 7px; border:1px solid #d1d5db; border-radius:4px; font-size:11px; font-family:'Malgun Gothic',sans-serif; outline:none; resize:none; }
+        .wp-edit-form textarea { height:52px; line-height:1.5; }
+        .wp-edit-actions { display:flex; justify-content:flex-end; gap:5px; }
+        .wp-edit-cancel { padding:3px 9px; background:none; border:1px solid #d1d5db; border-radius:4px; font-size:11px; cursor:pointer; color:#64748b; font-family:'Malgun Gothic',sans-serif; }
+        .wp-edit-save   { padding:3px 10px; border:none; border-radius:4px; font-size:11px; cursor:pointer; color:white; font-family:'Malgun Gothic',sans-serif; }
+        #sec-routine .wp-edit-save { background:#6366f1; }
+        #sec-expense .wp-edit-save { background:#10b981; }
+        #sec-report  .wp-edit-save { background:#f59e0b; }
+        .wp-item-list { list-style:none; padding:0; margin:0 0 0 14px; }
+        .wp-item { display:flex; align-items:flex-start; gap:6px; padding:3px 0; border-bottom:1px solid #f8fafc; font-size:11px; color:#374151; }
+        .wp-item:last-child { border-bottom:none; }
+        .wp-item input[type="checkbox"] { width:13px; height:13px; flex-shrink:0; cursor:pointer; margin-top:2px; }
+        #sec-routine .wp-item input[type="checkbox"] { accent-color:#6366f1; }
+        #sec-expense .wp-item input[type="checkbox"] { accent-color:#10b981; }
+        #sec-report  .wp-item input[type="checkbox"] { accent-color:#f59e0b; }
+        .wp-item-text { flex:1; word-break:break-all; line-height:1.4; white-space:pre-wrap; }
+        .wp-item-text.done { text-decoration:line-through; color:#9ca3af; }
+        .wp-item-del { color:#ddd; cursor:pointer; border:none; background:none; font-size:11px; padding:0 1px; line-height:1; flex-shrink:0; }
+        .wp-item-del:hover { color:#f87171; }
+        .wp-empty { color:#c0c8d4; font-size:11px; text-align:center; padding:10px 0; }
+
+        .todo-section { background:white; border:1px solid #eee; border-radius:12px; padding:25px; flex:1; display:flex; flex-direction:column; }
+        .todo-section.hidden { display:none; }
+        #selected-date-display { color:#007bff; font-weight:bold; margin-bottom:10px; font-size:1.1em; flex-shrink:0; }
+        .input-group { display:flex; gap:8px; margin-bottom:20px; flex-shrink:0; }
+        .input-group input  { flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:'Malgun Gothic',sans-serif; }
+        .input-group button { padding:10px 15px; background:#333; color:white; border:none; border-radius:6px; cursor:pointer; }
+        .todo-list { list-style:none; padding:0; overflow-y:auto; flex:1; }
+        .todo-item  { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f5f5f5; font-size:14px; }
+        .delete-btn { color:#ff4d4f; cursor:pointer; border:none; background:none; }
+
+        .fc .fc-daygrid-day-frame { cursor:pointer; overflow:hidden; position:relative; }
+        .fc .fc-daygrid-day-top   { display:flex !important; align-items:center !important; padding:4px !important; flex-direction:row !important; position:relative; }
+        .fc .fc-daygrid-day-number { font-weight:bold; text-decoration:none !important; padding:0 !important; font-size:14px; }
+        .fc .fc-day-sat .fc-daygrid-day-number { color:#0000ff !important; }
+        .fc .fc-day-sun .fc-daygrid-day-number { color:#ff0000 !important; }
+        .fc .fc-daygrid-day-events, .fc .fc-daygrid-day-bg, .fc .fc-daygrid-day-bottom, .fc .fc-daygrid-event-harness { display:none !important; height:0 !important; min-height:0 !important; margin:0 !important; padding:0 !important; }
+        .cell-todos { padding:0 2px; display:flex; flex-direction:column; gap:2px; }
+        .cell-todo-item { font-size:9px; border-radius:2px; padding:0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:13px; height:13px; cursor:pointer; }
+        .cell-todo-item:last-child { margin-bottom:6px; }
+        .cell-todo-c0 { background:#dbeafe; color:#1e40af; }
+        .cell-todo-c1 { background:#e2e8f0; color:#374151; }
+        .cell-todo-more { position:absolute; top:3px; right:3px; font-size:8px; font-weight:bold; color:#fff; background:#999; border-radius:2px; padding:0 3px; line-height:13px; pointer-events:none; z-index:2; }
+        .v-box { width:16px; height:16px; border:1px solid #ccc; margin-right:6px; display:flex; align-items:center; justify-content:center; background:#fff; pointer-events:none; flex-shrink:0; }
+        .v-box.is-checked { border-color:#000; background:#eee; }
+        .day-v-checkmark-svg { display:none; width:11px; height:11px; fill:#000; }
+        .v-box.is-checked .day-v-checkmark-svg { display:block; }
+        .holiday-label { position:absolute; top:4px; right:6px; font-size:10px; color:#ff0000; font-weight:bold; }
+        .fc-daygrid-day.selected-day { background-color:#f0f7ff !important; }
+
+        #loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,0.9); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; gap:12px; }
+        #loading-overlay.hidden { display:none; }
+        .loading-spinner { width:36px; height:36px; border:3px solid #e2e8f0; border-top-color:#6366f1; border-radius:50%; animation:spin 0.8s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loading-text { font-size:13px; color:#64748b; }
     </style>
 </head>
 <body>
 
-<!-- Firebase 설정 모달 -->
-<div id="fb-setup-modal">
-    <div class="fb-modal-box">
-        <h2>🔥 Firebase 연결 설정</h2>
-        <p class="fb-modal-desc">
-            다기기 동기화를 위해 Firebase 프로젝트 정보를 입력하세요.<br>
-            <a href="https://console.firebase.google.com/" target="_blank">Firebase 콘솔</a>에서 프로젝트 생성 →
-            웹 앱 추가 → 설정값을 복사해 붙여넣으세요.<br>
-            (Firestore Database도 생성 후 <b>테스트 모드</b>로 시작)
-        </p>
-        <div class="fb-field"><label>API Key</label><input id="fb-apiKey" placeholder="AIzaSy..."></div>
-        <div class="fb-field"><label>Auth Domain</label><input id="fb-authDomain" placeholder="your-app.firebaseapp.com"></div>
-        <div class="fb-field"><label>Project ID</label><input id="fb-projectId" placeholder="your-project-id"></div>
-        <div class="fb-field"><label>App ID</label><input id="fb-appId" placeholder="1:123456:web:abc..."></div>
-        <div class="fb-modal-actions">
-            <button class="fb-btn-reset" id="fb-reset-btn">초기화</button>
-            <button class="fb-btn-cancel" id="fb-cancel-btn">취소</button>
-            <button class="fb-btn-save" id="fb-save-btn">저장 및 연결</button>
-        </div>
-    </div>
-</div>
-
-<!-- 로딩 -->
 <div id="loading-overlay">
     <div class="loading-spinner"></div>
-    <div class="loading-text" id="loading-text">데이터를 불러오는 중...</div>
+    <div class="loading-text" id="loading-text">불러오는 중...</div>
 </div>
 
-<!-- Firebase 설정 버튼 -->
-<button id="fb-config-btn"><span id="fb-status"></span>Firebase 설정</button>
+<!-- ══ 로그인 화면 ══ -->
+<div id="login-screen" class="hidden">
+    <div class="login-card">
+        <div class="login-logo">📅</div>
+        <div class="login-title">비즈니스 플래너</div>
+        <div class="login-sub">로그인하고 어디서든 일정을 관리하세요</div>
 
-<div class="container">
-    <div id="calendar-container"><div id="calendar"></div></div>
+        <label class="lf-label">이메일</label>
+        <input class="lf-input" type="email" id="lf-email" placeholder="이메일 주소" autocomplete="username">
+        <label class="lf-label">비밀번호</label>
+        <input class="lf-input" type="password" id="lf-pw" placeholder="비밀번호" autocomplete="current-password">
+        <button class="lf-btn" id="lf-login-btn">로그인</button>
+        <div class="lf-error" id="lf-error"></div>
 
-    <div id="routine-panel" class="side-panel">
-        <div class="wp-section" id="sec-routine">
-            <div class="wp-section-header">
-                <div class="wp-section-label">루틴 업무</div>
-                <button class="wp-plus-btn" id="plus-routine">+</button>
+        <hr class="lf-divider">
+        <div class="lf-setup-toggle">Firebase 설정이 필요하신가요? <span id="toggle-setup">설정 열기</span></div>
+
+        <div id="setup-panel">
+            <div class="sp-title">🔥 Firebase 프로젝트 설정 <small style="font-weight:normal;color:#94a3b8;">(최초 1회만)</small></div>
+            <div class="sp-desc">
+                <a href="https://console.firebase.google.com/" target="_blank">Firebase 콘솔</a> →
+                프로젝트 생성 → 웹 앱 추가 → 값 복사 붙여넣기<br>
+                Authentication → 이메일/비밀번호 <b>사용 설정</b><br>
+                Firestore Database → <b>테스트 모드</b>로 생성
             </div>
-            <div class="wp-add-form" id="form-routine">
-                <div><label>대제목</label><input id="ftitle-routine" placeholder="대제목을 입력하세요"></div>
-                <div><label>내용</label><textarea id="fbody-routine" placeholder="내용을 입력하세요"></textarea></div>
-                <div class="wp-form-actions">
-                    <button class="wp-form-cancel" id="fcancel-routine">취소</button>
-                    <button class="wp-form-save" id="fsave-routine">저장</button>
-                </div>
+            <div class="sp-field"><label>API Key</label><input id="sp-apiKey" placeholder="AIzaSy..."></div>
+            <div class="sp-field"><label>Auth Domain</label><input id="sp-authDomain" placeholder="your-app.firebaseapp.com"></div>
+            <div class="sp-field"><label>Project ID</label><input id="sp-projectId" placeholder="your-project-id"></div>
+            <div class="sp-field"><label>App ID</label><input id="sp-appId" placeholder="1:123456:web:abc..."></div>
+            <div class="sp-actions">
+                <button class="sp-reset" id="sp-reset-btn">초기화</button>
+                <button class="sp-save"  id="sp-save-btn">저장 및 적용</button>
             </div>
-            <div class="wp-groups" id="groups-routine"></div>
         </div>
-        <div class="wp-section" id="sec-expense">
-            <div class="wp-section-header">
-                <div class="wp-section-label">지출 업무</div>
-                <button class="wp-plus-btn" id="plus-expense">+</button>
-            </div>
-            <div class="wp-add-form" id="form-expense">
-                <div><label>대제목</label><input id="ftitle-expense" placeholder="대제목을 입력하세요"></div>
-                <div><label>내용</label><textarea id="fbody-expense" placeholder="내용을 입력하세요"></textarea></div>
-                <div class="wp-form-actions">
-                    <button class="wp-form-cancel" id="fcancel-expense">취소</button>
-                    <button class="wp-form-save" id="fsave-expense">저장</button>
-                </div>
-            </div>
-            <div class="wp-groups" id="groups-expense"></div>
+    </div>
+</div>
+
+<!-- ══ 앱 화면 ══ -->
+<div id="app-screen" class="hidden">
+    <div id="app-topbar">
+        <div class="topbar-left">
+            <span class="topbar-appname">📅 비즈니스 플래너</span>
+            <span id="sync-status"><span id="sync-dot"></span><span id="sync-label">대기 중</span></span>
         </div>
-        <div class="wp-section" id="sec-report">
-            <div class="wp-section-header">
-                <div class="wp-section-label">보고 업무</div>
-                <button class="wp-plus-btn" id="plus-report">+</button>
-            </div>
-            <div class="wp-add-form" id="form-report">
-                <div><label>대제목</label><input id="ftitle-report" placeholder="대제목을 입력하세요"></div>
-                <div><label>내용</label><textarea id="fbody-report" placeholder="내용을 입력하세요"></textarea></div>
-                <div class="wp-form-actions">
-                    <button class="wp-form-cancel" id="fcancel-report">취소</button>
-                    <button class="wp-form-save" id="fsave-report">저장</button>
-                </div>
-            </div>
-            <div class="wp-groups" id="groups-report"></div>
+        <div class="topbar-right">
+            <span id="user-email"></span>
+            <button class="tb-btn logout" id="logout-btn">로그아웃</button>
         </div>
     </div>
 
-    <div class="todo-section side-panel hidden" id="todo-section">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
-            <h3 style="margin:0;">일정 상세</h3>
-            <button id="close-todo-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;line-height:1;padding:2px 6px;">&#x2715;</button>
+    <div id="app-body">
+        <div id="calendar-container"><div id="calendar"></div></div>
+
+        <div id="routine-panel" class="side-panel">
+            <div class="wp-section" id="sec-routine">
+                <div class="wp-section-header"><div class="wp-section-label">루틴 업무</div><button class="wp-plus-btn" id="plus-routine">+</button></div>
+                <div class="wp-add-form" id="form-routine">
+                    <div><label>대제목</label><input id="ftitle-routine" placeholder="대제목을 입력하세요"></div>
+                    <div><label>내용</label><textarea id="fbody-routine" placeholder="내용을 입력하세요"></textarea></div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-routine">취소</button><button class="wp-form-save" id="fsave-routine">저장</button></div>
+                </div>
+                <div class="wp-groups" id="groups-routine"></div>
+            </div>
+            <div class="wp-section" id="sec-expense">
+                <div class="wp-section-header"><div class="wp-section-label">지출 업무</div><button class="wp-plus-btn" id="plus-expense">+</button></div>
+                <div class="wp-add-form" id="form-expense">
+                    <div><label>대제목</label><input id="ftitle-expense" placeholder="대제목을 입력하세요"></div>
+                    <div><label>내용</label><textarea id="fbody-expense" placeholder="내용을 입력하세요"></textarea></div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-expense">취소</button><button class="wp-form-save" id="fsave-expense">저장</button></div>
+                </div>
+                <div class="wp-groups" id="groups-expense"></div>
+            </div>
+            <div class="wp-section" id="sec-report">
+                <div class="wp-section-header"><div class="wp-section-label">보고 업무</div><button class="wp-plus-btn" id="plus-report">+</button></div>
+                <div class="wp-add-form" id="form-report">
+                    <div><label>대제목</label><input id="ftitle-report" placeholder="대제목을 입력하세요"></div>
+                    <div><label>내용</label><textarea id="fbody-report" placeholder="내용을 입력하세요"></textarea></div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-report">취소</button><button class="wp-form-save" id="fsave-report">저장</button></div>
+                </div>
+                <div class="wp-groups" id="groups-report"></div>
+            </div>
         </div>
-        <div id="selected-date-display">날짜를 선택하세요</div>
-        <div class="input-group">
-            <input type="text" id="todo-input" placeholder="새 일정 입력...">
-            <button id="add-btn">추가</button>
+
+        <div class="todo-section side-panel hidden" id="todo-section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
+                <h3 style="margin:0;">일정 상세</h3>
+                <button id="close-todo-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;">&#x2715;</button>
+            </div>
+            <div id="selected-date-display">날짜를 선택하세요</div>
+            <div class="input-group">
+                <input type="text" id="todo-input" placeholder="새 일정 입력...">
+                <button id="add-btn">추가</button>
+            </div>
+            <ul id="todo-list" class="todo-list"></ul>
         </div>
-        <ul id="todo-list" class="todo-list"></ul>
     </div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════
-   Firebase / localStorage 스토리지 래퍼
-═══════════════════════════════════════════ */
-var db = null;
-var FB_DOC = 'planner/data'; // Firestore 문서 경로
+var db = null, auth = null, currentUser = null, saveTimer = null;
 
 function initFirebase(cfg) {
     try {
-        if (firebase.apps.length) firebase.app().delete();
+        if (firebase.apps.length) firebase.apps.forEach(function(a){ try{ a.delete(); }catch(e){} });
         firebase.initializeApp(cfg);
-        db = firebase.firestore();
-        document.getElementById('fb-status').classList.add('connected');
+        auth = firebase.auth();
+        db   = firebase.firestore();
         return true;
-    } catch(e) {
-        console.error('Firebase init error:', e);
-        return false;
-    }
+    } catch(e) { console.error(e); return false; }
 }
 
-var Store = {
-    async load() {
-        if (db) {
-            try {
-                var snap = await db.doc(FB_DOC).get();
-                return snap.exists ? snap.data() : {};
-            } catch(e) { console.warn('Firestore load error:', e); }
-        }
-        /* 폴백: localStorage */
-        return {
-            activeDate : JSON.parse(localStorage.getItem('pl_activeDate') || 'null'),
-            todos      : JSON.parse(localStorage.getItem('pl_todos')      || '{}'),
-            wpData     : JSON.parse(localStorage.getItem('pl_wp')         || 'null')
-        };
-    },
-    async save(payload) {
-        if (db) {
-            try { await db.doc(FB_DOC).set(payload, { merge: true }); return; } catch(e) { console.warn('Firestore save error:', e); }
-        }
-        /* 폴백 */
-        if (payload.activeDate !== undefined) localStorage.setItem('pl_activeDate', JSON.stringify(payload.activeDate));
-        if (payload.todos      !== undefined) localStorage.setItem('pl_todos',      JSON.stringify(payload.todos));
-        if (payload.wpData     !== undefined) localStorage.setItem('pl_wp',         JSON.stringify(payload.wpData));
-    }
-};
+function tryAutoInit() {
+    var cfg = JSON.parse(localStorage.getItem('fb_cfg') || 'null');
+    if (cfg && cfg.apiKey) return initFirebase(cfg);
+    return false;
+}
 
-/* ═══════════════════════════════════════════
-   앱 상태
-═══════════════════════════════════════════ */
-var activeDate = "";
-var todos  = {};
-var wpData = { routine: [], expense: [], report: [] };
+/* ── 앱 상태 ── */
+var activeDate = "", todos = {}, wpData = { routine:[], expense:[], report:[] };
 var calendar, MAX_VISIBLE = 5;
 var vIconSvg = '<svg class="day-v-checkmark-svg" viewBox="0 0 12 12"><path d="M10.2,2.3L4.7,7.8L1.8,4.9L0.5,6.2L4.7,10.4L11.5,3.6L10.2,2.3z"/></svg>';
 
 var holidays = {
     '2026-01-01':'신정','2026-02-16':'설날 연휴','2026-02-17':'설날','2026-02-18':'설날 연휴',
-    '2026-03-01':'삼일절','2026-03-02':'대체공휴일(삼일절)','2026-05-05':'어린이날',
-    '2026-05-24':'부처님오신날','2026-05-25':'대체공휴일(부처님오신날)','2026-06-06':'현충일',
-    '2026-07-17':'제헌절','2026-08-15':'광복절','2026-08-17':'대체공휴일(광복절)',
-    '2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴',
-    '2026-10-03':'개천절','2026-10-05':'대체공휴일(개천절)','2026-10-09':'한글날','2026-12-25':'성탄절',
-    '2027-01-01':'신정','2027-02-06':'설날 연휴','2027-02-07':'설날','2027-02-08':'설날 연휴',
-    '2027-02-09':'대체공휴일(설날)','2027-03-01':'삼일절','2027-05-05':'어린이날',
-    '2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-06-07':'대체공휴일(현충일)',
-    '2027-07-17':'제헌절','2027-07-19':'대체공휴일(제헌절)','2027-08-15':'광복절',
-    '2027-08-16':'대체공휴일(광복절)','2027-09-14':'추석 연휴','2027-09-15':'추석',
-    '2027-09-16':'추석 연휴','2027-10-03':'개천절','2027-10-04':'대체공휴일(개천절)',
-    '2027-10-09':'한글날','2027-10-11':'대체공휴일(한글날)','2027-12-25':'성탄절',
-    '2027-12-27':'대체공휴일(성탄절)','2028-01-01':'신정','2028-01-26':'설날 연휴',
-    '2028-01-27':'설날','2028-01-28':'설날 연휴','2028-03-01':'삼일절','2028-04-12':'국회의원선거',
-    '2028-05-02':'부처님오신날','2028-05-05':'어린이날','2028-06-06':'현충일',
-    '2028-07-17':'제헌절','2028-08-15':'광복절','2028-10-02':'추석 연휴',
-    '2028-10-03':'추석·개천절','2028-10-04':'추석 연휴','2028-10-05':'대체공휴일(개천절)',
-    '2028-10-09':'한글날','2028-12-25':'성탄절','2029-01-01':'신정',
-    '2029-02-12':'설날 연휴','2029-02-13':'설날','2029-02-14':'설날 연휴','2029-03-01':'삼일절',
-    '2029-05-05':'어린이날','2029-05-07':'대체공휴일(어린이날)','2029-05-20':'부처님오신날',
-    '2029-05-21':'대체공휴일(부처님오신날)','2029-06-06':'현충일','2029-07-17':'제헌절',
-    '2029-08-15':'광복절','2029-09-21':'추석 연휴','2029-09-22':'추석','2029-09-23':'추석 연휴',
-    '2029-09-24':'대체공휴일(추석)','2029-10-03':'개천절','2029-10-09':'한글날','2029-12-25':'성탄절',
-    '2030-01-01':'신정','2030-02-02':'설날 연휴','2030-02-03':'설날','2030-02-04':'설날 연휴',
-    '2030-02-05':'대체공휴일(설날)','2030-03-01':'삼일절','2030-05-05':'어린이날',
-    '2030-05-06':'대체공휴일(어린이날)','2030-05-09':'부처님오신날','2030-06-06':'현충일',
-    '2030-07-17':'제헌절','2030-08-15':'광복절','2030-09-11':'추석 연휴','2030-09-12':'추석',
-    '2030-09-13':'추석 연휴','2030-10-03':'개천절','2030-10-09':'한글날','2030-12-25':'성탄절'
+    '2026-03-01':'삼일절','2026-03-02':'대체공휴일','2026-05-05':'어린이날',
+    '2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-07-17':'제헌절',
+    '2026-08-15':'광복절','2026-09-24':'추석 연휴','2026-09-25':'추석','2026-09-26':'추석 연휴',
+    '2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'성탄절',
+    '2027-01-01':'신정','2027-02-07':'설날','2027-03-01':'삼일절','2027-05-05':'어린이날',
+    '2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-07-17':'제헌절','2027-08-15':'광복절',
+    '2027-09-15':'추석','2027-10-03':'개천절','2027-10-09':'한글날','2027-12-25':'성탄절',
+    '2028-01-01':'신정','2028-01-27':'설날','2028-03-01':'삼일절','2028-05-05':'어린이날',
+    '2028-06-06':'현충일','2028-07-17':'제헌절','2028-08-15':'광복절',
+    '2028-10-03':'추석·개천절','2028-10-09':'한글날','2028-12-25':'성탄절',
+    '2029-01-01':'신정','2029-02-13':'설날','2029-03-01':'삼일절','2029-05-05':'어린이날',
+    '2029-05-20':'부처님오신날','2029-06-06':'현충일','2029-07-17':'제헌절','2029-08-15':'광복절',
+    '2029-09-22':'추석','2029-10-03':'개천절','2029-10-09':'한글날','2029-12-25':'성탄절',
+    '2030-01-01':'신정','2030-02-03':'설날','2030-03-01':'삼일절','2030-05-05':'어린이날',
+    '2030-05-09':'부처님오신날','2030-06-06':'현충일','2030-07-17':'제헌절','2030-08-15':'광복절',
+    '2030-09-12':'추석','2030-10-03':'개천절','2030-10-09':'한글날','2030-12-25':'성탄절'
 };
 
-function saveWp()    { Store.save({ wpData: wpData }); }
-function saveTodos() { Store.save({ todos: todos }); }
-function saveActiveDate() { Store.save({ activeDate: activeDate }); }
+function setSyncStatus(state, label) {
+    var dot = document.getElementById('sync-dot');
+    var lbl = document.getElementById('sync-label');
+    if(dot) dot.className = state;
+    if(lbl) lbl.textContent = label;
+}
 
-/* ═══════════════════════════════════════════
-   섹션 렌더
-═══════════════════════════════════════════ */
+function scheduleSave(payload) {
+    clearTimeout(saveTimer);
+    setSyncStatus('syncing','저장 중...');
+    saveTimer = setTimeout(function(){
+        if (!db || !currentUser) return;
+        db.collection('planners').doc(currentUser.uid).set(payload, { merge:true })
+            .then(function(){ setSyncStatus('synced','저장됨'); })
+            .catch(function(){ setSyncStatus('error','저장 실패'); });
+    }, 600);
+}
+
+function saveWp()         { scheduleSave({ wpData:wpData }); }
+function saveTodos()      { scheduleSave({ todos:todos }); }
+function saveActiveDate() { scheduleSave({ activeDate:activeDate }); }
+
+async function loadData() {
+    if (!db || !currentUser) return;
+    setSyncStatus('syncing','불러오는 중...');
+    try {
+        var snap = await db.collection('planners').doc(currentUser.uid).get();
+        var d = snap.exists ? snap.data() : {};
+        if (d.activeDate) activeDate = d.activeDate;
+        if (d.todos)      todos      = d.todos;
+        if (d.wpData)     wpData     = d.wpData;
+        setSyncStatus('synced','동기화됨');
+    } catch(e) { setSyncStatus('error','로드 실패'); }
+}
+
+function showLoginScreen() {
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('app-screen').classList.add('hidden');
+}
+function showAppScreen() {
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+}
+
+/* ── 섹션 렌더 ── */
 function renderSection(key) {
-    var container = document.getElementById('groups-' + key);
+    var container = document.getElementById('groups-'+key);
     container.innerHTML = '';
-    var groups = wpData[key] || [];
+    var groups = wpData[key]||[];
     if (!groups.length) {
-        var e = document.createElement('div'); e.className = 'wp-empty';
-        e.textContent = '+ 버튼으로 항목을 추가하세요'; container.appendChild(e); return;
+        var e = document.createElement('div'); e.className='wp-empty';
+        e.textContent='+ 버튼으로 항목을 추가하세요'; container.appendChild(e); return;
     }
     groups.forEach(function(g, gi) {
-        var gDiv = document.createElement('div'); gDiv.className = 'wp-group';
-        var hdr  = document.createElement('div'); hdr.className = 'wp-group-header';
-        var tog  = document.createElement('span'); tog.className = 'wp-group-toggle'; tog.textContent = g.open !== false ? '▼' : '▶';
-        var ttl  = document.createElement('span'); ttl.className = 'wp-group-title';  ttl.textContent = g.title;
-        var editBtn = document.createElement('button'); editBtn.className = 'wp-group-edit-btn'; editBtn.innerHTML = '✏️';
-        var delBtn  = document.createElement('button'); delBtn.className  = 'wp-group-del-btn';  delBtn.innerHTML  = '✕';
-
-        (function(k, idx) {
-            tog.onclick  = function()    { toggleGroup(k, idx); };
-            ttl.onclick  = function()    { toggleGroup(k, idx); };
-            delBtn.onclick = function(e) {
-                e.stopPropagation();
-                wpData[k].splice(idx, 1); saveWp(); renderSection(k);
-            };
-            editBtn.onclick = function(e) {
-                e.stopPropagation();
-                var ef = gDiv.querySelector('.wp-edit-form');
-                var wasOpen = ef.classList.contains('visible');
+        var gDiv=document.createElement('div'); gDiv.className='wp-group';
+        var hdr=document.createElement('div');  hdr.className='wp-group-header';
+        var tog=document.createElement('span'); tog.className='wp-group-toggle'; tog.textContent=g.open!==false?'▼':'▶';
+        var ttl=document.createElement('span'); ttl.className='wp-group-title';  ttl.textContent=g.title;
+        var editBtn=document.createElement('button'); editBtn.className='wp-group-edit-btn'; editBtn.innerHTML='✏️';
+        var delBtn =document.createElement('button'); delBtn.className ='wp-group-del-btn';  delBtn.innerHTML ='✕';
+        (function(k,idx){
+            tog.onclick=ttl.onclick=function(){ toggleGroup(k,idx); };
+            delBtn.onclick=function(ev){ ev.stopPropagation(); wpData[k].splice(idx,1); saveWp(); renderSection(k); };
+            editBtn.onclick=function(ev){
+                ev.stopPropagation();
+                var ef=gDiv.querySelector('.wp-edit-form');
+                var wasOpen=ef.classList.contains('visible');
                 container.querySelectorAll('.wp-edit-form.visible').forEach(function(f){ f.classList.remove('visible'); });
-                if (!wasOpen) {
-                    ef.querySelector('.wp-ei-title').value = wpData[k][idx].title;
-                    ef.querySelector('.wp-ei-body').value  = wpData[k][idx].body || '';
-                    ef.classList.add('visible');
-                    ef.querySelector('.wp-ei-title').focus();
-                }
+                if(!wasOpen){ ef.querySelector('.wp-ei-title').value=wpData[k][idx].title; ef.querySelector('.wp-ei-body').value=wpData[k][idx].body||''; ef.classList.add('visible'); ef.querySelector('.wp-ei-title').focus(); }
             };
-        })(key, gi);
-
+        })(key,gi);
         hdr.appendChild(tog); hdr.appendChild(ttl); hdr.appendChild(editBtn); hdr.appendChild(delBtn);
         gDiv.appendChild(hdr);
-
-        /* 수정 폼 */
-        var ef = document.createElement('div'); ef.className = 'wp-edit-form';
-        ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div>' +
-            '<div><label>내용</label><textarea class="wp-ei-body"></textarea></div>' +
-            '<div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
-        (function(k, idx) {
-            ef.querySelector('.wp-edit-cancel').onclick = function() { ef.classList.remove('visible'); };
-            ef.querySelector('.wp-edit-save').onclick   = function() {
-                var nt = ef.querySelector('.wp-ei-title').value.trim();
-                var nb = ef.querySelector('.wp-ei-body').value.trim();
-                if (!nt) { ef.querySelector('.wp-ei-title').focus(); return; }
-                wpData[k][idx].title = nt; wpData[k][idx].body = nb; wpData[k][idx].checked = {};
+        var ef=document.createElement('div'); ef.className='wp-edit-form';
+        ef.innerHTML='<div><label>대제목</label><input class="wp-ei-title"></div><div><label>내용</label><textarea class="wp-ei-body"></textarea></div><div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
+        (function(k,idx){
+            ef.querySelector('.wp-edit-cancel').onclick=function(){ ef.classList.remove('visible'); };
+            ef.querySelector('.wp-edit-save').onclick=function(){
+                var nt=ef.querySelector('.wp-ei-title').value.trim(), nb=ef.querySelector('.wp-ei-body').value.trim();
+                if(!nt){ ef.querySelector('.wp-ei-title').focus(); return; }
+                wpData[k][idx].title=nt; wpData[k][idx].body=nb; wpData[k][idx].checked={};
                 saveWp(); renderSection(k);
             };
-            ef.querySelector('.wp-ei-body').addEventListener('keydown', function(ev) {
-                if (ev.key==='Enter' && ev.ctrlKey) ef.querySelector('.wp-edit-save').click();
-            });
-        })(key, gi);
+            ef.querySelector('.wp-ei-body').addEventListener('keydown',function(ev){ if(ev.key==='Enter'&&ev.ctrlKey) ef.querySelector('.wp-edit-save').click(); });
+        })(key,gi);
         gDiv.appendChild(ef);
-
-        /* 항목 목록 */
-        if (g.open !== false) {
-            var ul    = document.createElement('ul'); ul.className = 'wp-item-list';
-            var lines = (g.body||'').split('\n').filter(function(l){ return l.trim(); });
-            lines.forEach(function(line, li) {
-                var item = document.createElement('li'); item.className = 'wp-item';
-                var cb   = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!(g.checked && g.checked[li]);
-                var span = document.createElement('span'); span.className = 'wp-item-text' + (cb.checked?' done':''); span.textContent = line;
-                var idel = document.createElement('button'); idel.className = 'wp-item-del'; idel.innerHTML = '✕';
-                (function(k, idx, capturedLi) {
-                    cb.onchange = function() {
-                        if (!wpData[k][idx].checked) wpData[k][idx].checked = {};
-                        wpData[k][idx].checked[capturedLi] = cb.checked; saveWp(); renderSection(k);
+        if(g.open!==false){
+            var ul=document.createElement('ul'); ul.className='wp-item-list';
+            var lines=(g.body||'').split('\n').filter(function(l){ return l.trim(); });
+            lines.forEach(function(line,li){
+                var item=document.createElement('li'); item.className='wp-item';
+                var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!(g.checked&&g.checked[li]);
+                var span=document.createElement('span'); span.className='wp-item-text'+(cb.checked?' done':''); span.textContent=line;
+                var idel=document.createElement('button'); idel.className='wp-item-del'; idel.innerHTML='✕';
+                (function(k,idx,capturedLi){
+                    cb.onchange=function(){ if(!wpData[k][idx].checked) wpData[k][idx].checked={}; wpData[k][idx].checked[capturedLi]=cb.checked; saveWp(); renderSection(k); };
+                    idel.onclick=function(){
+                        var ls=(wpData[k][idx].body||'').split('\n').filter(function(l){ return l.trim(); });
+                        ls.splice(capturedLi,1); wpData[k][idx].body=ls.join('\n');
+                        var nc={}; ls.forEach(function(_,ni){ var oi=ni<capturedLi?ni:ni+1; if(g.checked&&g.checked[oi]) nc[ni]=true; });
+                        wpData[k][idx].checked=nc; saveWp(); renderSection(k);
                     };
-                    idel.onclick = function() {
-                        var ls = (wpData[k][idx].body||'').split('\n').filter(function(l){ return l.trim(); });
-                        ls.splice(capturedLi, 1); wpData[k][idx].body = ls.join('\n');
-                        var nc = {}; ls.forEach(function(_,ni){ var oi=ni<capturedLi?ni:ni+1; if(g.checked&&g.checked[oi]) nc[ni]=true; });
-                        wpData[k][idx].checked = nc; saveWp(); renderSection(k);
-                    };
-                })(key, gi, li);
+                })(key,gi,li);
                 item.appendChild(cb); item.appendChild(span); item.appendChild(idel); ul.appendChild(item);
             });
             gDiv.appendChild(ul);
@@ -448,41 +436,33 @@ function renderSection(key) {
     });
 }
 
-function toggleGroup(key, gi) {
-    wpData[key][gi].open = (wpData[key][gi].open === false) ? true : false;
-    saveWp(); renderSection(key);
-}
-function openForm(key) {
-    ['routine','expense','report'].forEach(function(k){ document.getElementById('form-'+k).classList.remove('visible'); document.getElementById('ftitle-'+k).value=''; document.getElementById('fbody-'+k).value=''; });
-    document.getElementById('form-'+key).classList.add('visible'); document.getElementById('ftitle-'+key).focus();
-}
-function closeForm(key) { document.getElementById('form-'+key).classList.remove('visible'); document.getElementById('ftitle-'+key).value=''; document.getElementById('fbody-'+key).value=''; }
-function saveForm(key) {
-    var title = document.getElementById('ftitle-'+key).value.trim();
-    var body  = document.getElementById('fbody-'+key).value.trim();
-    if (!title) { document.getElementById('ftitle-'+key).focus(); return; }
-    wpData[key].push({ title:title, body:body, open:true, checked:{} });
+function toggleGroup(key,gi){ wpData[key][gi].open=(wpData[key][gi].open===false)?true:false; saveWp(); renderSection(key); }
+function openForm(key){ ['routine','expense','report'].forEach(function(k){ document.getElementById('form-'+k).classList.remove('visible'); document.getElementById('ftitle-'+k).value=''; document.getElementById('fbody-'+k).value=''; }); document.getElementById('form-'+key).classList.add('visible'); document.getElementById('ftitle-'+key).focus(); }
+function closeForm(key){ document.getElementById('form-'+key).classList.remove('visible'); document.getElementById('ftitle-'+key).value=''; document.getElementById('fbody-'+key).value=''; }
+function saveForm(key){
+    var title=document.getElementById('ftitle-'+key).value.trim(), body=document.getElementById('fbody-'+key).value.trim();
+    if(!title){ document.getElementById('ftitle-'+key).focus(); return; }
+    wpData[key].push({title:title,body:body,open:true,checked:{}});
     saveWp(); renderSection(key); closeForm(key);
 }
-function showRoutine() { document.getElementById('routine-panel').classList.remove('hidden'); document.getElementById('todo-section').classList.add('hidden'); }
-function showTodo()    { document.getElementById('routine-panel').classList.add('hidden');    document.getElementById('todo-section').classList.remove('hidden'); }
+function showRoutine(){ document.getElementById('routine-panel').classList.remove('hidden'); document.getElementById('todo-section').classList.add('hidden'); }
+function showTodo()   { document.getElementById('routine-panel').classList.add('hidden');    document.getElementById('todo-section').classList.remove('hidden'); }
 
-/* ── 캘린더 유틸 ── */
-function applyCellSquare() {
-    var calEl = document.getElementById('calendar'); if (!calEl) return;
+function applyCellSquare(){
+    var calEl=document.getElementById('calendar'); if(!calEl) return;
     var toolbar=calEl.querySelector('.fc-header-toolbar'), colHeader=calEl.querySelector('.fc-col-header');
     var rows=calEl.querySelectorAll('.fc-daygrid-body tr'), rowCount=rows.length||6;
     var cellH=Math.floor((calEl.offsetHeight-(toolbar?toolbar.offsetHeight:0)-(colHeader?colHeader.offsetHeight:0)-2)/rowCount);
     document.querySelectorAll('.fc-daygrid-day-frame').forEach(function(f){ f.style.setProperty('height',cellH+'px','important'); });
 }
-function applyHolidayColors() {
+function applyHolidayColors(){
     Object.keys(holidays).forEach(function(d){
         var cell=document.querySelector('.fc-daygrid-day[data-date="'+d+'"]'); if(!cell) return;
         var n=cell.querySelector('.fc-daygrid-day-number');
         if(n) n.setAttribute('style','color:#ff0000!important;font-weight:bold;text-decoration:none;padding:0;');
     });
 }
-function renderCellTodos(dateStr) {
+function renderCellTodos(dateStr){
     var cell=document.querySelector('.fc-daygrid-day[data-date="'+dateStr+'"]'); if(!cell) return;
     ['cell-todos','cell-todo-more'].forEach(function(cls){ var el=cell.querySelector('.'+cls); if(el) el.parentNode.removeChild(el); });
     var items=todos[dateStr]||[]; if(!items.length) return;
@@ -495,132 +475,83 @@ function renderCellTodos(dateStr) {
 function renderAllCellTodos(){ Object.keys(todos).forEach(renderCellTodos); }
 function refreshCalendar(){ setTimeout(function(){ calendar.updateSize(); setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); },100); },50); }
 
-/* ═══════════════════════════════════════════
-   Firebase 설정 모달
-═══════════════════════════════════════════ */
-function loadFbConfig() {
-    var cfg = JSON.parse(localStorage.getItem('fb_config') || 'null');
-    if (cfg) {
-        document.getElementById('fb-apiKey').value     = cfg.apiKey     || '';
-        document.getElementById('fb-authDomain').value = cfg.authDomain || '';
-        document.getElementById('fb-projectId').value  = cfg.projectId  || '';
-        document.getElementById('fb-appId').value      = cfg.appId      || '';
-    }
-    return cfg;
-}
-function openFbModal()  { loadFbConfig(); document.getElementById('fb-setup-modal').classList.add('visible'); }
-function closeFbModal() { document.getElementById('fb-setup-modal').classList.remove('visible'); }
+/* ── DOMContentLoaded ── */
+document.addEventListener('DOMContentLoaded', function() {
 
-/* ═══════════════════════════════════════════
-   DOMContentLoaded
-═══════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', async function() {
-
-    /* Firebase 설정 버튼 */
-    document.getElementById('fb-config-btn').onclick = openFbModal;
-    document.getElementById('fb-cancel-btn').onclick = closeFbModal;
-    document.getElementById('fb-reset-btn').onclick  = function() { localStorage.removeItem('fb_config'); db=null; document.getElementById('fb-status').classList.remove('connected'); closeFbModal(); };
-    document.getElementById('fb-save-btn').onclick   = async function() {
-        var cfg = {
-            apiKey    : document.getElementById('fb-apiKey').value.trim(),
-            authDomain: document.getElementById('fb-authDomain').value.trim(),
-            projectId : document.getElementById('fb-projectId').value.trim(),
-            appId     : document.getElementById('fb-appId').value.trim()
-        };
-        if (!cfg.apiKey || !cfg.projectId) { alert('API Key와 Project ID는 필수입니다.'); return; }
-        localStorage.setItem('fb_config', JSON.stringify(cfg));
-        if (initFirebase(cfg)) {
-            closeFbModal();
-            document.getElementById('loading-overlay').classList.remove('hidden');
-            document.getElementById('loading-text').textContent = 'Firebase에서 데이터 로드 중...';
-            var d = await Store.load();
-            if (d.activeDate !== undefined && d.activeDate !== null) activeDate = d.activeDate;
-            if (d.todos)  todos  = d.todos;
-            if (d.wpData) wpData = d.wpData;
-            document.getElementById('loading-overlay').classList.add('hidden');
-            ['routine','expense','report'].forEach(function(k){ renderSection(k); });
-            renderAllCellTodos();
-        }
+    /* Firebase 설정 패널 */
+    document.getElementById('toggle-setup').onclick = function(){
+        var p=document.getElementById('setup-panel'), open=p.classList.contains('visible');
+        p.classList.toggle('visible',!open);
+        this.textContent=open?'설정 열기':'설정 닫기';
+        if(!open){ var cfg=JSON.parse(localStorage.getItem('fb_cfg')||'null')||{}; document.getElementById('sp-apiKey').value=cfg.apiKey||''; document.getElementById('sp-authDomain').value=cfg.authDomain||''; document.getElementById('sp-projectId').value=cfg.projectId||''; document.getElementById('sp-appId').value=cfg.appId||''; }
+    };
+    document.getElementById('sp-reset-btn').onclick = function(){
+        localStorage.removeItem('fb_cfg'); db=null; auth=null;
+        ['sp-apiKey','sp-authDomain','sp-projectId','sp-appId'].forEach(function(id){ document.getElementById(id).value=''; });
+        document.getElementById('lf-error').textContent='설정이 초기화되었습니다.';
+    };
+    document.getElementById('sp-save-btn').onclick = function(){
+        var cfg={ apiKey:document.getElementById('sp-apiKey').value.trim(), authDomain:document.getElementById('sp-authDomain').value.trim(), projectId:document.getElementById('sp-projectId').value.trim(), appId:document.getElementById('sp-appId').value.trim() };
+        if(!cfg.apiKey||!cfg.projectId){ document.getElementById('lf-error').textContent='API Key와 Project ID를 입력하세요.'; return; }
+        localStorage.setItem('fb_cfg',JSON.stringify(cfg));
+        if(initFirebase(cfg)){
+            document.getElementById('lf-error').textContent='✅ 연결 완료! 이제 로그인하세요.';
+            document.getElementById('setup-panel').classList.remove('visible');
+            document.getElementById('toggle-setup').textContent='설정 열기';
+            setupAuthListener();
+        } else { document.getElementById('lf-error').textContent='초기화 실패. 설정값을 확인하세요.'; }
     };
 
-    /* 저장된 Firebase 설정 자동 로드 */
-    var savedCfg = JSON.parse(localStorage.getItem('fb_config') || 'null');
-    if (savedCfg && savedCfg.apiKey) {
-        initFirebase(savedCfg);
-    } else {
-        /* 첫 방문 시 모달 자동 오픈 */
-        openFbModal();
-    }
+    /* 로그인 */
+    document.getElementById('lf-login-btn').onclick = function(){
+        var btn=this, email=document.getElementById('lf-email').value.trim(), pw=document.getElementById('lf-pw').value, errEl=document.getElementById('lf-error');
+        errEl.textContent='';
+        if(!email||!pw){ errEl.textContent='이메일과 비밀번호를 입력하세요.'; return; }
+        if(!auth){ errEl.textContent='먼저 Firebase 설정을 완료하세요. ("설정 열기" 클릭)'; return; }
+        btn.disabled=true; btn.textContent='로그인 중...';
+        auth.signInWithEmailAndPassword(email,pw).catch(function(e){
+            var msg=e.code==='auth/user-not-found'?'등록되지 않은 이메일입니다.':e.code==='auth/wrong-password'?'비밀번호가 틀렸습니다.':e.code==='auth/invalid-credential'?'이메일 또는 비밀번호가 틀렸습니다.':'로그인 실패: '+e.message;
+            errEl.textContent=msg; btn.disabled=false; btn.textContent='로그인';
+        });
+    };
+    document.getElementById('lf-pw').addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('lf-login-btn').click(); });
 
-    /* 데이터 로드 */
-    document.getElementById('loading-text').textContent = '데이터를 불러오는 중...';
-    var d = await Store.load();
-    if (d.activeDate !== undefined && d.activeDate !== null) activeDate = d.activeDate;
-    if (d.todos)  todos  = d.todos;
-    if (d.wpData) wpData = d.wpData;
-    document.getElementById('loading-overlay').classList.add('hidden');
+    /* 로그아웃 */
+    document.getElementById('logout-btn').onclick = function(){ if(auth) auth.signOut(); };
 
-    /* 캘린더 초기화 */
-    calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-        initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
-        headerToolbar:{ left:'title', center:'', right:'today prev,next' },
-        dayCellDidMount: function(arg) {
-            var topEl=arg.el.querySelector('.fc-daygrid-day-top');
-            var vBox=document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
-            if (activeDate===arg.dateStr) vBox.classList.add('is-checked');
-            topEl.prepend(vBox);
-            if (holidays[arg.dateStr]) { var lbl=document.createElement('span'); lbl.className='holiday-label'; lbl.innerText=holidays[arg.dateStr]; topEl.appendChild(lbl); }
-        },
-        datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); },50); },
-        dateClick: function(info) {
-            document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
-            if (activeDate===info.dateStr) {
-                activeDate=""; saveActiveDate(); MAX_VISIBLE=6; showRoutine(); refreshCalendar();
-            } else {
-                activeDate=info.dateStr; saveActiveDate();
-                var vBox=info.dayEl.querySelector('.v-box'); if(vBox) vBox.classList.add('is-checked');
-                MAX_VISIBLE=5; showTodo(); refreshCalendar(); updateDisplay(info.dateStr,info.dayEl);
+    /* 캘린더 */
+    var calendarInited = false;
+    function initCalendar(){
+        if(calendarInited) return; calendarInited=true;
+        calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{
+            initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
+            headerToolbar:{left:'title',center:'',right:'today prev,next'},
+            dayCellDidMount:function(arg){
+                var topEl=arg.el.querySelector('.fc-daygrid-day-top');
+                var vBox=document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
+                if(activeDate===arg.dateStr) vBox.classList.add('is-checked');
+                topEl.prepend(vBox);
+                if(holidays[arg.dateStr]){ var lbl=document.createElement('span'); lbl.className='holiday-label'; lbl.innerText=holidays[arg.dateStr]; topEl.appendChild(lbl); }
+            },
+            datesSet:function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); },50); },
+            dateClick:function(info){
+                document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+                if(activeDate===info.dateStr){ activeDate=""; saveActiveDate(); MAX_VISIBLE=6; showRoutine(); refreshCalendar(); }
+                else{ activeDate=info.dateStr; saveActiveDate(); var vBox=info.dayEl.querySelector('.v-box'); if(vBox) vBox.classList.add('is-checked'); MAX_VISIBLE=5; showTodo(); refreshCalendar(); updateDisplay(info.dateStr,info.dayEl); }
             }
-        }
-    });
-    calendar.render();
-    window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
-
-    if (activeDate) { showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
-
-    ['routine','expense','report'].forEach(function(key) {
-        renderSection(key);
-        document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
-        document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
-        document.getElementById('fsave-'+key).onclick   = function(){ saveForm(key); };
-        document.getElementById('fbody-'+key).addEventListener('keydown', function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
-    });
-
-    document.getElementById('close-todo-btn').onclick = function() {
-        document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
-        activeDate=""; saveActiveDate(); MAX_VISIBLE=6;
-        document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
-        document.getElementById('todo-list').innerHTML='';
-        document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-        showRoutine(); refreshCalendar();
-    };
-    document.getElementById('add-btn').onclick = addTodo;
-    document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
-    function addTodo() {
-        var input=document.getElementById('todo-input');
-        var date=document.getElementById('selected-date-display').innerText;
-        if (!input.value.trim()||date==='날짜를 선택하세요') return;
-        if (!todos[date]) todos[date]=[];
-        todos[date].push({text:input.value});
-        saveTodos(); renderList(date); renderCellTodos(date); input.value='';
+        });
+        calendar.render();
+        window.addEventListener('resize',function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
     }
-    function updateDisplay(dateStr,el) {
+
+    function updateDisplay(dateStr,el){
         document.getElementById('selected-date-display').innerText=dateStr;
         document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
         var target=el||document.querySelector('[data-date="'+dateStr+'"]');
-        if(target) target.classList.add('selected-day'); renderList(dateStr);
+        if(target) target.classList.add('selected-day');
+        renderList(dateStr);
     }
-    function renderList(date) {
+    function renderList(date){
         var listEl=document.getElementById('todo-list'); listEl.innerHTML='';
         (todos[date]||[]).forEach(function(t,i){
             var li=document.createElement('li'); li.className='todo-item';
@@ -628,10 +559,72 @@ document.addEventListener('DOMContentLoaded', async function() {
             listEl.appendChild(li);
         });
     }
-    window.removeItem = function(date,i){
-        todos[date].splice(i,1); if(!todos[date].length) delete todos[date];
-        saveTodos(); renderList(date); renderCellTodos(date);
+    window.renderList=renderList;
+    window.removeItem=function(date,i){ todos[date].splice(i,1); if(!todos[date].length) delete todos[date]; saveTodos(); renderList(date); renderCellTodos(date); };
+
+    function addTodo(){
+        var input=document.getElementById('todo-input'), date=document.getElementById('selected-date-display').innerText;
+        if(!input.value.trim()||date==='날짜를 선택하세요') return;
+        if(!todos[date]) todos[date]=[];
+        todos[date].push({text:input.value});
+        saveTodos(); renderList(date); renderCellTodos(date); input.value='';
+    }
+    document.getElementById('add-btn').onclick=addTodo;
+    document.getElementById('todo-input').addEventListener('keydown',function(e){ if(e.key==='Enter') addTodo(); });
+
+    document.getElementById('close-todo-btn').onclick=function(){
+        document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+        activeDate=""; saveActiveDate(); MAX_VISIBLE=6;
+        document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
+        document.getElementById('todo-list').innerHTML='';
+        document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
+        showRoutine(); refreshCalendar();
     };
+
+    ['routine','expense','report'].forEach(function(key){
+        document.getElementById('plus-'+key).onclick   =function(){ openForm(key); };
+        document.getElementById('fcancel-'+key).onclick=function(){ closeForm(key); };
+        document.getElementById('fsave-'+key).onclick  =function(){ saveForm(key); };
+        document.getElementById('fbody-'+key).addEventListener('keydown',function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
+    });
+
+    /* ── Auth 상태 감지 ── */
+    var authListenerSet = false;
+    function setupAuthListener(){
+        if(authListenerSet||!auth) return; authListenerSet=true;
+        auth.onAuthStateChanged(async function(user){
+            if(user){
+                currentUser=user;
+                document.getElementById('user-email').textContent=user.email;
+                document.getElementById('loading-text').textContent='데이터를 불러오는 중...';
+                document.getElementById('loading-overlay').classList.remove('hidden');
+                activeDate=""; todos={}; wpData={routine:[],expense:[],report:[]};
+                await loadData();
+                showAppScreen();
+                initCalendar();
+                ['routine','expense','report'].forEach(function(k){ renderSection(k); });
+                if(activeDate){ showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
+                refreshCalendar();
+                document.getElementById('lf-login-btn').disabled=false;
+                document.getElementById('lf-login-btn').textContent='로그인';
+            } else {
+                currentUser=null;
+                activeDate=""; todos={}; wpData={routine:[],expense:[],report:[]};
+                showLoginScreen();
+            }
+        });
+    }
+
+    /* 자동 초기화 */
+    if(tryAutoInit()){
+        setupAuthListener();
+    } else {
+        document.getElementById('loading-overlay').classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('setup-panel').classList.add('visible');
+        document.getElementById('toggle-setup').textContent='설정 닫기';
+        document.getElementById('lf-error').textContent='먼저 Firebase 설정을 입력하고 저장하세요.';
+    }
 });
 </script>
 </body>
