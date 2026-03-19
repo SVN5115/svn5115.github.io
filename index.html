@@ -122,7 +122,10 @@
         .wp-groups::-webkit-scrollbar { width: 4px; }
         .wp-groups::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
         .wp-group { margin-bottom: 8px; }
-        .wp-group-header { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 5px; margin-bottom: 3px; user-select: none; }
+        .wp-group-header { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 5px; margin-bottom: 3px; user-select: none; cursor: grab; }
+        .wp-group-header:active { cursor: grabbing; }
+        .wp-group.dragging { opacity: 0.4; }
+        .wp-group.drag-over { border-top: 2px solid #6366f1; }
         #sec-routine .wp-group-header { background: #ede9fe; } #sec-expense .wp-group-header { background: #d1fae5; } #sec-report .wp-group-header { background: #fef3c7; }
         .wp-group-toggle { font-size: 9px; color: #888; flex-shrink: 0; cursor: pointer; padding: 0 2px; }
         .wp-group-title { flex: 1; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -674,7 +677,7 @@ function renderSection(key) {
         e.textContent = '+ 버튼으로 항목을 추가하세요'; container.appendChild(e); return;
     }
     groups.forEach(function(g, gi) {
-        var gDiv = document.createElement('div'); gDiv.className = 'wp-group';
+        var gDiv = document.createElement('div'); gDiv.className = 'wp-group'; gDiv.draggable = true; gDiv.setAttribute('data-idx', gi);
         var hdr  = document.createElement('div'); hdr.className = 'wp-group-header';
         var tog  = document.createElement('span'); tog.className = 'wp-group-toggle'; tog.textContent = g.open !== false ? '▼' : '▶';
         var ttl  = document.createElement('span'); ttl.className = 'wp-group-title'; ttl.textContent = g.title;
@@ -726,6 +729,36 @@ function renderSection(key) {
             gDiv.appendChild(ul);
         }
         container.appendChild(gDiv);
+    });
+
+    // ── 드래그 앤 드롭 순서 변경 ──
+    var dragSrcIdx = null;
+    container.querySelectorAll('.wp-group').forEach(function(gEl) {
+        gEl.addEventListener('dragstart', function(e) {
+            dragSrcIdx = parseInt(this.getAttribute('data-idx'));
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        gEl.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            container.querySelectorAll('.wp-group').forEach(function(g){ g.classList.remove('drag-over'); });
+        });
+        gEl.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            container.querySelectorAll('.wp-group').forEach(function(g){ g.classList.remove('drag-over'); });
+            this.classList.add('drag-over');
+        });
+        gEl.addEventListener('drop', function(e) {
+            e.preventDefault();
+            var targetIdx = parseInt(this.getAttribute('data-idx'));
+            if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+            // 배열에서 순서 변경
+            var moved = wpData[key].splice(dragSrcIdx, 1)[0];
+            wpData[key].splice(targetIdx, 0, moved);
+            saveAll();
+            renderSection(key);
+        });
     });
 }
 
