@@ -167,6 +167,53 @@
         .add-date-btn { font-size: 11px; color: #10b981; background: none; border: 1px dashed #10b981; border-radius: 4px; padding: 3px 8px; cursor: pointer; margin-top: 2px; font-family: 'Malgun Gothic', sans-serif; }
         .add-date-btn:hover { background: #f0fdf4; }
 
+        /* ── 회의 팝업 ── */
+        #meeting-popup {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white; border-radius: 14px; padding: 24px;
+            width: 380px; max-width: 95vw;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.18); z-index: 8000;
+        }
+        #meeting-popup.visible { display: block; }
+        #meeting-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3); z-index: 7999;
+        }
+        #meeting-overlay.visible { display: block; }
+        .meeting-popup-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px;
+        }
+        .meeting-popup-header h3 { margin: 0; font-size: 15px; color: #1e293b; }
+        #meeting-close-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; }
+        .meeting-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+        .meeting-field label { font-size: 11px; font-weight: bold; color: #64748b; }
+        .meeting-field input, .meeting-field textarea {
+            padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 7px;
+            font-size: 12px; font-family: 'Malgun Gothic', sans-serif; outline: none;
+        }
+        .meeting-field input:focus, .meeting-field textarea:focus { border-color: #eab308; }
+        .meeting-field textarea { height: 80px; resize: none; line-height: 1.5; }
+        .meeting-date-row { display: flex; gap: 8px; }
+        .meeting-date-row input { flex: 1; }
+        .meeting-popup-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+        .meeting-cancel-btn { padding: 7px 14px; background: none; border: 1px solid #e2e8f0; border-radius: 7px; font-size: 12px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
+        .meeting-save-btn { padding: 7px 18px; background: #eab308; color: white; border: none; border-radius: 7px; font-size: 12px; font-weight: bold; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+        .meeting-save-btn:hover { background: #ca8a04; }
+        /* 회의 마커 */
+        .meeting-markers { position: absolute; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
+        .meeting-tag { background: #fef08a; color: #713f12; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; line-height: 14px; height: 14px; box-sizing: border-box; cursor: pointer; }
+        .meeting-tag:hover { background: #fde047; }
+        .meeting-item { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }
+        .meeting-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .meeting-item-title { font-size: 13px; font-weight: bold; color: #1e293b; }
+        .meeting-item-date { font-size: 11px; color: #94a3b8; }
+        .meeting-item-content { font-size: 12px; color: #475569; line-height: 1.5; white-space: pre-wrap; }
+        .meeting-item-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+        .meeting-edit-btn { padding: 3px 10px; background: #eab308; color: white; border: none; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+        .meeting-del-btn  { padding: 3px 10px; background: none; border: 1px solid #fca5a5; color: #ef4444; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+
         /* ── 달력 셀 지출 마커 ── */
         .expense-markers { position: absolute; top: 4px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .expense-tag { background: #ede9fe; color: #6d28d9; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
@@ -181,8 +228,11 @@
         .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif; }
         .input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; }
         .todo-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
-        .todo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .todo-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
         .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
+        .todo-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; accent-color: #6366f1; }
+        .todo-text.done { text-decoration: line-through; color: #9ca3af; }
+        .todo-text { flex: 1; font-size: 14px; }
         .fc .fc-daygrid-day-frame { cursor: pointer; overflow: hidden; position: relative; }
         .fc .fc-daygrid-day-top { display: flex !important; align-items: center !important; padding: 4px !important; flex-direction: row !important; position: relative; }
         .fc .fc-daygrid-day-number { font-weight: bold; text-decoration: none !important; padding: 0 !important; font-size: 14px; }
@@ -267,6 +317,49 @@
         <div id="setup-error" class="auth-error"></div>
         <button id="setup-btn" class="auth-btn green">관리자 계정 생성</button>
         <div class="auth-hint" style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px;">관리자 아이디: <b>admin</b> (고정)</div>
+    </div>
+</div>
+
+<!-- 회의 오버레이 -->
+<div id="meeting-overlay"></div>
+
+<!-- 회의 팝업 -->
+<div id="meeting-popup">
+    <div class="meeting-popup-header">
+        <h3 id="meeting-popup-title">📋 회의 일정 등록</h3>
+        <button id="meeting-close-btn">&#x2715;</button>
+    </div>
+
+    <!-- 회의 목록 뷰 -->
+    <div id="meeting-list-view">
+        <div id="meeting-list-date" style="font-size:12px;color:#64748b;margin-bottom:10px;"></div>
+        <div id="meeting-list-items" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
+        <button id="meeting-add-new-btn" style="width:100%;margin-top:12px;padding:8px;background:#fef08a;border:1px dashed #eab308;border-radius:7px;font-size:12px;font-weight:bold;color:#713f12;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">+ 새 회의 추가</button>
+    </div>
+
+    <!-- 회의 입력/수정 뷰 -->
+    <div id="meeting-form-view" style="display:none;">
+        <div class="meeting-field">
+            <label>날짜</label>
+            <div class="meeting-date-row">
+                <input type="number" id="meeting-month" min="1" max="12" placeholder="월">
+                <input type="number" id="meeting-day"   min="1" max="31" placeholder="일">
+            </div>
+        </div>
+        <div class="meeting-field">
+            <label>회의 제목</label>
+            <input type="text" id="meeting-title" placeholder="회의 제목을 입력하세요">
+        </div>
+        <div class="meeting-field">
+            <label>회의 내용</label>
+            <textarea id="meeting-content" placeholder="회의 내용을 입력하세요"></textarea>
+        </div>
+        <div id="meeting-error" style="font-size:11px;color:#ef4444;min-height:16px;margin-bottom:4px;"></div>
+        <div class="meeting-popup-actions">
+            <button class="meeting-cancel-btn" id="meeting-back-btn">← 목록</button>
+            <button class="meeting-cancel-btn" id="meeting-cancel-btn">취소</button>
+            <button class="meeting-save-btn"   id="meeting-save-btn">저장</button>
+        </div>
     </div>
 </div>
 
@@ -702,6 +795,7 @@ function saveData() {
         }, function(err) {
             setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
             renderExpenseMarkers();
+            renderMeetingMarkers();
             renderReportMarkers();
         });
     }, 600);
@@ -918,6 +1012,156 @@ function renderExpenseMarkers() {
             });
             frame.appendChild(repWrap);
         }
+    });
+}
+
+/* ════════════════════════════════════
+   회의 일정
+════════════════════════════════════ */
+var meetingEditIdx = null; // 수정 중인 인덱스 (-1: 신규)
+var meetingViewDate = null; // 목록 뷰의 날짜
+
+function showMeetingListView(dateStr) {
+    meetingViewDate = dateStr;
+    var parts = dateStr.split('-');
+    document.getElementById('meeting-popup-title').textContent = '📋 회의 일정';
+    document.getElementById('meeting-list-date').textContent = parts[0] + '년 ' + parseInt(parts[1]) + '월 ' + parseInt(parts[2]) + '일';
+    document.getElementById('meeting-list-view').style.display = 'block';
+    document.getElementById('meeting-form-view').style.display = 'none';
+    renderMeetingListItems(dateStr);
+}
+
+function renderMeetingListItems(dateStr) {
+    var container = document.getElementById('meeting-list-items');
+    container.innerHTML = '';
+    var meetings = (wpData.meetings || []).filter(function(m){ return m.date === dateStr; });
+    if (meetings.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:16px 0;">등록된 회의가 없습니다.</div>';
+        return;
+    }
+    meetings.forEach(function(m) {
+        var globalIdx = wpData.meetings.indexOf(m);
+        var item = document.createElement('div');
+        item.className = 'meeting-item';
+        item.innerHTML =
+            '<div class="meeting-item-header">' +
+                '<div class="meeting-item-title">📋 ' + m.title + '</div>' +
+            '</div>' +
+            (m.content ? '<div class="meeting-item-content">' + m.content + '</div>' : '') +
+            '<div class="meeting-item-actions">' +
+                '<button class="meeting-edit-btn" data-idx="' + globalIdx + '">수정</button>' +
+                '<button class="meeting-del-btn"  data-idx="' + globalIdx + '">삭제</button>' +
+            '</div>';
+        item.querySelector('.meeting-edit-btn').onclick = function() {
+            showMeetingFormView(parseInt(this.getAttribute('data-idx')));
+        };
+        item.querySelector('.meeting-del-btn').onclick = function() {
+            var idx = parseInt(this.getAttribute('data-idx'));
+            if (!confirm('이 회의 일정을 삭제하시겠습니까?')) return;
+            wpData.meetings.splice(idx, 1);
+            saveAll(); renderMeetingMarkers();
+            renderMeetingListItems(dateStr);
+        };
+        container.appendChild(item);
+    });
+}
+
+function showMeetingFormView(editIdx) {
+    meetingEditIdx = editIdx;
+    var isEdit = editIdx !== null && editIdx >= 0;
+    document.getElementById('meeting-popup-title').textContent = isEdit ? '📋 회의 수정' : '📋 회의 등록';
+    document.getElementById('meeting-list-view').style.display = 'none';
+    document.getElementById('meeting-form-view').style.display = 'block';
+    document.getElementById('meeting-error').textContent = '';
+    if (isEdit) {
+        var m = wpData.meetings[editIdx];
+        var parts = m.date.split('-');
+        document.getElementById('meeting-month').value   = parseInt(parts[1]);
+        document.getElementById('meeting-day').value     = parseInt(parts[2]);
+        document.getElementById('meeting-title').value   = m.title;
+        document.getElementById('meeting-content').value = m.content || '';
+    } else {
+        var now = calendar.getDate();
+        var parts2 = (meetingViewDate || '').split('-');
+        document.getElementById('meeting-month').value   = parts2[1] ? parseInt(parts2[1]) : (now.getMonth()+1);
+        document.getElementById('meeting-day').value     = parts2[2] ? parseInt(parts2[2]) : now.getDate();
+        document.getElementById('meeting-title').value   = '';
+        document.getElementById('meeting-content').value = '';
+    }
+    document.getElementById('meeting-title').focus();
+}
+
+function openMeetingPopup(dateStr) {
+    if (!wpData.meetings) wpData.meetings = [];
+    document.getElementById('meeting-popup').classList.add('visible');
+    document.getElementById('meeting-overlay').classList.add('visible');
+    if (dateStr) {
+        showMeetingListView(dateStr);
+    } else {
+        // 헤더 버튼 클릭: 신규 등록 폼 바로
+        meetingViewDate = null;
+        showMeetingFormView(-1);
+    }
+}
+function closeMeetingPopup() {
+    document.getElementById('meeting-popup').classList.remove('visible');
+    document.getElementById('meeting-overlay').classList.remove('visible');
+}
+function saveMeeting() {
+    var month   = parseInt(document.getElementById('meeting-month').value);
+    var day     = parseInt(document.getElementById('meeting-day').value);
+    var title   = document.getElementById('meeting-title').value.trim();
+    var content2 = document.getElementById('meeting-content').value.trim();
+    var err     = document.getElementById('meeting-error');
+    if (!month||month<1||month>12) { err.textContent='월을 입력하세요(1~12)'; return; }
+    if (!day||day<1||day>31)       { err.textContent='일을 입력하세요(1~31)'; return; }
+    if (!title)                    { err.textContent='회의 제목을 입력하세요'; document.getElementById('meeting-title').focus(); return; }
+    var year = calendar.getDate().getFullYear();
+    var mm = ('0'+month).slice(-2), dd = ('0'+day).slice(-2);
+    var dateStr = year + '-' + mm + '-' + dd;
+    if (!wpData.meetings) wpData.meetings = [];
+    if (meetingEditIdx !== null && meetingEditIdx >= 0) {
+        // 수정
+        wpData.meetings[meetingEditIdx] = { date: dateStr, title: title, content: content2, updatedAt: new Date().toISOString() };
+    } else {
+        // 신규
+        wpData.meetings.push({ date: dateStr, title: title, content: content2, createdAt: new Date().toISOString() });
+    }
+    saveAll(); renderMeetingMarkers();
+    if (meetingViewDate) {
+        showMeetingListView(dateStr);
+    } else {
+        closeMeetingPopup();
+    }
+}
+
+function renderMeetingMarkers() {
+    document.querySelectorAll('.meeting-markers').forEach(function(el){ el.parentNode.removeChild(el); });
+    if (!wpData.meetings || !wpData.meetings.length) return;
+    // 날짜별로 그룹핑
+    var byDate = {};
+    wpData.meetings.forEach(function(m) {
+        if (!byDate[m.date]) byDate[m.date] = [];
+        byDate[m.date].push(m);
+    });
+    Object.keys(byDate).forEach(function(dateStr) {
+        var cell = document.querySelector('.fc-daygrid-day[data-date="' + dateStr + '"]');
+        if (!cell) return;
+        var frame = cell.querySelector('.fc-daygrid-day-frame');
+        if (!frame) return;
+        // 지출/보고 마커 높이 계산
+        var expH = frame.querySelector('.expense-markers') ? 18 : 0;
+        var repH = frame.querySelector('.report-markers')  ? 18 : 0;
+        var wrap = document.createElement('div');
+        wrap.className = 'meeting-markers';
+        wrap.style.top = (4 + expH + repH) + 'px';
+        var tag = document.createElement('div');
+        tag.className = 'meeting-tag';
+        tag.title = byDate[dateStr].map(function(m){ return m.title; }).join(', ');
+        tag.textContent = '회의';
+        (function(ds){ tag.onclick = function(e){ e.stopPropagation(); openMeetingPopup(ds); }; })(dateStr);
+        wrap.appendChild(tag);
+        frame.appendChild(wrap);
     });
 }
 
@@ -1146,8 +1390,19 @@ function renderList(date) {
     var listEl=document.getElementById('todo-list'); listEl.innerHTML='';
     var clearBtn=document.getElementById('clear-all-btn'); if(clearBtn) clearBtn.style.display=(todos[date]&&todos[date].length>0)?'inline-block':'none';
     (todos[date]||[]).forEach(function(t,i){
-        var li=document.createElement('li'); li.className='todo-item';
-        li.innerHTML='<span>'+t.text+'</span><button class="delete-btn" onclick="removeItem(\''+date+'\','+i+')">&#x2715;</button>';
+        var li = document.createElement('li'); li.className = 'todo-item';
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!t.done;
+        var span = document.createElement('span'); span.className = 'todo-text' + (t.done ? ' done' : ''); span.textContent = t.text;
+        var btn = document.createElement('button'); btn.className = 'delete-btn'; btn.innerHTML = '&#x2715;';
+        (function(d, idx) {
+            cb.onchange = function() {
+                todos[d][idx].done = cb.checked;
+                span.className = 'todo-text' + (cb.checked ? ' done' : '');
+                saveAll();
+            };
+            btn.onclick = function() { removeItem(d, idx); };
+        })(date, i);
+        li.appendChild(cb); li.appendChild(span); li.appendChild(btn);
         listEl.appendChild(li);
     });
 }
@@ -1290,6 +1545,20 @@ document.addEventListener('DOMContentLoaded', function() {
         addReportDateRow('', '', 'monthly');
     };
 
+    /* 회의 팝업 이벤트 */
+    document.getElementById('meeting-close-btn').onclick  = closeMeetingPopup;
+    document.getElementById('meeting-cancel-btn').onclick = closeMeetingPopup;
+    document.getElementById('meeting-overlay').onclick    = closeMeetingPopup;
+    document.getElementById('meeting-save-btn').onclick   = saveMeeting;
+    document.getElementById('meeting-back-btn').onclick   = function() {
+        if (meetingViewDate) showMeetingListView(meetingViewDate);
+        else closeMeetingPopup();
+    };
+    document.getElementById('meeting-add-new-btn').onclick = function() { showMeetingFormView(-1); };
+    document.getElementById('meeting-content').addEventListener('keydown', function(e){
+        if (e.key === 'Enter' && e.ctrlKey) saveMeeting();
+    });
+
     document.getElementById('add-expense-date-btn').onclick = function() {
         addExpenseDateRow('', '', 'monthly');
     };
@@ -1345,6 +1614,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 activeDate = saved.activeDate || '';
                 todos      = saved.todos      || {};
                 wpData     = saved.wpData     || { routine:[], expense:[], report:[] };
+                if (!wpData.meetings) wpData.meetings = [];
             }
             startApp();
         });
@@ -1354,7 +1624,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
-                headerToolbar:{ left:'title', center:'', right:'today prev,next' },
+                customButtons:{ meetingBtn:{ text:'📋 회의 추가', click: function(){ openMeetingPopup(); } } },
+                headerToolbar:{ left:'title', center:'', right:'meetingBtn today prev,next' },
                 dayCellDidMount: function(arg) {
                     var topEl=arg.el.querySelector('.fc-daygrid-day-top');
                     var vBox=document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
@@ -1362,7 +1633,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     topEl.prepend(vBox);
     
                 },
-                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); renderReportMarkers(); },50); },
+                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); renderReportMarkers(); renderMeetingMarkers(); },50); },
                 dateClick: function(info) {
                     document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
                     if(activeDate===info.dateStr){
