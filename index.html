@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>비즈니스 플래너</title>
+    <title>강원소방본부 달력</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <style>
         :root { --main-bg: #f8f9fa; }
@@ -155,6 +155,21 @@
         .wp-item-del { color: #ddd; cursor: pointer; border: none; background: none; font-size: 11px; padding: 0 1px; line-height: 1; flex-shrink: 0; }
         .wp-item-del:hover { color: #f87171; }
         .wp-empty { color: #c0c8d4; font-size: 11px; text-align: center; padding: 10px 0; }
+
+        /* ── 지출 날짜 입력 폼 ── */
+        .expense-date-row { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; min-height: 28px; flex-shrink: 0; }
+        .expense-date-row input[type="number"] { width: 56px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; }
+        .expense-date-row input[type="number"]:focus { border-color: #10b981; }
+        .expense-date-row input[type="text"] { flex: 1; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; }
+        .expense-date-row input[type="text"]:focus { border-color: #10b981; }
+        .expense-date-row select { padding: 4px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; background: white; }
+        .expense-date-row .rm-date-btn { background: none; border: none; color: #f87171; cursor: pointer; font-size: 14px; padding: 0 2px; line-height: 1; }
+        .add-date-btn { font-size: 11px; color: #10b981; background: none; border: 1px dashed #10b981; border-radius: 4px; padding: 3px 8px; cursor: pointer; margin-top: 2px; font-family: 'Malgun Gothic', sans-serif; }
+        .add-date-btn:hover { background: #f0fdf4; }
+
+        /* ── 달력 셀 지출 마커 ── */
+        .expense-markers { position: absolute; top: 4px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
+        .expense-tag { background: #ede9fe; color: #6d28d9; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
         .todo-section.hidden { display: none; }
         #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0; }
@@ -182,7 +197,7 @@
         .v-box.is-checked { border-color: #000; background: #eee; }
         .day-v-checkmark-svg { display: none; width: 11px; height: 11px; fill: #000; }
         .v-box.is-checked .day-v-checkmark-svg { display: block; }
-        .holiday-label { position: absolute; top: 4px; right: 6px; font-size: 10px; color: #ff0000; font-weight: bold; }
+        /* holiday-label 제거 */
         .fc-daygrid-day.selected-day { background-color: #f0f7ff !important; }
     </style>
 </head>
@@ -193,7 +208,7 @@
     <div class="auth-box">
         <div class="auth-logo">
             <div class="auth-icon">📅</div>
-            <div class="auth-title">비즈니스 플래너</div>
+            <div class="auth-title">강원소방본부 달력</div>
             <div class="auth-sub">로그인</div>
         </div>
         <div class="auth-field"><label>아이디</label><input type="text" id="login-id" placeholder="아이디 입력" autocomplete="username"></div>
@@ -299,10 +314,18 @@
             </div>
             <div class="wp-section" id="sec-expense">
                 <div class="wp-section-header"><div class="wp-section-label">지출 업무</div><button class="wp-plus-btn" id="plus-expense">+</button></div>
-                <div class="wp-add-form" id="form-expense">
+                <div class="wp-add-form" id="form-expense" style="overflow-y:auto;max-height:calc(100% - 60px);flex-shrink:1;">
                     <div><label>대제목</label><input id="ftitle-expense" placeholder="대제목을 입력하세요"></div>
                     <div><label>내용</label><textarea id="fbody-expense" placeholder="내용을 입력하세요"></textarea></div>
-                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-expense">취소</button><button class="wp-form-save" id="fsave-expense">저장</button></div>
+                    <div>
+                        <label style="font-size:10px;color:#64748b;font-weight:bold;">지출 날짜</label>
+                        <div id="expense-date-list" style="margin-top:5px;"></div>
+                        <div style="display:flex;gap:5px;margin-top:6px;align-items:center;">
+                            <button class="add-date-btn" id="add-expense-date-btn" style="flex:1;margin-top:0;">+ 날짜 추가</button>
+                            <button class="wp-form-cancel" id="fcancel-expense">취소</button>
+                            <button class="wp-form-save" id="fsave-expense">저장</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="wp-groups" id="groups-expense"></div>
             </div>
@@ -660,9 +683,93 @@ function saveData() {
             updated_at: new Date().toISOString()
         }, function(err) {
             setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
+            renderExpenseMarkers();
         });
     }, 600);
 }
+/* ════════════════════════════════════
+   지출 날짜 UI
+════════════════════════════════════ */
+function addExpenseDateRow(day, label, repeat) {
+    var list = document.getElementById('expense-date-list');
+    var row  = document.createElement('div');
+    row.className = 'expense-date-row';
+    row.innerHTML =
+        '<input type="number" min="1" max="31" placeholder="일" value="' + (day||'') + '" style="width:52px;">' +
+        '<input type="text" placeholder="이름/금액 (예: 보험료 5만)" value="' + (label||'') + '">' +
+        '<select>' +
+          '<option value="monthly"' + (repeat==='monthly'?' selected':'') + '>매월 반복</option>' +
+          '<option value="once"'   + (repeat==='once'   ?' selected':'') + '>특정일만</option>' +
+        '</select>' +
+        '<button class="rm-date-btn" title="삭제">✕</button>';
+    row.querySelector('.rm-date-btn').onclick = function() { list.removeChild(row); };
+    list.appendChild(row);
+}
+
+function getExpenseDates() {
+    var rows = document.querySelectorAll('#expense-date-list .expense-date-row');
+    var result = [];
+    rows.forEach(function(row) {
+        var day    = parseInt(row.querySelector('input[type="number"]').value);
+        var label  = row.querySelector('input[type="text"]').value.trim();
+        var repeat = row.querySelector('select').value;
+        if (day >= 1 && day <= 31) result.push({ day: day, label: label, repeat: repeat });
+    });
+    return result;
+}
+
+function clearExpenseDateList() {
+    document.getElementById('expense-date-list').innerHTML = '';
+}
+
+/* ── 달력에 지출 마커 렌더링 ── */
+function renderExpenseMarkers() {
+    // 기존 마커 모두 제거
+    document.querySelectorAll('.expense-markers').forEach(function(el){ el.parentNode.removeChild(el); });
+
+    var expenseGroups = wpData.expense || [];
+    // 현재 달력에 보이는 날짜 셀 순회
+    document.querySelectorAll('.fc-daygrid-day').forEach(function(cell) {
+        var dateStr = cell.getAttribute('data-date');
+        if (!dateStr) return;
+        var dateParts = dateStr.split('-');
+        var day = parseInt(dateParts[2]);
+
+        var tags = [];
+        expenseGroups.forEach(function(g) {
+            if (!g.dates) return;
+            g.dates.forEach(function(d) {
+                var match = false;
+                if (d.repeat === 'monthly') {
+                    match = (d.day === day);
+                } else {
+                    // 특정일: yyyy-mm-dd 형식으로 저장
+                    match = (d.specificDate === dateStr);
+                }
+                if (match) {
+                    var dayLabel = d.day + '일' + (d.repeat === 'monthly' ? '↻' : '');
+            tags.push({ title: g.title, label: dayLabel });
+                }
+            });
+        });
+
+        if (tags.length === 0) return;
+
+        var frame = cell.querySelector('.fc-daygrid-day-frame');
+        if (!frame) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'expense-markers';
+        tags.forEach(function(t) {
+            var tag = document.createElement('div');
+            tag.className = 'expense-tag';
+            tag.title = t.title;
+            tag.textContent = t.label || t.title;
+            wrap.appendChild(tag);
+        });
+        frame.appendChild(wrap);
+    });
+}
+
 function saveAll() { saveData(); }
 
 /* ════════════════════════════════════
@@ -694,6 +801,13 @@ function renderSection(key) {
             };
         })(key, gi);
         hdr.appendChild(tog); hdr.appendChild(ttl); hdr.appendChild(editBtn); hdr.appendChild(delBtn);
+        // 지출 날짜 뱃지
+        if (key === 'expense' && g.dates && g.dates.length > 0) {
+            var datesBadge = document.createElement('span');
+            datesBadge.style.cssText = 'font-size:9px;color:#7c3aed;background:#ede9fe;border-radius:3px;padding:1px 5px;margin-left:2px;flex-shrink:0;';
+            datesBadge.textContent = g.dates.map(function(d){ return d.day+'일'+(d.repeat==='monthly'?'↻':''); }).join(' ');
+            hdr.appendChild(datesBadge);
+        }
         gDiv.appendChild(hdr);
         var ef = document.createElement('div'); ef.className = 'wp-edit-form';
         ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div><div><label>내용</label><textarea class="wp-ei-body"></textarea></div><div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
@@ -763,12 +877,30 @@ function renderSection(key) {
 }
 
 function toggleGroup(key,gi){ wpData[key][gi].open=(wpData[key][gi].open===false)?true:false; saveAll(); renderSection(key); }
-function openForm(key){ ['routine','expense','report'].forEach(function(k){ document.getElementById('form-'+k).classList.remove('visible'); document.getElementById('ftitle-'+k).value=''; document.getElementById('fbody-'+k).value=''; }); document.getElementById('form-'+key).classList.add('visible'); document.getElementById('ftitle-'+key).focus(); }
-function closeForm(key){ document.getElementById('form-'+key).classList.remove('visible'); document.getElementById('ftitle-'+key).value=''; document.getElementById('fbody-'+key).value=''; }
+function openForm(key){
+    ['routine','expense','report'].forEach(function(k){
+        document.getElementById('form-'+k).classList.remove('visible');
+        document.getElementById('ftitle-'+k).value='';
+        document.getElementById('fbody-'+k).value='';
+    });
+    document.getElementById('form-'+key).classList.add('visible');
+    document.getElementById('ftitle-'+key).focus();
+}
+function closeForm(key){
+    document.getElementById('form-'+key).classList.remove('visible');
+    document.getElementById('ftitle-'+key).value='';
+    document.getElementById('fbody-'+key).value='';
+    if (key === 'expense') clearExpenseDateList();
+}
 function saveForm(key){
     var title=document.getElementById('ftitle-'+key).value.trim(), body=document.getElementById('fbody-'+key).value.trim();
     if(!title){ document.getElementById('ftitle-'+key).focus(); return; }
-    wpData[key].push({title:title,body:body,open:true,checked:{}}); saveAll(); renderSection(key); closeForm(key);
+    var item = {title:title, body:body, open:true, checked:{}};
+    if (key === 'expense') {
+        item.dates = getExpenseDates();
+        clearExpenseDateList();
+    }
+    wpData[key].push(item); saveAll(); renderSection(key); closeForm(key);
 }
 function showRoutine(){ document.getElementById('routine-panel').classList.remove('hidden'); document.getElementById('todo-section').classList.add('hidden'); }
 function showTodo()   { document.getElementById('routine-panel').classList.add('hidden');    document.getElementById('todo-section').classList.remove('hidden'); }
@@ -954,6 +1086,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    /* ── 지출 날짜 추가 버튼 ── */
+    document.getElementById('add-expense-date-btn').onclick = function() {
+        addExpenseDateRow('', '', 'monthly');
+    };
+
     /* 탭 전환 */
     document.querySelectorAll('.admin-tab').forEach(function(tab) {
         tab.onclick = function() {
@@ -1017,9 +1154,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     var vBox=document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
                     if(activeDate===arg.dateStr) vBox.classList.add('is-checked');
                     topEl.prepend(vBox);
-                    if(holidays[arg.dateStr]){ var lbl=document.createElement('span'); lbl.className='holiday-label'; lbl.innerText=holidays[arg.dateStr]; topEl.appendChild(lbl); }
+    
                 },
-                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); },50); },
+                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); },50); },
                 dateClick: function(info) {
                     document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
                     if(activeDate===info.dateStr){
