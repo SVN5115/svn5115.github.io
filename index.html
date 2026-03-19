@@ -170,6 +170,10 @@
         /* ── 달력 셀 지출 마커 ── */
         .expense-markers { position: absolute; top: 4px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .expense-tag { background: #ede9fe; color: #6d28d9; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
+        .report-markers { position: absolute; top: 20px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
+        .report-tag { background: #fdf3e7; color: #92400e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
+        .report-markers { position: absolute; top: 20px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
+        .report-tag { background: #fef3c7; color: #92400e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
         .todo-section.hidden { display: none; }
         #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0; }
@@ -331,10 +335,18 @@
             </div>
             <div class="wp-section" id="sec-report">
                 <div class="wp-section-header"><div class="wp-section-label">보고 업무</div><button class="wp-plus-btn" id="plus-report">+</button></div>
-                <div class="wp-add-form" id="form-report">
+                <div class="wp-add-form" id="form-report" style="overflow-y:auto;max-height:calc(100% - 60px);flex-shrink:1;">
                     <div><label>대제목</label><input id="ftitle-report" placeholder="대제목을 입력하세요"></div>
                     <div><label>내용</label><textarea id="fbody-report" placeholder="내용을 입력하세요"></textarea></div>
-                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-report">취소</button><button class="wp-form-save" id="fsave-report">저장</button></div>
+                    <div>
+                        <label style="font-size:10px;color:#64748b;font-weight:bold;">보고 날짜</label>
+                        <div id="report-date-list" style="margin-top:5px;"></div>
+                        <div style="display:flex;gap:5px;margin-top:6px;align-items:center;">
+                            <button class="add-date-btn" id="add-report-date-btn" style="flex:1;margin-top:0;border-color:#f59e0b;color:#f59e0b;">+ 날짜 추가</button>
+                            <button class="wp-form-cancel" id="fcancel-report">취소</button>
+                            <button class="wp-form-save" id="fsave-report">저장</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="wp-groups" id="groups-report"></div>
             </div>
@@ -342,9 +354,15 @@
         <div class="todo-section side-panel hidden" id="todo-section">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
                 <h3 style="margin:0;">일정 상세</h3>
-                <button id="close-todo-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;">&#x2715;</button>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <button id="clear-all-btn" style="display:none;background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:5px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">전체삭제</button>
+                    <button id="close-todo-btn" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;">&#x2715;</button>
+                </div>
             </div>
             <div id="selected-date-display">날짜를 선택하세요</div>
+            <div style="display:flex;justify-content:flex-end;margin-bottom:6px;flex-shrink:0;">
+                <button id="clear-all-btn" style="display:none;padding:3px 10px;background:none;border:1px solid #fca5a5;border-radius:5px;font-size:11px;color:#ef4444;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">🗑 전체 삭제</button>
+            </div>
             <div class="input-group">
                 <input type="text" id="todo-input" placeholder="새 일정 입력...">
                 <button id="add-btn">추가</button>
@@ -684,19 +702,20 @@ function saveData() {
         }, function(err) {
             setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
             renderExpenseMarkers();
+            renderReportMarkers();
         });
     }, 600);
 }
 /* ════════════════════════════════════
    지출 날짜 UI
 ════════════════════════════════════ */
-function addExpenseDateRow(day, label, repeat) {
-    var list = document.getElementById('expense-date-list');
+function addReportDateRow(day, label, repeat) {
+    var list = document.getElementById('report-date-list');
     var row  = document.createElement('div');
     row.className = 'expense-date-row';
     row.innerHTML =
         '<input type="number" min="1" max="31" placeholder="일" value="' + (day||'') + '" style="width:52px;">' +
-        '<input type="text" placeholder="이름/금액 (예: 보험료 5만)" value="' + (label||'') + '">' +
+        '<input type="text" placeholder="보고명 (예: 월간보고)" value="' + (label||'') + '">' +
         '<select>' +
           '<option value="monthly"' + (repeat==='monthly'?' selected':'') + '>매월 반복</option>' +
           '<option value="once"'   + (repeat==='once'   ?' selected':'') + '>특정일만</option>' +
@@ -706,8 +725,8 @@ function addExpenseDateRow(day, label, repeat) {
     list.appendChild(row);
 }
 
-function getExpenseDates() {
-    var rows = document.querySelectorAll('#expense-date-list .expense-date-row');
+function getReportDates() {
+    var rows = document.querySelectorAll('#report-date-list .expense-date-row');
     var result = [];
     rows.forEach(function(row) {
         var day    = parseInt(row.querySelector('input[type="number"]').value);
@@ -718,55 +737,187 @@ function getExpenseDates() {
     return result;
 }
 
-function clearExpenseDateList() {
-    document.getElementById('expense-date-list').innerHTML = '';
+function clearReportDateList() {
+    document.getElementById('report-date-list').innerHTML = '';
 }
 
-/* ── 달력에 지출 마커 렌더링 ── */
-function renderExpenseMarkers() {
-    // 기존 마커 모두 제거
-    document.querySelectorAll('.expense-markers').forEach(function(el){ el.parentNode.removeChild(el); });
+function addDateRow(listId, day, label, repeat, month) {
+    var list = document.getElementById(listId);
+    var row  = document.createElement('div');
+    row.className = 'expense-date-row';
+    row.style.cssText = 'flex-wrap:wrap;gap:4px;';
+    var isOnce = repeat === 'once';
 
-    var expenseGroups = wpData.expense || [];
-    // 현재 달력에 보이는 날짜 셀 순회
+    // 기본 행: 일 입력 + 이름 + 반복선택 + 삭제
+    var baseDiv = document.createElement('div');
+    baseDiv.style.cssText = 'display:flex;align-items:center;gap:5px;width:100%;';
+    baseDiv.innerHTML =
+        '<input type="number" min="1" max="31" placeholder="일" value="' + (day||'') + '" style="width:48px;" class="ei-day">' +
+        '<input type="text" placeholder="이름/메모" value="' + (label||'') + '" class="ei-label" style="flex:1;">' +
+        '<select class="ei-repeat">' +
+          '<option value="monthly"' + (!isOnce?' selected':'') + '>매월 반복</option>' +
+          '<option value="once"'   + (isOnce?' selected':'') + '>특정일만</option>' +
+        '</select>' +
+        '<button class="rm-date-btn" title="삭제">✕</button>';
+    row.appendChild(baseDiv);
+
+    // 특정일 선택 시: 월 입력 추가 행
+    var monthDiv = document.createElement('div');
+    monthDiv.style.cssText = 'display:' + (isOnce?'flex':'none') + ';align-items:center;gap:5px;padding-left:4px;';
+    monthDiv.innerHTML =
+        '<label style="font-size:10px;color:#64748b;white-space:nowrap;">적용 월:</label>' +
+        '<input type="number" min="1" max="12" placeholder="월" value="' + (month||'') + '" style="width:48px;" class="ei-month">' +
+        '<label style="font-size:10px;color:#94a3b8;">월</label>' +
+        '<input type="number" min="1" max="31" placeholder="일" value="' + (day||'') + '" style="width:48px;" class="ei-specific-day">' +
+        '<label style="font-size:10px;color:#94a3b8;">일</label>';
+    row.appendChild(monthDiv);
+
+    // 반복 선택 변경 시 월 입력 표시/숨김
+    baseDiv.querySelector('.ei-repeat').addEventListener('change', function() {
+        if (this.value === 'once') {
+            monthDiv.style.display = 'flex';
+        } else {
+            monthDiv.style.display = 'none';
+        }
+    });
+
+    baseDiv.querySelector('.rm-date-btn').onclick = function() { list.removeChild(row); };
+    list.appendChild(row);
+}
+function addExpenseDateRow(day, label, repeat) { addDateRow('expense-date-list', day, label, repeat); }
+function addReportDateRow(day, label, repeat)  { addDateRow('report-date-list',  day, label, repeat); }
+
+function getDates(listId) {
+    var rows = document.querySelectorAll('#' + listId + ' .expense-date-row');
+    var result = [];
+    rows.forEach(function(row) {
+        var dayEl    = row.querySelector('.ei-day');
+        var labelEl  = row.querySelector('.ei-label');
+        var repeatEl = row.querySelector('.ei-repeat');
+        if (!dayEl || !repeatEl) return;
+        var day    = parseInt(dayEl.value);
+        var label  = labelEl ? labelEl.value.trim() : '';
+        var repeat = repeatEl.value;
+        if (repeat === 'once') {
+            // 특정일: 월/일 따로 저장
+            var monthEl  = row.querySelector('.ei-month');
+            var specDayEl = row.querySelector('.ei-specific-day');
+            var month = monthEl ? parseInt(monthEl.value) : null;
+            var specDay = specDayEl ? parseInt(specDayEl.value) : day;
+            if (month >= 1 && month <= 12 && specDay >= 1 && specDay <= 31) {
+                // specificDate: MM-DD 형식으로 저장
+                var mm = ('0' + month).slice(-2);
+                var dd = ('0' + specDay).slice(-2);
+                result.push({ day: specDay, label: label, repeat: 'once', specificMonth: month, specificDay: specDay, specificMMDD: mm + '-' + dd });
+            }
+        } else {
+            if (day >= 1 && day <= 31) result.push({ day: day, label: label, repeat: 'monthly' });
+        }
+    });
+    return result;
+}
+function getExpenseDates() { return getDates('expense-date-list'); }
+function getReportDates()  { return getDates('report-date-list'); }
+
+function clearExpenseDateList() { document.getElementById('expense-date-list').innerHTML = ''; }
+function clearReportDateList()  { document.getElementById('report-date-list').innerHTML = ''; }
+
+/* ── 달력에 보고 마커 렌더링 ── */
+function renderReportMarkers() {
+    document.querySelectorAll('.report-markers').forEach(function(el){ el.parentNode.removeChild(el); });
+    var reportGroups = wpData.report || [];
     document.querySelectorAll('.fc-daygrid-day').forEach(function(cell) {
         var dateStr = cell.getAttribute('data-date');
         if (!dateStr) return;
-        var dateParts = dateStr.split('-');
-        var day = parseInt(dateParts[2]);
-
+        var day = parseInt(dateStr.split('-')[2]);
         var tags = [];
-        expenseGroups.forEach(function(g) {
+        reportGroups.forEach(function(g) {
             if (!g.dates) return;
             g.dates.forEach(function(d) {
-                var match = false;
-                if (d.repeat === 'monthly') {
-                    match = (d.day === day);
-                } else {
-                    // 특정일: yyyy-mm-dd 형식으로 저장
-                    match = (d.specificDate === dateStr);
-                }
+                var match = d.repeat === 'monthly' ? (d.day === day) : (d.specificDate === dateStr);
                 if (match) {
-                    var dayLabel = d.day + '일' + (d.repeat === 'monthly' ? '↻' : '');
-            tags.push({ title: g.title, label: dayLabel });
+                    tags.push({ title: g.title, label: '보고' });
                 }
             });
         });
-
         if (tags.length === 0) return;
-
         var frame = cell.querySelector('.fc-daygrid-day-frame');
         if (!frame) return;
         var wrap = document.createElement('div');
-        wrap.className = 'expense-markers';
+        wrap.className = 'report-markers';
         tags.forEach(function(t) {
             var tag = document.createElement('div');
-            tag.className = 'expense-tag';
+            tag.className = 'report-tag';
             tag.title = t.title;
-            tag.textContent = t.label || t.title;
+            tag.textContent = t.label;
             wrap.appendChild(tag);
         });
         frame.appendChild(wrap);
+    });
+}
+
+/* ── 달력에 지출/보고 마커 렌더링 ── */
+function renderExpenseMarkers() {
+    document.querySelectorAll('.expense-markers, .report-markers').forEach(function(el){ el.parentNode.removeChild(el); });
+
+    document.querySelectorAll('.fc-daygrid-day').forEach(function(cell) {
+        var dateStr = cell.getAttribute('data-date');
+        if (!dateStr) return;
+        var day = parseInt(dateStr.split('-')[2]);
+        var frame = cell.querySelector('.fc-daygrid-day-frame');
+        if (!frame) return;
+
+        // 지출 마커 - 중복 제거
+        var expTags = [];
+        var expSeen = {};
+        var mmdd = dateStr.slice(5); // MM-DD
+        (wpData.expense || []).forEach(function(g) {
+            if (!g.dates) return;
+            g.dates.forEach(function(d) {
+                var match = d.repeat === 'monthly'
+                    ? (d.day === day)
+                    : (d.specificMMDD === mmdd);
+                if (match) {
+                    var lbl = '지출';
+                    if (!expSeen[lbl]) { expSeen[lbl] = true; expTags.push({ title: g.title, label: lbl }); }
+                }
+            });
+        });
+        if (expTags.length > 0) {
+            var expWrap = document.createElement('div');
+            expWrap.className = 'expense-markers';
+            expTags.forEach(function(t) {
+                var tag = document.createElement('div'); tag.className = 'expense-tag';
+                tag.title = t.title; tag.textContent = t.label; expWrap.appendChild(tag);
+            });
+            frame.appendChild(expWrap);
+        }
+
+        // 보고 마커 (지출 아래) - 같은 label 중복 제거
+        var repTags = [];
+        var repSeen = {};
+        (wpData.report || []).forEach(function(g) {
+            if (!g.dates) return;
+            g.dates.forEach(function(d) {
+                var match = d.repeat === 'monthly'
+                    ? (d.day === day)
+                    : (d.specificMMDD === mmdd);
+                if (match) {
+                    var lbl = '보고';
+                    if (!repSeen[lbl]) { repSeen[lbl] = true; repTags.push({ title: g.title, label: lbl }); }
+                }
+            });
+        });
+        if (repTags.length > 0) {
+            var repWrap = document.createElement('div');
+            repWrap.className = 'report-markers';
+            repWrap.style.top = (4 + (expTags.length > 0 ? 18 : 0)) + 'px';
+            repTags.forEach(function(t) {
+                var tag = document.createElement('div'); tag.className = 'report-tag';
+                tag.title = t.title; tag.textContent = t.label; repWrap.appendChild(tag);
+            });
+            frame.appendChild(repWrap);
+        }
     });
 }
 
@@ -797,28 +948,73 @@ function renderSection(key) {
                 e.stopPropagation();
                 var ef = gDiv.querySelector('.wp-edit-form'), wasOpen = ef.classList.contains('visible');
                 container.querySelectorAll('.wp-edit-form.visible').forEach(function(f){ f.classList.remove('visible'); });
-                if (!wasOpen) { ef.querySelector('.wp-ei-title').value=wpData[k][idx].title; ef.querySelector('.wp-ei-body').value=wpData[k][idx].body||''; ef.classList.add('visible'); ef.querySelector('.wp-ei-title').focus(); }
+                if (!wasOpen) {
+                    ef.querySelector('.wp-ei-title').value = wpData[k][idx].title;
+                    ef.querySelector('.wp-ei-body').value  = wpData[k][idx].body || '';
+                    // 지출/보고 날짜 불러오기
+                    if (k === 'expense' || k === 'report') {
+                        var listId = 'edit-date-list-' + k + '-' + idx;
+                        var dateList = ef.querySelector('#' + listId);
+                        if (dateList) {
+                            dateList.innerHTML = '';
+                            var existDates = wpData[k][idx].dates || [];
+                            existDates.forEach(function(d) { addDateRow(listId, d.day, d.label||'', d.repeat||'monthly', d.specificMonth||''); });
+                        }
+                    }
+                    ef.classList.add('visible');
+                    ef.querySelector('.wp-ei-title').focus();
+                }
             };
         })(key, gi);
         hdr.appendChild(tog); hdr.appendChild(ttl); hdr.appendChild(editBtn); hdr.appendChild(delBtn);
-        // 지출 날짜 뱃지
-        if (key === 'expense' && g.dates && g.dates.length > 0) {
+        // 날짜 뱃지 (지출: 보라, 보고: 갈색)
+        if ((key === 'expense' || key === 'report') && g.dates && g.dates.length > 0) {
             var datesBadge = document.createElement('span');
-            datesBadge.style.cssText = 'font-size:9px;color:#7c3aed;background:#ede9fe;border-radius:3px;padding:1px 5px;margin-left:2px;flex-shrink:0;';
-            datesBadge.textContent = g.dates.map(function(d){ return d.day+'일'+(d.repeat==='monthly'?'↻':''); }).join(' ');
+            var isExpense = key === 'expense';
+            datesBadge.style.cssText = 'font-size:9px;color:' + (isExpense?'#7c3aed':'#92400e') + ';background:' + (isExpense?'#ede9fe':'#fdf3e7') + ';border-radius:3px;padding:1px 5px;margin-left:2px;flex-shrink:0;';
+            datesBadge.textContent = key === 'expense' ? '지출' : '보고';
             hdr.appendChild(datesBadge);
         }
+
         gDiv.appendChild(hdr);
         var ef = document.createElement('div'); ef.className = 'wp-edit-form';
-        ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div><div><label>내용</label><textarea class="wp-ei-body"></textarea></div><div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
+        // 지출/보고는 날짜 입력 UI 포함
+        var dateHtml = '';
+        if (key === 'expense' || key === 'report') {
+            var dateColor = key === 'expense' ? '#10b981' : '#f59e0b';
+            var listId    = 'edit-date-list-' + key + '-' + gi;
+            dateHtml = '<div style="margin-top:4px;">' +
+                '<label style="font-size:10px;color:#64748b;font-weight:bold;">' + (key==='expense'?'지출':'보고') + ' 날짜</label>' +
+                '<div id="' + listId + '" style="margin-top:4px;max-height:100px;overflow-y:auto;"></div>' +
+                '<button class="add-date-btn wp-ei-add-date" style="margin-top:5px;border-color:' + dateColor + ';color:' + dateColor + ';">+ 날짜 추가</button>' +
+                '</div>';
+        }
+        ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div>' +
+            '<div><label>내용</label><textarea class="wp-ei-body"></textarea></div>' +
+            dateHtml +
+            '<div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
         (function(k, idx) {
             ef.querySelector('.wp-edit-cancel').onclick = function() { ef.classList.remove('visible'); };
             ef.querySelector('.wp-edit-save').onclick = function() {
                 var nt=ef.querySelector('.wp-ei-title').value.trim(), nb=ef.querySelector('.wp-ei-body').value.trim();
                 if(!nt){ ef.querySelector('.wp-ei-title').focus(); return; }
-                wpData[k][idx].title=nt; wpData[k][idx].body=nb; wpData[k][idx].checked={}; saveAll(); renderSection(k);
+                wpData[k][idx].title=nt; wpData[k][idx].body=nb; wpData[k][idx].checked={};
+                // 지출/보고 날짜 저장
+                if (k === 'expense' || k === 'report') {
+                    var listId = 'edit-date-list-' + k + '-' + idx;
+                    wpData[k][idx].dates = getDates(listId);
+                }
+                saveAll(); renderSection(k);
             };
             ef.querySelector('.wp-ei-body').addEventListener('keydown', function(ev){ if(ev.key==='Enter'&&ev.ctrlKey) ef.querySelector('.wp-edit-save').click(); });
+            // 날짜 추가 버튼
+            var addBtn = ef.querySelector('.wp-ei-add-date');
+            if (addBtn) {
+                addBtn.onclick = function() {
+                    var listId = 'edit-date-list-' + k + '-' + idx;
+                    addDateRow(listId, '', '', 'monthly');
+                };
+            }
         })(key, gi);
         gDiv.appendChild(ef);
         if (g.open !== false) {
@@ -891,15 +1087,14 @@ function closeForm(key){
     document.getElementById('ftitle-'+key).value='';
     document.getElementById('fbody-'+key).value='';
     if (key === 'expense') clearExpenseDateList();
+    if (key === 'report')  clearReportDateList();
 }
 function saveForm(key){
     var title=document.getElementById('ftitle-'+key).value.trim(), body=document.getElementById('fbody-'+key).value.trim();
     if(!title){ document.getElementById('ftitle-'+key).focus(); return; }
     var item = {title:title, body:body, open:true, checked:{}};
-    if (key === 'expense') {
-        item.dates = getExpenseDates();
-        clearExpenseDateList();
-    }
+    if (key === 'expense') { item.dates = getExpenseDates(); }
+    if (key === 'report')  { item.dates = getReportDates(); }
     wpData[key].push(item); saveAll(); renderSection(key); closeForm(key);
 }
 function showRoutine(){ document.getElementById('routine-panel').classList.remove('hidden'); document.getElementById('todo-section').classList.add('hidden'); }
@@ -943,9 +1138,13 @@ function updateDisplay(dateStr, el) {
     var target = el || document.querySelector('[data-date="'+dateStr+'"]');
     if (target) target.classList.add('selected-day');
     renderList(dateStr);
+    // 전체 삭제 버튼 표시 여부
+    var clearBtn = document.getElementById('clear-all-btn');
+    if (clearBtn) clearBtn.style.display = (todos[dateStr] && todos[dateStr].length > 0) ? 'block' : 'none';
 }
 function renderList(date) {
     var listEl=document.getElementById('todo-list'); listEl.innerHTML='';
+    var clearBtn=document.getElementById('clear-all-btn'); if(clearBtn) clearBtn.style.display=(todos[date]&&todos[date].length>0)?'inline-block':'none';
     (todos[date]||[]).forEach(function(t,i){
         var li=document.createElement('li'); li.className='todo-item';
         li.innerHTML='<span>'+t.text+'</span><button class="delete-btn" onclick="removeItem(\''+date+'\','+i+')">&#x2715;</button>';
@@ -1087,8 +1286,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     /* ── 지출 날짜 추가 버튼 ── */
+    document.getElementById('add-report-date-btn').onclick = function() {
+        addReportDateRow('', '', 'monthly');
+    };
+
     document.getElementById('add-expense-date-btn').onclick = function() {
         addExpenseDateRow('', '', 'monthly');
+    };
+    document.getElementById('add-report-date-btn').onclick = function() {
+        addReportDateRow('', '', 'monthly');
     };
 
     /* 탭 전환 */
@@ -1156,7 +1362,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     topEl.prepend(vBox);
     
                 },
-                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); },50); },
+                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); renderReportMarkers(); },50); },
                 dateClick: function(info) {
                     document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
                     if(activeDate===info.dateStr){
@@ -1176,7 +1382,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('fsave-'+key).onclick   = function(){ saveForm(key); };
                 document.getElementById('fbody-'+key).addEventListener('keydown', function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
             });
-            document.getElementById('close-todo-btn').onclick = function() {
+            document.getElementById('clear-all-btn').onclick = function() {
+            var date = document.getElementById('selected-date-display').innerText;
+            if (date === '날짜를 선택하세요' || !todos[date] || !todos[date].length) return;
+            if (!confirm(date + ' 일정을 모두 삭제하시겠습니까?')) return;
+            delete todos[date];
+            saveAll();
+            renderList(date);
+            renderCellTodos(date);
+            this.style.display = 'none';
+        };
+
+        document.getElementById('clear-all-btn').onclick = function() {
+            var date = document.getElementById('selected-date-display').innerText;
+            if (date === '날짜를 선택하세요' || !todos[date] || todos[date].length === 0) return;
+            if (!confirm(date + '의 일정을 모두 삭제하시겠습니까?')) return;
+            delete todos[date];
+            saveAll();
+            renderList(date);
+            renderCellTodos(date);
+        };
+
+        document.getElementById('close-todo-btn').onclick = function() {
                 document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
                 activeDate=''; saveAll(); MAX_VISIBLE=6;
                 document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
