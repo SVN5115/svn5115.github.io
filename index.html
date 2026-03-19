@@ -1624,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
-                customButtons:{ meetingBtn:{ text:'📋 회의 추가', click: function(){ openMeetingPopup(); } } },
+                customButtons:{ meetingBtn:{ text:'📋 보고일정추가', click: function(){ openMeetingPopup(); } } },
                 headerToolbar:{ left:'title', center:'', right:'meetingBtn today prev,next' },
                 dayCellDidMount: function(arg) {
                     var topEl=arg.el.querySelector('.fc-daygrid-day-top');
