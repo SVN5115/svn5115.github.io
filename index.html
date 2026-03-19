@@ -9,40 +9,97 @@
         :root { --main-bg: #f8f9fa; }
         body { font-family: 'Malgun Gothic', sans-serif; background: var(--main-bg); margin: 0; }
 
+        /* ── 인증 화면 공통 ── */
+        .auth-screen { position: fixed; inset: 0; background: #f1f5f9; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .auth-screen.hidden { display: none; }
+        .auth-box { background: white; border-radius: 16px; padding: 40px 36px; width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,0.12); display: flex; flex-direction: column; }
+        .auth-logo { text-align: center; margin-bottom: 24px; }
+        .auth-logo .auth-icon { font-size: 36px; margin-bottom: 8px; }
+        .auth-logo .auth-title { font-size: 17px; font-weight: bold; color: #1e293b; }
+        .auth-logo .auth-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+        .auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .auth-field label { font-size: 11px; font-weight: bold; color: #64748b; }
+        .auth-field input { padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: 'Malgun Gothic', sans-serif; outline: none; transition: border-color 0.15s; }
+        .auth-field input:focus { border-color: #6366f1; }
+        .auth-error { font-size: 11px; color: #ef4444; text-align: center; min-height: 16px; margin-bottom: 6px; }
+        .auth-btn { width: 100%; padding: 11px; background: #6366f1; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; transition: background 0.15s; margin-top: 4px; }
+        .auth-btn:hover { background: #4f46e5; }
+        .auth-btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+        .auth-btn.green { background: #10b981; } .auth-btn.green:hover { background: #059669; }
+        .auth-btn.gray { background: #94a3b8; } .auth-btn.gray:hover { background: #64748b; }
+        .auth-divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
+        .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+        .auth-divider span { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+        .pw-hint { font-size: 10px; margin-top: 4px; min-height: 14px; }
+        .pw-hint.ok { color: #10b981; } .pw-hint.ng { color: #ef4444; }
+        .auth-success { font-size: 12px; color: #10b981; text-align: center; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px; margin-top: 8px; display: none; }
+
         /* ── 상단 바 ── */
-        #top-bar {
-            position: fixed; top: 0; left: 0; right: 0; height: 36px;
-            background: white; border-bottom: 1px solid #e2e8f0;
-            display: flex; align-items: center; justify-content: flex-end;
-            padding: 0 16px; gap: 10px; z-index: 100;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-        }
-        #sync-indicator {
-            font-size: 11px; color: #22c55e; transition: color 0.2s;
-        }
+        #top-bar { position: fixed; top: 0; left: 0; right: 0; height: 36px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+        #top-left { display: flex; align-items: center; gap: 10px; }
+        #top-right { display: flex; align-items: center; gap: 10px; }
+        #sync-indicator { font-size: 11px; color: #22c55e; }
         #sync-indicator.saving { color: #f59e0b; }
         #sync-indicator.saved  { color: #22c55e; }
         #sync-indicator.error  { color: #ef4444; }
+        #user-label { font-size: 11px; color: #64748b; }
+        #logout-btn { padding: 4px 12px; background: none; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
+        #logout-btn:hover { background: #fef2f2; border-color: #fca5a5; color: #ef4444; }
+
+        /* ── 알림 버튼 ── */
+        #notify-btn { position: relative; background: none; border: none; cursor: pointer; font-size: 18px; padding: 2px 6px; line-height: 1; }
+        #notify-badge { position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 9px; font-weight: bold; border-radius: 50%; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; }
+        #notify-badge.visible { display: flex; }
+
+        /* ── 관리자 패널 탭 ── */
+        #admin-panel { position: fixed; top: 44px; left: 16px; width: 320px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); z-index: 500; display: none; max-height: 500px; overflow: hidden; flex-direction: column; }
+        #admin-panel.visible { display: flex; }
+        #admin-panel-header { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        #admin-panel-header span { font-size: 13px; font-weight: bold; color: #1e293b; }
+        #admin-panel-close { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; }
+        .admin-tabs { display: flex; border-bottom: 1px solid #f1f5f9; flex-shrink: 0; }
+        .admin-tab { flex: 1; padding: 8px; font-size: 12px; font-weight: bold; text-align: center; cursor: pointer; color: #64748b; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Malgun Gothic', sans-serif; }
+        .admin-tab.active { color: #6366f1; border-bottom-color: #6366f1; }
+        .admin-tab-content { flex: 1; overflow-y: auto; min-height: 0; }
+        .admin-tab-pane { display: none; }
+        .admin-tab-pane.active { display: block; }
+
+        /* ── 승인 요청 패널 ── */
+        #request-panel { position: fixed; top: 44px; left: 16px; width: 280px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); z-index: 500; display: none; max-height: 400px; overflow-y: auto; }
+        #request-panel.visible { display: block; }
+        #request-panel-header { padding: 12px 14px; font-size: 13px; font-weight: bold; color: #1e293b; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+        #request-panel-close { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 16px; line-height: 1; }
+        .req-item { padding: 10px 14px; border-bottom: 1px solid #f8fafc; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .req-item:last-child { border-bottom: none; }
+        .req-id { font-size: 13px; font-weight: bold; color: #334155; }
+        .req-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+        .req-actions { display: flex; gap: 5px; flex-shrink: 0; }
+        .req-approve { padding: 4px 10px; background: #10b981; color: white; border: none; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+        .req-approve:hover { background: #059669; }
+        .req-reject { padding: 4px 10px; background: none; border: 1px solid #fca5a5; color: #ef4444; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+        .req-reject:hover { background: #fef2f2; }
+        #request-empty { padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
+        .acc-item { padding: 10px 14px; border-bottom: 1px solid #f8fafc; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .acc-item:last-child { border-bottom: none; }
+        .acc-info .acc-id { font-size: 13px; font-weight: bold; color: #334155; }
+        .acc-info .acc-role { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+        .acc-del { padding: 4px 10px; background: none; border: 1px solid #fca5a5; color: #ef4444; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+        .acc-del:hover { background: #fef2f2; }
+        #account-empty { padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
 
         /* ── 메인 앱 ── */
         #app { padding-top: 36px; height: 100vh; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
         .container { display: flex; width: 98%; max-width: 2400px; height: calc(96vh - 36px); gap: 15px; }
-        #calendar-container { flex: 4; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-width: 0; transition: flex 0.2s; }
+        #calendar-container { flex: 4; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-width: 0; }
         #calendar { flex: 1; }
         .side-panel { width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
         #routine-panel { display: flex; flex-direction: column; flex: 1; gap: 10px; min-height: 0; }
         #routine-panel.hidden { display: none; }
-
-        /* ── 섹션 ── */
         .wp-section { flex: 1; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 10px; padding: 11px 12px 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-        #sec-routine { border-top: 3px solid #6366f1; }
-        #sec-expense { border-top: 3px solid #10b981; }
-        #sec-report  { border-top: 3px solid #f59e0b; }
+        #sec-routine { border-top: 3px solid #6366f1; } #sec-expense { border-top: 3px solid #10b981; } #sec-report { border-top: 3px solid #f59e0b; }
         .wp-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-shrink: 0; }
         .wp-section-label { font-size: 12px; font-weight: bold; color: #334155; display: flex; align-items: center; gap: 4px; }
-        #sec-routine .wp-section-label::before { content: '🔁'; }
-        #sec-expense .wp-section-label::before { content: '💰'; }
-        #sec-report  .wp-section-label::before { content: '📋'; }
+        #sec-routine .wp-section-label::before { content: '🔁'; } #sec-expense .wp-section-label::before { content: '💰'; } #sec-report .wp-section-label::before { content: '📋'; }
         .wp-plus-btn { width: 22px; height: 22px; border-radius: 50%; border: none; font-size: 16px; line-height: 1; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
         #sec-routine .wp-plus-btn { background: #6366f1; } #sec-routine .wp-plus-btn:hover { background: #4f46e5; }
         #sec-expense .wp-plus-btn { background: #10b981; } #sec-expense .wp-plus-btn:hover { background: #059669; }
@@ -66,14 +123,10 @@
         .wp-groups::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
         .wp-group { margin-bottom: 8px; }
         .wp-group-header { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 5px; margin-bottom: 3px; user-select: none; }
-        #sec-routine .wp-group-header { background: #ede9fe; }
-        #sec-expense .wp-group-header { background: #d1fae5; }
-        #sec-report  .wp-group-header { background: #fef3c7; }
+        #sec-routine .wp-group-header { background: #ede9fe; } #sec-expense .wp-group-header { background: #d1fae5; } #sec-report .wp-group-header { background: #fef3c7; }
         .wp-group-toggle { font-size: 9px; color: #888; flex-shrink: 0; cursor: pointer; padding: 0 2px; }
         .wp-group-title { flex: 1; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-        #sec-routine .wp-group-title { color: #4338ca; }
-        #sec-expense .wp-group-title { color: #065f46; }
-        #sec-report  .wp-group-title { color: #92400e; }
+        #sec-routine .wp-group-title { color: #4338ca; } #sec-expense .wp-group-title { color: #065f46; } #sec-report .wp-group-title { color: #92400e; }
         .wp-group-edit-btn { color: #94a3b8; border: none; background: none; font-size: 11px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
         .wp-group-edit-btn:hover { color: #6366f1; }
         .wp-group-del-btn { color: #cbd5e1; border: none; background: none; font-size: 12px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0; }
@@ -86,9 +139,7 @@
         .wp-edit-actions { display: flex; justify-content: flex-end; gap: 5px; }
         .wp-edit-cancel { padding: 3px 9px; background: none; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
         .wp-edit-save { padding: 3px 10px; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; color: white; font-family: 'Malgun Gothic', sans-serif; }
-        #sec-routine .wp-edit-save { background: #6366f1; }
-        #sec-expense .wp-edit-save { background: #10b981; }
-        #sec-report  .wp-edit-save { background: #f59e0b; }
+        #sec-routine .wp-edit-save { background: #6366f1; } #sec-expense .wp-edit-save { background: #10b981; } #sec-report .wp-edit-save { background: #f59e0b; }
         .wp-item-list { list-style: none; padding: 0; margin: 0 0 0 14px; }
         .wp-item { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f8fafc; font-size: 11px; color: #374151; }
         .wp-item:last-child { border-bottom: none; }
@@ -101,8 +152,6 @@
         .wp-item-del { color: #ddd; cursor: pointer; border: none; background: none; font-size: 11px; padding: 0 1px; line-height: 1; flex-shrink: 0; }
         .wp-item-del:hover { color: #f87171; }
         .wp-empty { color: #c0c8d4; font-size: 11px; text-align: center; padding: 10px 0; }
-
-        /* ── 일정 상세 ── */
         .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
         .todo-section.hidden { display: none; }
         #selected-date-display { color: #007bff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0; }
@@ -112,8 +161,6 @@
         .todo-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
         .todo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
         .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
-
-        /* ── 캘린더 ── */
         .fc .fc-daygrid-day-frame { cursor: pointer; overflow: hidden; position: relative; }
         .fc .fc-daygrid-day-top { display: flex !important; align-items: center !important; padding: 4px !important; flex-direction: row !important; position: relative; }
         .fc .fc-daygrid-day-number { font-weight: bold; text-decoration: none !important; padding: 0 !important; font-size: 14px; }
@@ -126,8 +173,7 @@
         .cell-todos { padding: 0 2px; display: flex; flex-direction: column; }
         .cell-todo-item:last-child { margin-bottom: 6px; }
         .cell-todo-item { font-size: 9px; border-radius: 2px; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 13px; height: 13px; box-sizing: border-box; }
-        .cell-todo-c0 { background: #dbeafe; color: #1e40af; }
-        .cell-todo-c1 { background: #e2e8f0; color: #374151; }
+        .cell-todo-c0 { background: #dbeafe; color: #1e40af; } .cell-todo-c1 { background: #e2e8f0; color: #374151; }
         .cell-todo-more { position: absolute; top: 3px; right: 3px; font-size: 8px; font-weight: bold; color: #fff; background: #999; border-radius: 2px; padding: 0 3px; line-height: 13px; pointer-events: none; z-index: 2; }
         .v-box { width: 16px; height: 16px; border: 1px solid #ccc; margin-right: 6px; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; flex-shrink: 0; }
         .v-box.is-checked { border-color: #000; background: #eee; }
@@ -139,64 +185,134 @@
 </head>
 <body>
 
+<!-- ① 로그인 화면 -->
+<div id="login-screen" class="auth-screen">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <div class="auth-icon">📅</div>
+            <div class="auth-title">비즈니스 플래너</div>
+            <div class="auth-sub">로그인</div>
+        </div>
+        <div class="auth-field"><label>아이디</label><input type="text" id="login-id" placeholder="아이디 입력" autocomplete="username"></div>
+        <div class="auth-field"><label>비밀번호</label><input type="password" id="login-pw" placeholder="비밀번호 입력" autocomplete="current-password"></div>
+        <div id="login-error" class="auth-error"></div>
+        <button id="login-btn" class="auth-btn">로그인</button>
+        <div class="auth-divider"><span>또는</span></div>
+        <button id="goto-signup-btn" class="auth-btn gray">계정 생성 요청</button>
+    </div>
+</div>
+
+<!-- ② 계정 생성 요청 화면 -->
+<div id="signup-screen" class="auth-screen hidden">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <div class="auth-icon">✍️</div>
+            <div class="auth-title">계정 생성 요청</div>
+            <div class="auth-sub">관리자 승인 후 로그인 가능합니다</div>
+        </div>
+        <div class="auth-field"><label>아이디</label><input type="text" id="signup-id" placeholder="사용할 아이디 입력" autocomplete="off"></div>
+        <div class="auth-field">
+            <label>비밀번호</label>
+            <input type="password" id="signup-pw" placeholder="비밀번호 입력">
+        </div>
+        <div class="auth-field">
+            <label>비밀번호 확인</label>
+            <input type="password" id="signup-pw2" placeholder="비밀번호 재입력">
+            <div id="signup-pw-hint" class="pw-hint"></div>
+        </div>
+        <div id="signup-error" class="auth-error"></div>
+        <button id="signup-btn" class="auth-btn green">요청 보내기</button>
+        <div id="signup-success" class="auth-success">✅ 요청이 전송되었습니다!<br>관리자 승인 후 로그인하실 수 있습니다.</div>
+        <div class="auth-divider"><span></span></div>
+        <button id="goto-login-btn" class="auth-btn gray">← 로그인으로 돌아가기</button>
+    </div>
+</div>
+
+<!-- ③ 최초 관리자 설정 화면 -->
+<div id="setup-screen" class="auth-screen hidden">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <div class="auth-icon">🔐</div>
+            <div class="auth-title">관리자 계정 설정</div>
+            <div class="auth-sub">처음 사용 시 1회만 설정합니다</div>
+        </div>
+        <div class="auth-field"><label>비밀번호</label><input type="password" id="setup-pw" placeholder="관리자 비밀번호 입력"></div>
+        <div class="auth-field">
+            <label>비밀번호 확인</label>
+            <input type="password" id="setup-pw2" placeholder="비밀번호 재입력">
+            <div id="setup-pw-hint" class="pw-hint"></div>
+        </div>
+        <div id="setup-error" class="auth-error"></div>
+        <button id="setup-btn" class="auth-btn green">관리자 계정 생성</button>
+        <div class="auth-hint" style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px;">관리자 아이디: <b>admin</b> (고정)</div>
+    </div>
+</div>
+
 <!-- 상단 바 -->
 <div id="top-bar">
-    <div id="sync-indicator" class="saved">● 저장됨</div>
+    <div id="top-left">
+        <button id="notify-btn" title="계정 승인 요청">🔔<span id="notify-badge"></span></button>
+        <span id="user-label"></span>
+    </div>
+    <div id="top-right">
+        <div id="sync-indicator" class="saved">● 저장됨</div>
+        <button id="logout-btn">로그아웃</button>
+    </div>
+</div>
+
+<!-- 관리자 패널 -->
+<div id="admin-panel">
+    <div id="admin-panel-header">
+        <span>⚙️ 관리자 패널</span>
+        <button id="admin-panel-close">✕</button>
+    </div>
+    <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="requests">🔔 승인 요청 <span id="req-count"></span></button>
+        <button class="admin-tab" data-tab="accounts">👥 계정 목록</button>
+    </div>
+    <div class="admin-tab-content">
+        <div class="admin-tab-pane active" id="tab-requests">
+            <div id="request-list"></div>
+        </div>
+        <div class="admin-tab-pane" id="tab-accounts">
+            <div id="account-list"></div>
+        </div>
+    </div>
 </div>
 
 <!-- 앱 -->
 <div id="app">
     <div class="container">
         <div id="calendar-container"><div id="calendar"></div></div>
-
         <div id="routine-panel" class="side-panel">
             <div class="wp-section" id="sec-routine">
-                <div class="wp-section-header">
-                    <div class="wp-section-label">루틴 업무</div>
-                    <button class="wp-plus-btn" id="plus-routine">+</button>
-                </div>
+                <div class="wp-section-header"><div class="wp-section-label">루틴 업무</div><button class="wp-plus-btn" id="plus-routine">+</button></div>
                 <div class="wp-add-form" id="form-routine">
                     <div><label>대제목</label><input id="ftitle-routine" placeholder="대제목을 입력하세요"></div>
                     <div><label>내용</label><textarea id="fbody-routine" placeholder="내용을 입력하세요"></textarea></div>
-                    <div class="wp-form-actions">
-                        <button class="wp-form-cancel" id="fcancel-routine">취소</button>
-                        <button class="wp-form-save"   id="fsave-routine">저장</button>
-                    </div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-routine">취소</button><button class="wp-form-save" id="fsave-routine">저장</button></div>
                 </div>
                 <div class="wp-groups" id="groups-routine"></div>
             </div>
             <div class="wp-section" id="sec-expense">
-                <div class="wp-section-header">
-                    <div class="wp-section-label">지출 업무</div>
-                    <button class="wp-plus-btn" id="plus-expense">+</button>
-                </div>
+                <div class="wp-section-header"><div class="wp-section-label">지출 업무</div><button class="wp-plus-btn" id="plus-expense">+</button></div>
                 <div class="wp-add-form" id="form-expense">
                     <div><label>대제목</label><input id="ftitle-expense" placeholder="대제목을 입력하세요"></div>
                     <div><label>내용</label><textarea id="fbody-expense" placeholder="내용을 입력하세요"></textarea></div>
-                    <div class="wp-form-actions">
-                        <button class="wp-form-cancel" id="fcancel-expense">취소</button>
-                        <button class="wp-form-save"   id="fsave-expense">저장</button>
-                    </div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-expense">취소</button><button class="wp-form-save" id="fsave-expense">저장</button></div>
                 </div>
                 <div class="wp-groups" id="groups-expense"></div>
             </div>
             <div class="wp-section" id="sec-report">
-                <div class="wp-section-header">
-                    <div class="wp-section-label">보고 업무</div>
-                    <button class="wp-plus-btn" id="plus-report">+</button>
-                </div>
+                <div class="wp-section-header"><div class="wp-section-label">보고 업무</div><button class="wp-plus-btn" id="plus-report">+</button></div>
                 <div class="wp-add-form" id="form-report">
                     <div><label>대제목</label><input id="ftitle-report" placeholder="대제목을 입력하세요"></div>
                     <div><label>내용</label><textarea id="fbody-report" placeholder="내용을 입력하세요"></textarea></div>
-                    <div class="wp-form-actions">
-                        <button class="wp-form-cancel" id="fcancel-report">취소</button>
-                        <button class="wp-form-save"   id="fsave-report">저장</button>
-                    </div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-report">취소</button><button class="wp-form-save" id="fsave-report">저장</button></div>
                 </div>
                 <div class="wp-groups" id="groups-report"></div>
             </div>
         </div>
-
         <div class="todo-section side-panel hidden" id="todo-section">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
                 <h3 style="margin:0;">일정 상세</h3>
@@ -213,106 +329,273 @@
 </div>
 
 <script>
-/* ════════════════════════════════════════
-   ★ SUPABASE 설정 — 여기만 수정하세요
-════════════════════════════════════════ */
-var SUPABASE_URL  = 'https://ummlnvrqyotuguqhzfvw.supabase.co';   // ← Project URL
-var SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtbWxudnJxeW90dWd1cWh6ZnZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxMjEsImV4cCI6MjA4OTQ1NTEyMX0.AmgcLv1MZYHkjbSVbfVHRFqvZ-KUJkzFmyLqKsr04GM';                    // ← anon public key
-var PLANNER_KEY   = 'main';   // 단일 사용자: 고정값 사용
-/* ════════════════════════════════════════ */
+/* ════════════════════════════════════
+   Supabase 설정
+════════════════════════════════════ */
+var SUPABASE_URL = 'https://ummlnvrqyotuguqhzfvw.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtbWxudnJxeW90dWd1cWh6ZnZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxMjEsImV4cCI6MjA4OTQ1NTEyMX0.AmgcLv1MZYHkjbSVbfVHRFqvZ-KUJkzFmyLqKsr04GM';
+var ADMIN_ID    = 'admin'; // 고정 관리자 아이디
+var PLANNER_KEY = 'planner_'; // 사용자별 데이터 키 prefix
 
-var saveTimer = null;
+var currentUser = null;
+var saveTimer   = null;
 
+/* ── 해시 ── */
+function simpleHash(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+    return Math.abs(h).toString(36) + str.length.toString(36) + str.charCodeAt(0).toString(36);
+}
+
+/* ── 상태 표시 ── */
 function setSyncStatus(cls, text) {
     var el = document.getElementById('sync-indicator');
     el.className = cls; el.textContent = text;
 }
 
-/* ── Supabase REST API 호출 헬퍼 ── */
-function sbRequest(method, body, callback) {
-    var url = SUPABASE_URL + '/rest/v1/planner_data';
-    var headers = {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Prefer': method === 'POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal'
-    };
+/* ════════════════════════════════════
+   Supabase REST
+════════════════════════════════════ */
+function sbGet(table, key, callback) {
     var xhr = new XMLHttpRequest();
-    xhr.open(method === 'GET' ? 'GET' : 'POST', method === 'GET' ? url + '?key=eq.' + PLANNER_KEY + '&select=value' : url, true);
-    Object.keys(headers).forEach(function(k){ xhr.setRequestHeader(k, headers[k]); });
-    xhr.onload = function() {
-        if (xhr.status >= 200 && xhr.status < 300) {
-            try { callback(null, xhr.responseText ? JSON.parse(xhr.responseText) : null); }
-            catch(e) { callback(null, null); }
-        } else {
-            callback(new Error('HTTP ' + xhr.status + ': ' + xhr.responseText), null);
-        }
-    };
-    xhr.onerror = function() { callback(new Error('네트워크 오류'), null); };
-    xhr.send(body ? JSON.stringify(body) : null);
-}
-
-/* ── 데이터 불러오기 ── */
-function loadData(callback) {
-    setSyncStatus('saving', '● 불러오는 중...');
-    var url = SUPABASE_URL + '/rest/v1/planner_data?key=eq.' + PLANNER_KEY + '&select=value';
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
+    xhr.open('GET', SUPABASE_URL + '/rest/v1/' + table + '?key=eq.' + encodeURIComponent(key) + '&select=*', true);
     xhr.setRequestHeader('apikey', SUPABASE_KEY);
     xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
     xhr.onload = function() {
         if (xhr.status === 200) {
             var rows = JSON.parse(xhr.responseText);
-            setSyncStatus('saved', '● 저장됨');
-            callback(rows && rows.length ? rows[0].value : null);
-        } else {
-            setSyncStatus('error', '● 연결 실패');
-            console.error('불러오기 실패:', xhr.responseText);
-            callback(null);
-        }
+            callback(null, rows.length ? rows[0] : null);
+        } else callback(new Error(xhr.responseText), null);
     };
-    xhr.onerror = function() {
-        setSyncStatus('error', '● 연결 실패');
-        callback(null);
-    };
+    xhr.onerror = function() { callback(new Error('네트워크 오류'), null); };
     xhr.send();
 }
 
-/* ── 데이터 저장 (upsert) ── */
-function saveData() {
-    clearTimeout(saveTimer);
-    setSyncStatus('saving', '● 저장 중...');
-    saveTimer = setTimeout(function() {
-        var payload = [{
-            key: PLANNER_KEY,
-            value: { activeDate: activeDate, todos: todos, wpData: wpData },
-            updated_at: new Date().toISOString()
-        }];
-        var url = SUPABASE_URL + '/rest/v1/planner_data';
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', url, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('apikey', SUPABASE_KEY);
-        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-        xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=minimal');
-        xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                setSyncStatus('saved', '● 저장됨');
-            } else {
-                setSyncStatus('error', '● 저장 실패');
-                console.error('저장 실패:', xhr.responseText);
-            }
-        };
-        xhr.onerror = function() { setSyncStatus('error', '● 저장 실패'); };
-        xhr.send(JSON.stringify(payload));
-    }, 600);
+function sbGetAll(table, filter, callback) {
+    var url = SUPABASE_URL + '/rest/v1/' + table + (filter ? '?' + filter : '');
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.onload = function() {
+        if (xhr.status === 200) callback(null, JSON.parse(xhr.responseText));
+        else callback(new Error(xhr.responseText), []);
+    };
+    xhr.onerror = function() { callback(new Error('네트워크 오류'), []); };
+    xhr.send();
 }
 
-function saveAll() { saveData(); }
+function sbUpsert(table, data, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/rest/v1/' + table, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=minimal');
+    xhr.onload = function() { if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText)); };
+    xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
+    xhr.send(JSON.stringify(Array.isArray(data) ? data : [data]));
+}
 
-/* ════════════════════════════════════════
+function sbDelete(table, key, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', SUPABASE_URL + '/rest/v1/' + table + '?key=eq.' + encodeURIComponent(key), true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.onload = function() { if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText)); };
+    xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
+    xhr.send();
+}
+
+/* ════════════════════════════════════
+   계정 관련
+════════════════════════════════════ */
+function getAccount(id, callback) {
+    sbGet('planner_data', 'account_' + id, function(err, row) {
+        callback(err, row ? row.value : null);
+    });
+}
+
+function saveAccount(id, data, callback) {
+    sbUpsert('planner_data', { key: 'account_' + id, value: data, updated_at: new Date().toISOString() }, callback);
+}
+
+function getPendingRequests(callback) {
+    sbGetAll('account_requests', 'status=eq.pending&order=created_at.asc', callback);
+}
+
+function submitRequest(id, pw, callback) {
+    sbUpsert('account_requests', {
+        key: id, pw: simpleHash(pw), status: 'pending', created_at: new Date().toISOString()
+    }, callback);
+}
+
+function approveRequest(id, pw, callback) {
+    // 계정 생성
+    saveAccount(id, { id: id, pw: pw, role: 'user', createdAt: new Date().toISOString() }, function(err) {
+        if (err) { callback(err); return; }
+        // 요청 삭제
+        sbDelete('account_requests', id, callback);
+    });
+}
+
+function rejectRequest(id, callback) {
+    sbDelete('account_requests', id, callback);
+}
+
+/* ════════════════════════════════════
+   화면 전환
+════════════════════════════════════ */
+function showScreen(name) {
+    ['login-screen','signup-screen','setup-screen'].forEach(function(s){
+        document.getElementById(s).classList.add('hidden');
+    });
+    document.getElementById(name).classList.remove('hidden');
+}
+function hideAllScreens() {
+    ['login-screen','signup-screen','setup-screen'].forEach(function(s){
+        document.getElementById(s).classList.add('hidden');
+    });
+}
+
+/* ════════════════════════════════════
+   관리자 알림
+════════════════════════════════════ */
+var notifyTimer = null;
+function checkPendingRequests() {
+    if (!currentUser || currentUser.id !== ADMIN_ID) return;
+    getPendingRequests(function(err, rows) {
+        if (err || !rows) return;
+        var badge = document.getElementById('notify-badge');
+        if (rows.length > 0) {
+            badge.textContent = rows.length;
+            badge.classList.add('visible');
+        } else {
+            badge.classList.remove('visible');
+        }
+    });
+}
+
+/* ── 계정 목록 조회 ── */
+function getAllAccounts(callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', SUPABASE_URL + '/rest/v1/planner_data?key=like.account_' + encodeURIComponent('%') + '&select=key,value', true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.onload = function() {
+        if (xhr.status === 200) callback(null, JSON.parse(xhr.responseText));
+        else callback(new Error(xhr.responseText), []);
+    };
+    xhr.onerror = function() { callback(new Error('네트워크 오류'), []); };
+    xhr.send();
+}
+
+function deleteAccount(id, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', SUPABASE_URL + '/rest/v1/planner_data?key=eq.' + encodeURIComponent('account_' + id), true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.onload = function() { if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText)); };
+    xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
+    xhr.send();
+}
+
+function renderAccountList() {
+    var list = document.getElementById('account-list');
+    list.innerHTML = '<div style="padding:14px;font-size:11px;color:#94a3b8;">불러오는 중...</div>';
+    getAllAccounts(function(err, rows) {
+        list.innerHTML = '';
+        if (err || !rows || rows.length === 0) {
+            list.innerHTML = '<div id="account-empty">계정이 없습니다.</div>'; return;
+        }
+        rows.forEach(function(row) {
+            var id = row.key.replace('account_', '');
+            var role = (row.value && row.value.role) || 'user';
+            var isAdmin = id === ADMIN_ID;
+            var item = document.createElement('div');
+            item.className = 'acc-item';
+            item.innerHTML =
+                '<div class="acc-info">' +
+                '<div class="acc-id">' + (isAdmin ? '👑 ' : '👤 ') + id + '</div>' +
+                '<div class="acc-role">' + (isAdmin ? '관리자' : '일반 사용자') + '</div>' +
+                '</div>' +
+                (!isAdmin ? '<button class="acc-del" data-id="' + id + '">삭제</button>' : '<span style="font-size:11px;color:#c0c8d4;">삭제 불가</span>');
+            list.appendChild(item);
+        });
+        list.querySelectorAll('.acc-del').forEach(function(btn) {
+            btn.onclick = function() {
+                var id = this.getAttribute('data-id');
+                if (!confirm('[' + id + '] 계정을 삭제하시겠습니까? 해당 계정의 모든 데이터도 함께 삭제됩니다.')) return;
+                btn.disabled = true; btn.textContent = '삭제 중...';
+                deleteAccount(id, function(err) {
+                    if (err) { alert('삭제 실패: ' + err.message); btn.disabled=false; btn.textContent='삭제'; return; }
+                    // 해당 사용자 데이터도 삭제
+                    sbDelete('planner_data', PLANNER_KEY + id, function() {
+                        renderAccountList();
+                        alert('✅ [' + id + '] 계정이 삭제되었습니다.');
+                    });
+                });
+            };
+        });
+    });
+}
+
+function renderRequestPanel() {
+    getPendingRequests(function(err, rows) {
+        var list = document.getElementById('request-list');
+        list.innerHTML = '';
+        var countEl = document.getElementById('req-count');
+        if (rows && rows.length > 0) countEl.textContent = '(' + rows.length + ')';
+        else countEl.textContent = '';
+        if (err || !rows || rows.length === 0) {
+            list.innerHTML = '<div id="request-empty">대기 중인 요청이 없습니다.</div>';
+            return;
+        }
+        rows.forEach(function(row) {
+            var item = document.createElement('div');
+            item.className = 'req-item';
+            var dt = new Date(row.created_at);
+            var timeStr = (dt.getMonth()+1) + '/' + dt.getDate() + ' ' + dt.getHours() + ':' + ('0'+dt.getMinutes()).slice(-2);
+            item.innerHTML =
+                '<div><div class="req-id">👤 ' + row.key + '</div><div class="req-time">' + timeStr + '</div></div>' +
+                '<div class="req-actions">' +
+                '<button class="req-approve" data-id="' + row.key + '" data-pw="' + row.pw + '">승인</button>' +
+                '<button class="req-reject" data-id="' + row.key + '">거절</button>' +
+                '</div>';
+            list.appendChild(item);
+        });
+        // 승인 버튼
+        list.querySelectorAll('.req-approve').forEach(function(btn) {
+            btn.onclick = function() {
+                var id = this.getAttribute('data-id');
+                var pw = this.getAttribute('data-pw');
+                btn.disabled = true; btn.textContent = '처리 중...';
+                approveRequest(id, pw, function(err) {
+                    if (err) { alert('승인 실패: ' + err.message); btn.disabled=false; btn.textContent='승인'; return; }
+                    renderRequestPanel();
+                    checkPendingRequests();
+                    alert('✅ ' + id + ' 계정이 승인되었습니다.');
+                });
+            };
+        });
+        // 거절 버튼
+        list.querySelectorAll('.req-reject').forEach(function(btn) {
+            btn.onclick = function() {
+                var id = this.getAttribute('data-id');
+                if (!confirm(id + ' 요청을 거절하시겠습니까?')) return;
+                rejectRequest(id, function(err) {
+                    if (err) { alert('처리 실패: ' + err.message); return; }
+                    renderRequestPanel();
+                    checkPendingRequests();
+                });
+            };
+        });
+    });
+}
+
+/* ════════════════════════════════════
    앱 상태
-════════════════════════════════════════ */
+════════════════════════════════════ */
 var activeDate = '';
 var todos  = {};
 var wpData = { routine: [], expense: [], report: [] };
@@ -351,9 +634,37 @@ var holidays = {
     '2030-09-13':'추석 연휴','2030-10-03':'개천절','2030-10-09':'한글날','2030-12-25':'성탄절'
 };
 
-/* ════════════════════════════════════════
+/* ════════════════════════════════════
+   데이터 저장/로드 (사용자별)
+════════════════════════════════════ */
+function getUserDataKey() { return PLANNER_KEY + currentUser.id; }
+
+function loadData(callback) {
+    setSyncStatus('saving', '● 불러오는 중...');
+    sbGet('planner_data', getUserDataKey(), function(err, row) {
+        setSyncStatus(err ? 'error' : 'saved', err ? '● 연결 실패' : '● 저장됨');
+        callback(row ? row.value : null);
+    });
+}
+
+function saveData() {
+    clearTimeout(saveTimer);
+    setSyncStatus('saving', '● 저장 중...');
+    saveTimer = setTimeout(function() {
+        sbUpsert('planner_data', {
+            key: getUserDataKey(),
+            value: { activeDate: activeDate, todos: todos, wpData: wpData },
+            updated_at: new Date().toISOString()
+        }, function(err) {
+            setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
+        });
+    }, 600);
+}
+function saveAll() { saveData(); }
+
+/* ════════════════════════════════════
    섹션 렌더
-════════════════════════════════════════ */
+════════════════════════════════════ */
 function renderSection(key) {
     var container = document.getElementById('groups-' + key);
     container.innerHTML = '';
@@ -366,7 +677,7 @@ function renderSection(key) {
         var gDiv = document.createElement('div'); gDiv.className = 'wp-group';
         var hdr  = document.createElement('div'); hdr.className = 'wp-group-header';
         var tog  = document.createElement('span'); tog.className = 'wp-group-toggle'; tog.textContent = g.open !== false ? '▼' : '▶';
-        var ttl  = document.createElement('span'); ttl.className = 'wp-group-title';  ttl.textContent = g.title;
+        var ttl  = document.createElement('span'); ttl.className = 'wp-group-title'; ttl.textContent = g.title;
         var editBtn = document.createElement('button'); editBtn.className = 'wp-group-edit-btn'; editBtn.innerHTML = '✏️';
         var delBtn  = document.createElement('button'); delBtn.className  = 'wp-group-del-btn';  delBtn.innerHTML  = '✕';
         (function(k, idx) {
@@ -381,29 +692,24 @@ function renderSection(key) {
         })(key, gi);
         hdr.appendChild(tog); hdr.appendChild(ttl); hdr.appendChild(editBtn); hdr.appendChild(delBtn);
         gDiv.appendChild(hdr);
-
         var ef = document.createElement('div'); ef.className = 'wp-edit-form';
-        ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div>' +
-            '<div><label>내용</label><textarea class="wp-ei-body"></textarea></div>' +
-            '<div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
+        ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div><div><label>내용</label><textarea class="wp-ei-body"></textarea></div><div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
         (function(k, idx) {
             ef.querySelector('.wp-edit-cancel').onclick = function() { ef.classList.remove('visible'); };
             ef.querySelector('.wp-edit-save').onclick = function() {
                 var nt=ef.querySelector('.wp-ei-title').value.trim(), nb=ef.querySelector('.wp-ei-body').value.trim();
                 if(!nt){ ef.querySelector('.wp-ei-title').focus(); return; }
-                wpData[k][idx].title=nt; wpData[k][idx].body=nb; wpData[k][idx].checked={};
-                saveAll(); renderSection(k);
+                wpData[k][idx].title=nt; wpData[k][idx].body=nb; wpData[k][idx].checked={}; saveAll(); renderSection(k);
             };
             ef.querySelector('.wp-ei-body').addEventListener('keydown', function(ev){ if(ev.key==='Enter'&&ev.ctrlKey) ef.querySelector('.wp-edit-save').click(); });
         })(key, gi);
         gDiv.appendChild(ef);
-
         if (g.open !== false) {
             var ul = document.createElement('ul'); ul.className = 'wp-item-list';
             var lines = (g.body||'').split('\n').filter(function(l){ return l.trim(); });
             lines.forEach(function(line, li) {
                 var item = document.createElement('li'); item.className = 'wp-item';
-                var cb   = document.createElement('input'); cb.type='checkbox'; cb.checked=!!(g.checked&&g.checked[li]);
+                var cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!(g.checked&&g.checked[li]);
                 var span = document.createElement('span'); span.className='wp-item-text'+(cb.checked?' done':''); span.textContent=line;
                 var idel = document.createElement('button'); idel.className='wp-item-del'; idel.innerHTML='✕';
                 (function(k, idx, capturedLi) {
@@ -429,13 +735,11 @@ function closeForm(key){ document.getElementById('form-'+key).classList.remove('
 function saveForm(key){
     var title=document.getElementById('ftitle-'+key).value.trim(), body=document.getElementById('fbody-'+key).value.trim();
     if(!title){ document.getElementById('ftitle-'+key).focus(); return; }
-    wpData[key].push({title:title,body:body,open:true,checked:{}});
-    saveAll(); renderSection(key); closeForm(key);
+    wpData[key].push({title:title,body:body,open:true,checked:{}}); saveAll(); renderSection(key); closeForm(key);
 }
 function showRoutine(){ document.getElementById('routine-panel').classList.remove('hidden'); document.getElementById('todo-section').classList.add('hidden'); }
 function showTodo()   { document.getElementById('routine-panel').classList.add('hidden');    document.getElementById('todo-section').classList.remove('hidden'); }
 
-/* ── 캘린더 유틸 ── */
 function applyCellSquare(){
     var calEl=document.getElementById('calendar'); if(!calEl) return;
     var toolbar=calEl.querySelector('.fc-header-toolbar'), colHeader=calEl.querySelector('.fc-col-header');
@@ -456,7 +760,7 @@ function renderCellTodos(dateStr){
     var items=todos[dateStr]||[]; if(!items.length) return;
     var frame=cell.querySelector('.fc-daygrid-day-frame');
     var wrap=document.createElement('div'); wrap.className='cell-todos';
-    wrap.style.gap = (MAX_VISIBLE<=5?'7px':'4px');
+    wrap.style.gap=(MAX_VISIBLE<=5?'7px':'4px');
     items.slice(0,MAX_VISIBLE).forEach(function(t,idx){
         var tag=document.createElement('div'); tag.className='cell-todo-item cell-todo-c'+(idx%2);
         tag.title=t.text; tag.textContent=t.text; wrap.appendChild(tag);
@@ -466,29 +770,7 @@ function renderCellTodos(dateStr){
     if(extra>0){ var more=document.createElement('div'); more.className='cell-todo-more'; more.textContent='+'+extra; frame.appendChild(more); }
 }
 function renderAllCellTodos(){ Object.keys(todos).forEach(renderCellTodos); }
-function refreshCalendar(){
-    setTimeout(function(){
-        calendar.updateSize();
-        setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); },100);
-    },50);
-}
-
-/* ── 상태 전체 적용 ── */
-function applyState() {
-    ['routine','expense','report'].forEach(function(k){ renderSection(k); });
-    document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
-    document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-    if (activeDate) {
-        showTodo(); updateDisplay(activeDate);
-        var vBox = document.querySelector('.fc-daygrid-day[data-date="'+activeDate+'"] .v-box');
-        if (vBox) vBox.classList.add('is-checked');
-    } else {
-        showRoutine();
-        document.getElementById('selected-date-display').innerText = '날짜를 선택하세요';
-        document.getElementById('todo-list').innerHTML = '';
-    }
-    refreshCalendar();
-}
+function refreshCalendar(){ setTimeout(function(){ calendar.updateSize(); setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); },100); },50); }
 
 function updateDisplay(dateStr, el) {
     document.getElementById('selected-date-display').innerText = dateStr;
@@ -510,68 +792,235 @@ window.removeItem = function(date,i){
     saveAll(); renderList(date); renderCellTodos(date);
 };
 
-/* ════════════════════════════════════════
+/* ════════════════════════════════════
    DOMContentLoaded
-════════════════════════════════════════ */
+════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
 
-    /* Supabase에서 데이터 불러온 후 앱 시작 */
-    loadData(function(saved) {
-        if (saved) {
-            activeDate = saved.activeDate || '';
-            todos      = saved.todos      || {};
-            wpData     = saved.wpData     || { routine:[], expense:[], report:[] };
+    /* ── 로그인 화면 ── */
+    function doLogin() {
+        var id  = document.getElementById('login-id').value.trim();
+        var pw  = document.getElementById('login-pw').value;
+        var err = document.getElementById('login-error');
+        if (!id || !pw) { err.textContent='아이디와 비밀번호를 입력하세요.'; return; }
+        var btn = document.getElementById('login-btn');
+        btn.disabled=true; btn.textContent='확인 중...'; err.textContent='';
+        getAccount(id, function(accErr, acc) {
+            if (accErr || !acc) {
+                err.textContent='아이디 또는 비밀번호가 틀렸습니다.';
+                btn.disabled=false; btn.textContent='로그인'; return;
+            }
+            if (acc.pw !== simpleHash(pw)) {
+                err.textContent='아이디 또는 비밀번호가 틀렸습니다.';
+                btn.disabled=false; btn.textContent='로그인'; return;
+            }
+            currentUser = acc;
+            sessionStorage.setItem('planner_user', JSON.stringify(acc));
+            hideAllScreens();
+            enterApp();
+        });
+    }
+    document.getElementById('login-btn').onclick = doLogin;
+    document.getElementById('login-pw').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+    document.getElementById('login-id').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('login-pw').focus(); });
+    document.getElementById('goto-signup-btn').onclick = function() { showScreen('signup-screen'); };
+
+    /* ── 계정 생성 요청 화면 ── */
+    document.getElementById('signup-pw2').addEventListener('input', function() {
+        var pw=document.getElementById('signup-pw').value, pw2=this.value;
+        var hint=document.getElementById('signup-pw-hint');
+        if (!pw2) { hint.textContent=''; return; }
+        if (pw===pw2) { hint.textContent='✓ 일치'; hint.className='pw-hint ok'; }
+        else          { hint.textContent='✗ 불일치'; hint.className='pw-hint ng'; }
+    });
+    document.getElementById('signup-btn').onclick = function() {
+        var id=document.getElementById('signup-id').value.trim();
+        var pw=document.getElementById('signup-pw').value;
+        var pw2=document.getElementById('signup-pw2').value;
+        var err=document.getElementById('signup-error');
+        if (!id||id.length<2) { err.textContent='아이디는 2자 이상이어야 합니다.'; return; }
+        if (id===ADMIN_ID) { err.textContent='사용할 수 없는 아이디입니다.'; return; }
+        if (!pw||pw.length<4) { err.textContent='비밀번호는 4자 이상이어야 합니다.'; return; }
+        if (pw!==pw2) { err.textContent='비밀번호가 일치하지 않습니다.'; return; }
+        var btn=document.getElementById('signup-btn');
+        btn.disabled=true; btn.textContent='전송 중...'; err.textContent='';
+        // 이미 계정이 있는지 확인
+        getAccount(id, function(accErr, acc) {
+            if (acc) { err.textContent='이미 존재하는 아이디입니다.'; btn.disabled=false; btn.textContent='요청 보내기'; return; }
+            submitRequest(id, pw, function(e) {
+                if (e) { err.textContent='전송 실패: '+e.message; btn.disabled=false; btn.textContent='요청 보내기'; return; }
+                document.getElementById('signup-success').style.display='block';
+                btn.style.display='none';
+            });
+        });
+    };
+    document.getElementById('goto-login-btn').onclick = function() {
+        showScreen('login-screen');
+        document.getElementById('signup-success').style.display='none';
+        document.getElementById('signup-btn').style.display='';
+        document.getElementById('signup-btn').disabled=false;
+        document.getElementById('signup-btn').textContent='요청 보내기';
+        document.getElementById('signup-id').value='';
+        document.getElementById('signup-pw').value='';
+        document.getElementById('signup-pw2').value='';
+        document.getElementById('signup-error').textContent='';
+    };
+
+    /* ── 관리자 초기 설정 화면 ── */
+    document.getElementById('setup-pw2').addEventListener('input', function() {
+        var pw=document.getElementById('setup-pw').value, pw2=this.value;
+        var hint=document.getElementById('setup-pw-hint');
+        if (!pw2) { hint.textContent=''; return; }
+        if (pw===pw2) { hint.textContent='✓ 일치'; hint.className='pw-hint ok'; }
+        else          { hint.textContent='✗ 불일치'; hint.className='pw-hint ng'; }
+    });
+    document.getElementById('setup-btn').onclick = function() {
+        var pw=document.getElementById('setup-pw').value;
+        var pw2=document.getElementById('setup-pw2').value;
+        var err=document.getElementById('setup-error');
+        if (!pw||pw.length<4) { err.textContent='비밀번호는 4자 이상이어야 합니다.'; return; }
+        if (pw!==pw2) { err.textContent='비밀번호가 일치하지 않습니다.'; return; }
+        var btn=document.getElementById('setup-btn');
+        btn.disabled=true; btn.textContent='생성 중...';
+        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), role:'admin', createdAt:new Date().toISOString() }, function(e) {
+            if (e) { err.textContent='저장 실패: '+e.message; btn.disabled=false; btn.textContent='관리자 계정 생성'; return; }
+            currentUser = { id:ADMIN_ID, role:'admin' };
+            sessionStorage.setItem('planner_user', JSON.stringify(currentUser));
+            hideAllScreens();
+            enterApp();
+        });
+    };
+
+    /* ── 로그아웃 ── */
+    document.getElementById('logout-btn').onclick = function() {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            sessionStorage.removeItem('planner_user');
+            location.reload();
         }
-        startApp();
+    };
+
+    /* ── 알림 버튼 ── */
+    document.getElementById('notify-btn').onclick = function(e) {
+        e.stopPropagation();
+        var panel = document.getElementById('admin-panel');
+        if (panel.classList.contains('visible')) {
+            panel.classList.remove('visible');
+        } else {
+            renderRequestPanel();
+            panel.classList.add('visible');
+        }
+    };
+    document.getElementById('admin-panel-close').onclick = function() {
+        document.getElementById('admin-panel').classList.remove('visible');
+    };
+    document.addEventListener('click', function(e) {
+        var panel = document.getElementById('admin-panel');
+        var btn   = document.getElementById('notify-btn');
+        if (!panel.contains(e.target) && e.target !== btn) {
+            panel.classList.remove('visible');
+        }
     });
 
-    function startApp() {
-        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-            initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
-            headerToolbar:{ left:'title', center:'', right:'today prev,next' },
-            dayCellDidMount: function(arg) {
-                var topEl=arg.el.querySelector('.fc-daygrid-day-top');
-                var vBox=document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
-                if(activeDate===arg.dateStr) vBox.classList.add('is-checked');
-                topEl.prepend(vBox);
-                if(holidays[arg.dateStr]){ var lbl=document.createElement('span'); lbl.className='holiday-label'; lbl.innerText=holidays[arg.dateStr]; topEl.appendChild(lbl); }
-            },
-            datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); },50); },
-            dateClick: function(info) {
-                document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
-                if(activeDate===info.dateStr){
-                    activeDate=''; saveAll(); MAX_VISIBLE=6; showRoutine(); refreshCalendar();
-                } else {
-                    activeDate=info.dateStr; saveAll();
-                    var vBox=info.dayEl.querySelector('.v-box'); if(vBox) vBox.classList.add('is-checked');
-                    MAX_VISIBLE=5; showTodo(); refreshCalendar(); updateDisplay(info.dateStr,info.dayEl);
-                }
-            }
-        });
-        calendar.render();
-        window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
-
-        ['routine','expense','report'].forEach(function(key) {
-            renderSection(key);
-            document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
-            document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
-            document.getElementById('fsave-'+key).onclick   = function(){ saveForm(key); };
-            document.getElementById('fbody-'+key).addEventListener('keydown', function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
-        });
-
-        if (activeDate) { showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
-
-        document.getElementById('close-todo-btn').onclick = function() {
-            document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
-            activeDate=''; saveAll(); MAX_VISIBLE=6;
-            document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
-            document.getElementById('todo-list').innerHTML='';
-            document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-            showRoutine(); refreshCalendar();
+    /* 탭 전환 */
+    document.querySelectorAll('.admin-tab').forEach(function(tab) {
+        tab.onclick = function() {
+            document.querySelectorAll('.admin-tab').forEach(function(t){ t.classList.remove('active'); });
+            document.querySelectorAll('.admin-tab-pane').forEach(function(p){ p.classList.remove('active'); });
+            this.classList.add('active');
+            var pane = document.getElementById('tab-' + this.getAttribute('data-tab'));
+            pane.classList.add('active');
+            if (this.getAttribute('data-tab') === 'accounts') renderAccountList();
+            if (this.getAttribute('data-tab') === 'requests') renderRequestPanel();
         };
+    });
 
-        document.getElementById('add-btn').onclick = addTodo;
-        document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
+    /* ── 세션 복원 or 최초 진입 ── */
+    var savedUser = sessionStorage.getItem('planner_user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        hideAllScreens();
+        enterApp();
+    } else {
+        // 관리자 계정 존재 여부 확인
+        getAccount(ADMIN_ID, function(err, acc) {
+            if (acc) showScreen('login-screen');
+            else     showScreen('setup-screen');
+        });
+    }
+
+    /* ── 앱 진입 ── */
+    function enterApp() {
+        // 상단바 사용자 표시
+        document.getElementById('user-label').textContent =
+            (currentUser.role === 'admin' ? '👑 ' : '👤 ') + currentUser.id;
+
+        // 관리자만 알림 버튼 표시
+        document.getElementById('notify-btn').style.display =
+            currentUser.id === ADMIN_ID ? 'inline-block' : 'none';
+
+        // 관리자 주기적 알림 체크 (30초)
+        if (currentUser.id === ADMIN_ID) {
+            checkPendingRequests();
+            notifyTimer = setInterval(checkPendingRequests, 30000);
+        }
+
+        loadData(function(saved) {
+            if (saved) {
+                activeDate = saved.activeDate || '';
+                todos      = saved.todos      || {};
+                wpData     = saved.wpData     || { routine:[], expense:[], report:[] };
+            }
+            startApp();
+        });
+    }
+
+    function startApp() {
+        if (!calendar) {
+            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
+                headerToolbar:{ left:'title', center:'', right:'today prev,next' },
+                dayCellDidMount: function(arg) {
+                    var topEl=arg.el.querySelector('.fc-daygrid-day-top');
+                    var vBox=document.createElement('div'); vBox.className='v-box'; vBox.innerHTML=vIconSvg;
+                    if(activeDate===arg.dateStr) vBox.classList.add('is-checked');
+                    topEl.prepend(vBox);
+                    if(holidays[arg.dateStr]){ var lbl=document.createElement('span'); lbl.className='holiday-label'; lbl.innerText=holidays[arg.dateStr]; topEl.appendChild(lbl); }
+                },
+                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); },50); },
+                dateClick: function(info) {
+                    document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+                    if(activeDate===info.dateStr){
+                        activeDate=''; saveAll(); MAX_VISIBLE=6; showRoutine(); refreshCalendar();
+                    } else {
+                        activeDate=info.dateStr; saveAll();
+                        var vBox=info.dayEl.querySelector('.v-box'); if(vBox) vBox.classList.add('is-checked');
+                        MAX_VISIBLE=5; showTodo(); refreshCalendar(); updateDisplay(info.dateStr,info.dayEl);
+                    }
+                }
+            });
+            calendar.render();
+            window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
+            ['routine','expense','report'].forEach(function(key) {
+                document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
+                document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
+                document.getElementById('fsave-'+key).onclick   = function(){ saveForm(key); };
+                document.getElementById('fbody-'+key).addEventListener('keydown', function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
+            });
+            document.getElementById('close-todo-btn').onclick = function() {
+                document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+                activeDate=''; saveAll(); MAX_VISIBLE=6;
+                document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
+                document.getElementById('todo-list').innerHTML='';
+                document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
+                showRoutine(); refreshCalendar();
+            };
+            document.getElementById('add-btn').onclick = addTodo;
+            document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
+        }
+        ['routine','expense','report'].forEach(function(k){ renderSection(k); });
+        if (activeDate) { showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
+        refreshCalendar();
+
         function addTodo() {
             var input=document.getElementById('todo-input');
             var date=document.getElementById('selected-date-display').innerText;
