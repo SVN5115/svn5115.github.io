@@ -230,6 +230,34 @@
         .meeting-edit-btn { padding: 3px 10px; background: #eab308; color: white; border: none; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
         .meeting-del-btn  { padding: 3px 10px; background: none; border: 1px solid #fca5a5; color: #ef4444; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
 
+        /* ── 지출/보고 상세 팝업 ── */
+        #expense-report-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:7999; }
+        #expense-report-overlay.visible { display:block; }
+        #expense-report-popup {
+            display:none; position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            background:white; border-radius:14px; padding:24px;
+            width:400px; max-width:95vw; max-height:80vh;
+            box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:8000;
+            display:none; flex-direction:column;
+        }
+        #expense-report-popup.visible { display:flex; }
+        .er-popup-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-shrink:0; }
+        .er-popup-header h3 { margin:0; font-size:15px; color:#1e293b; }
+        .er-popup-close { background:none; border:none; font-size:18px; cursor:pointer; color:#888; }
+        .er-popup-date { font-size:12px; color:#64748b; margin-bottom:12px; flex-shrink:0; }
+        .er-group-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:12px; }
+        .er-group { border-radius:10px; padding:12px 14px; }
+        .er-group.expense { background:#f5f3ff; border:1px solid #ddd6fe; }
+        .er-group.report  { background:#fdf8ee; border:1px solid #fde68a; }
+        .er-group-title { font-size:13px; font-weight:bold; color:#1e293b; margin-bottom:8px; }
+        .er-item { display:flex; align-items:flex-start; gap:8px; padding:5px 0; border-bottom:1px solid rgba(0,0,0,0.05); }
+        .er-item:last-child { border-bottom:none; }
+        .er-item-cb { width:13px; height:13px; flex-shrink:0; margin-top:2px; }
+        .er-item-text { font-size:12px; color:#374151; line-height:1.5; white-space:pre-wrap; flex:1; }
+        .er-item-text.done { text-decoration:line-through; color:#9ca3af; }
+        .er-empty { font-size:12px; color:#94a3b8; text-align:center; padding:16px 0; }
+
         /* ── 달력 셀 지출 마커 ── */
         .expense-markers { position: absolute; top: 4px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .expense-tag { background: #ede9fe; color: #6d28d9; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
@@ -334,6 +362,17 @@
         <button id="setup-btn" class="auth-btn green">관리자 계정 생성</button>
         <div class="auth-hint" style="font-size:11px;color:#94a3b8;text-align:center;margin-top:12px;">관리자 아이디: <b>admin</b> (고정)</div>
     </div>
+</div>
+
+<!-- 지출/보고 상세 팝업 -->
+<div id="expense-report-overlay"></div>
+<div id="expense-report-popup">
+    <div class="er-popup-header">
+        <h3 id="er-popup-title">📋 상세 내용</h3>
+        <button type="button" class="er-popup-close" id="er-popup-close">&#x2715;</button>
+    </div>
+    <div id="er-popup-date" class="er-popup-date"></div>
+    <div id="er-group-list" class="er-group-list"></div>
 </div>
 
 <!-- 회의 오버레이 -->
@@ -824,7 +863,6 @@ function saveData() {
             setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
             renderExpenseMarkers();
             renderMeetingMarkers();
-            renderReportMarkers();
         });
     }, 600);
 }
@@ -952,14 +990,14 @@ function renderReportMarkers() {
         var dateStr = cell.getAttribute('data-date');
         if (!dateStr) return;
         var day = parseInt(dateStr.split('-')[2]);
+        var mmdd = dateStr.slice(5);
         var tags = [];
+        var seen = {};
         reportGroups.forEach(function(g) {
             if (!g.dates) return;
             g.dates.forEach(function(d) {
-                var match = d.repeat === 'monthly' ? (d.day === day) : (d.specificDate === dateStr);
-                if (match) {
-                    tags.push({ title: g.title, label: '보고' });
-                }
+                var match = d.repeat === 'monthly' ? (d.day === day) : (d.specificMMDD === mmdd);
+                if (match && !seen['보고']) { seen['보고'] = true; tags.push({ title: g.title, label: '보고' }); }
             });
         });
         if (tags.length === 0) return;
@@ -972,6 +1010,8 @@ function renderReportMarkers() {
             tag.className = 'report-tag';
             tag.title = t.title;
             tag.textContent = t.label;
+            tag.style.cursor = 'pointer';
+            (function(ds){ tag.onclick = function(e){ e.stopPropagation(); openERPopup('report', ds); }; })(dateStr);
             wrap.appendChild(tag);
         });
         frame.appendChild(wrap);
@@ -1010,7 +1050,10 @@ function renderExpenseMarkers() {
             expWrap.className = 'expense-markers';
             expTags.forEach(function(t) {
                 var tag = document.createElement('div'); tag.className = 'expense-tag';
-                tag.title = t.title; tag.textContent = t.label; expWrap.appendChild(tag);
+                tag.title = t.title; tag.textContent = t.label;
+                tag.style.cursor = 'pointer';
+                (function(ds){ tag.onclick = function(e){ e.stopPropagation(); openERPopup('expense', ds); }; })(dateStr);
+                expWrap.appendChild(tag);
             });
             frame.appendChild(expWrap);
         }
@@ -1036,7 +1079,10 @@ function renderExpenseMarkers() {
             repWrap.style.top = (4 + (expTags.length > 0 ? 18 : 0)) + 'px';
             repTags.forEach(function(t) {
                 var tag = document.createElement('div'); tag.className = 'report-tag';
-                tag.title = t.title; tag.textContent = t.label; repWrap.appendChild(tag);
+                tag.title = t.title; tag.textContent = t.label;
+                tag.style.cursor = 'pointer';
+                (function(ds){ tag.onclick = function(e){ e.stopPropagation(); openERPopup('report', ds); }; })(dateStr);
+                repWrap.appendChild(tag);
             });
             frame.appendChild(repWrap);
         }
@@ -1243,6 +1289,103 @@ function loadBodyLines(key, body) {
     });
 }
 
+/* ════════════════════════════════════
+   지출/보고 상세 팝업
+════════════════════════════════════ */
+function openERPopup(type, dateStr) {
+    currentERType = type;
+    currentERDate = dateStr;
+    var day = parseInt(dateStr.split('-')[2]);
+    var mmdd = dateStr.slice(5);
+    var groups = (wpData[type] || []).filter(function(g) {
+        if (!g.dates || !g.dates.length) return false;
+        return g.dates.some(function(d) {
+            return d.repeat === 'monthly' ? d.day === day : d.specificMMDD === mmdd;
+        });
+    });
+
+    var title = type === 'expense' ? '💰 지출 업무' : '📋 보고 업무';
+    var parts = dateStr.split('-');
+    var dateLabel = parts[0] + '년 ' + parseInt(parts[1]) + '월 ' + parseInt(parts[2]) + '일';
+
+    document.getElementById('er-popup-title').textContent = title;
+    document.getElementById('er-popup-date').textContent = dateLabel;
+
+    var listEl = document.getElementById('er-group-list');
+    listEl.innerHTML = '';
+
+    if (groups.length === 0) {
+        listEl.innerHTML = '<div class="er-empty">해당 날짜에 등록된 내용이 없습니다.</div>';
+    } else {
+        groups.forEach(function(g, gi) {
+            var gIdx = wpData[type].indexOf(g);
+            var div = document.createElement('div');
+            div.className = 'er-group ' + type;
+
+            var titleEl = document.createElement('div');
+            titleEl.className = 'er-group-title';
+            titleEl.textContent = g.title;
+            div.appendChild(titleEl);
+
+            var items = g.items;
+            if (!items || !items.length) {
+                var b = (g.body||'').trim();
+                items = b ? [b] : [];
+            }
+
+            if (items.length === 0) {
+                var empty = document.createElement('div');
+                empty.style.cssText = 'font-size:12px;color:#94a3b8;';
+                empty.textContent = '등록된 내용이 없습니다.';
+                div.appendChild(empty);
+            } else {
+                items.forEach(function(itemText, li) {
+                    var row = document.createElement('div');
+                    row.className = 'er-item';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.className = 'er-item-cb';
+                    cb.checked = !!(g.checked && g.checked[li]);
+                    var span = document.createElement('span');
+                    span.className = 'er-item-text' + (cb.checked ? ' done' : '');
+                    span.textContent = itemText;
+                    (function(t, gI, captLi, sp) {
+                        cb.onchange = function() {
+                            if (!wpData[t][gI].checked) wpData[t][gI].checked = {};
+                            wpData[t][gI].checked[captLi] = cb.checked;
+                            sp.className = 'er-item-text' + (cb.checked ? ' done' : '');
+                            saveAll();
+                            // 섹션 패널도 동기화
+                            renderSection(t);
+                        };
+                    })(type, gIdx, li, span);
+                    row.appendChild(cb); row.appendChild(span);
+                    div.appendChild(row);
+                });
+            }
+            listEl.appendChild(div);
+        });
+    }
+
+    document.getElementById('expense-report-overlay').classList.add('visible');
+    document.getElementById('expense-report-popup').classList.add('visible');
+}
+
+var currentERType = null;
+var currentERDate = null;
+
+function refreshERPopup() {
+    if (currentERType && currentERDate) {
+        openERPopup(currentERType, currentERDate);
+    }
+}
+
+function closeERPopup() {
+    document.getElementById('expense-report-overlay').classList.remove('visible');
+    document.getElementById('expense-report-popup').classList.remove('visible');
+    currentERType = null;
+    currentERDate = null;
+}
+
 function saveAll() { saveData(); }
 
 /* ════════════════════════════════════
@@ -1387,6 +1530,11 @@ function renderSection(key) {
                         if(!wpData[k][idx].checked) wpData[k][idx].checked={};
                         wpData[k][idx].checked[capturedLi]=cb.checked;
                         saveAll(); renderSection(k);
+                        // 팝업이 열려있으면 동기화
+                        var popup = document.getElementById('expense-report-popup');
+                        if (popup && popup.classList.contains('visible')) {
+                            refreshERPopup();
+                        }
                     };
                     idel.onclick = function() {
                         var its = wpData[k][idx].items || [];
@@ -1667,6 +1815,10 @@ document.addEventListener('DOMContentLoaded', function() {
         addReportDateRow('', '', 'monthly');
     };
 
+    /* 지출/보고 팝업 닫기 */
+    document.getElementById('er-popup-close').onclick = closeERPopup;
+    document.getElementById('expense-report-overlay').onclick = closeERPopup;
+
     /* 회의 팝업 이벤트 */
     document.getElementById('meeting-close-btn').onclick  = closeMeetingPopup;
     document.getElementById('meeting-cancel-btn').onclick = closeMeetingPopup;
@@ -1761,8 +1913,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     topEl.prepend(vBox);
     
                 },
-                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); renderReportMarkers(); renderMeetingMarkers(); },50); },
+                datesSet: function(){ setTimeout(function(){ applyCellSquare(); applyHolidayColors(); renderAllCellTodos(); renderExpenseMarkers(); renderMeetingMarkers(); },50); },
                 dateClick: function(info) {
+                    // 뱃지 클릭 시 무시
+                    var clickedEl = info.jsEvent && info.jsEvent.target;
+                    if (clickedEl && (
+                        clickedEl.classList.contains('expense-tag') ||
+                        clickedEl.classList.contains('report-tag') ||
+                        clickedEl.classList.contains('meeting-tag') ||
+                        clickedEl.closest('.expense-markers') ||
+                        clickedEl.closest('.report-markers') ||
+                        clickedEl.closest('.meeting-markers')
+                    )) return;
                     document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
                     if(activeDate===info.dateStr){
                         activeDate=''; saveAll(); MAX_VISIBLE=6; showRoutine(); refreshCalendar();
