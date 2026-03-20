@@ -104,18 +104,18 @@
         #idinfo-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:8800; }
         #idinfo-overlay.visible { display:flex; align-items:center; justify-content:center; }
         #idinfo-popup {
-            background:white; border-radius:16px; width:80vw; max-width:900px;
-            height:80vh; display:flex; flex-direction:column;
+            background:white; border-radius:20px; width:98vw; max-width:2025px;
+            height:92vh; display:flex; flex-direction:column;
             box-shadow:0 16px 60px rgba(0,0,0,0.3); overflow:hidden;
         }
         #idinfo-header {
             display:flex; justify-content:space-between; align-items:center;
-            padding:16px 20px; border-bottom:1px solid #e2e8f0; flex-shrink:0;
+            padding:20px 28px; border-bottom:1px solid #e2e8f0; flex-shrink:0;
             background:#f8fafc;
         }
         #idinfo-header h3 { margin:0; font-size:15px; color:#1e293b; }
-        #idinfo-header-right { display:flex; gap:8px; align-items:center; }
-        #idinfo-close { background:none; border:none; font-size:18px; cursor:pointer; color:#888; }
+        #idinfo-header-right { display:flex; gap:10px; align-items:center; }
+        #idinfo-close { background:none; border:none; font-size:24px; cursor:pointer; color:#888; }
         #idinfo-add-btn {
             padding:5px 14px; background:#6366f1; color:white; border:none;
             border-radius:7px; font-size:12px; font-weight:bold; cursor:pointer;
@@ -126,19 +126,19 @@
         /* 테이블 */
         #idinfo-table { width:100%; border-collapse:collapse; font-size:13px; }
         #idinfo-table th {
-            background:#f1f5f9; padding:10px 12px; text-align:left;
+            background:#f1f5f9; padding:14px 16px; text-align:left;
             font-size:12px; color:#475569; border-bottom:2px solid #e2e8f0;
             position:sticky; top:0; z-index:1;
         }
-        #idinfo-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        #idinfo-table td { padding:11px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
         #idinfo-table tr:hover td { background:#fafafa; }
         #idinfo-table td input {
-            width:100%; padding:5px 7px; border:1px solid transparent; border-radius:5px;
+            width:100%; padding:7px 10px; border:1px solid transparent; border-radius:6px;
             font-size:12px; font-family:'Malgun Gothic',sans-serif; outline:none;
             background:transparent; box-sizing:border-box;
         }
         #idinfo-table td input:focus { border-color:#6366f1; background:white; }
-        .idinfo-pw-cell { position:relative; display:flex; align-items:center; gap:4px; }
+        .idinfo-pw-cell { position:relative; display:flex; align-items:center; gap:5px; }
         .idinfo-pw-toggle { background:none; border:none; cursor:pointer; font-size:13px; color:#94a3b8; padding:0 2px; flex-shrink:0; }
         .idinfo-row-del { padding:3px 10px; background:none; border:1px solid #fca5a5; border-radius:5px; font-size:11px; cursor:pointer; color:#ef4444; font-family:'Malgun Gothic',sans-serif; white-space:nowrap; }
         .idinfo-row-del:hover { background:#fef2f2; border-color:#ef4444; }
@@ -547,6 +547,13 @@
         <div id="idinfo-header">
             <h3>🔐 업무ID 관리</h3>
             <div id="idinfo-header-right">
+                <div id="idinfo-search-wrap" style="position:relative;display:flex;align-items:center;">
+                    <svg style="position:absolute;left:10px;width:17px;height:17px;" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8.5" cy="8.5" r="5.5" stroke="#555" stroke-width="2" fill="rgba(255,255,255,0.0)"/>
+                        <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="#666" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" id="idinfo-search" placeholder="제목 검색" style="padding:5px 10px 5px 30px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-family:'Malgun Gothic',sans-serif;outline:none;width:160px;" oninput="filterIdinfoTable(this.value)">
+                </div>
                 <button type="button" id="idinfo-add-btn">+ 항목 추가</button>
                 <button type="button" id="idinfo-close">&#x2715;</button>
             </div>
@@ -2041,8 +2048,18 @@ function addAttachment(date, idx, file, afterRender) {
 /* ════════════════════════════════════
    ID 정보 관리
 ════════════════════════════════════ */
+function filterIdinfoTable(q) {
+    var rows = document.querySelectorAll('#idinfo-tbody tr');
+    var keyword = q.trim().toLowerCase();
+    rows.forEach(function(tr) {
+        var service = (tr.querySelector('.ii-service') ? tr.querySelector('.ii-service').value : '').toLowerCase();
+        tr.style.display = (!keyword || service.indexOf(keyword) !== -1) ? '' : 'none';
+    });
+}
+
 function openIdinfoPopup() {
     if (!wpData.idinfo) wpData.idinfo = [];
+    var s = document.getElementById('idinfo-search'); if(s) s.value='';
     renderIdinfoTable();
     document.getElementById('idinfo-overlay').classList.add('visible');
 }
