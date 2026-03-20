@@ -334,6 +334,8 @@
         #img-preview-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; cursor:zoom-out; }
         #img-preview-overlay.visible { display:flex; }
         #img-preview-overlay img { max-width:90vw; max-height:90vh; border-radius:8px; object-fit:contain; }
+        .todo-edit-btn { background:none; border:none; cursor:pointer; font-size:12px; padding:0 3px; opacity:0.4; flex-shrink:0; }
+        .todo-edit-btn:hover { opacity:1; }
         .todo-text.clickable { cursor: pointer; }
         .todo-text.clickable:hover { color: #6366f1; }
 
@@ -2281,8 +2283,9 @@ function renderList(date) {
         detailBox.appendChild(attachBar);
         detailBox.appendChild(detailActions);
 
+        var editBtn = document.createElement('button'); editBtn.type='button'; editBtn.className='todo-edit-btn'; editBtn.innerHTML='✏️'; editBtn.title='수정';
         var row = document.createElement('div'); row.className = 'todo-item-row';
-        row.appendChild(cb); row.appendChild(span); row.appendChild(btn);
+        row.appendChild(cb); row.appendChild(span); row.appendChild(editBtn); row.appendChild(btn);
         li.appendChild(row); li.appendChild(detailBox);
 
         (function(d, idx, dBox, dTa, aArea, aBtn, fInput) {
@@ -2293,7 +2296,6 @@ function renderList(date) {
             };
             span.onclick = function(e) {
                 e.stopPropagation();
-                // 다른 열린 박스 닫기
                 document.querySelectorAll('.todo-detail-box.open').forEach(function(b){
                     if (b !== dBox) b.classList.remove('open');
                 });
@@ -2301,6 +2303,37 @@ function renderList(date) {
                 if (dBox.classList.contains('open')) {
                     setTimeout(function(){ dTa.focus(); dTa.style.height='auto'; dTa.style.height=dTa.scrollHeight+'px'; }, 50);
                 }
+            };
+            editBtn.onclick = function(e) {
+                e.stopPropagation();
+                // span을 input으로 전환
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.value = todos[d][idx].text;
+                input.style.cssText = 'flex:1;padding:2px 6px;border:1px solid #6366f1;border-radius:5px;font-size:14px;font-family:Malgun Gothic,sans-serif;outline:none;';
+                span.parentNode.insertBefore(input, span);
+                span.style.display = 'none';
+                editBtn.style.display = 'none';
+                input.focus(); input.select();
+                function applyEdit() {
+                    var newText = input.value.trim();
+                    if (newText && newText !== todos[d][idx].text) {
+                        todos[d][idx].text = newText;
+                        span.childNodes[0].textContent = newText;
+                        saveAll();
+                    }
+                    input.parentNode.removeChild(input);
+                    span.style.display = '';
+                    editBtn.style.display = '';
+                }
+                input.onblur = applyEdit;
+                input.onkeydown = function(ev) {
+                    if (ev.key === 'Enter') { ev.preventDefault(); applyEdit(); }
+                    if (ev.key === 'Escape') {
+                        input.parentNode.removeChild(input);
+                        span.style.display = ''; editBtn.style.display = '';
+                    }
+                };
             };
             cancelBtn.onclick = function(e) {
                 e.stopPropagation();
