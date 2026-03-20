@@ -599,6 +599,42 @@
     </div>
 </div>
 
+<!-- 업무연락처 팝업 -->
+<div id="contact-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:8800;">
+    <div id="contact-popup" style="background:white;border-radius:20px;width:98vw;max-width:1400px;height:88vh;display:flex;flex-direction:column;box-shadow:0 16px 60px rgba(0,0,0,0.3);overflow:hidden;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+        <div id="contact-header" style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid #e2e8f0;flex-shrink:0;background:#f8fafc;">
+            <h3 style="margin:0;font-size:15px;color:#1e293b;">📞 업무연락처</h3>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <div style="position:relative;display:flex;align-items:center;">
+                    <svg style="position:absolute;left:10px;width:17px;height:17px;" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8.5" cy="8.5" r="5.5" stroke="#555" stroke-width="2" fill="rgba(255,255,255,0.0)"/>
+                        <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="#666" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" id="contact-search" placeholder="이름 검색" style="padding:5px 10px 5px 34px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;outline:none;width:160px;" oninput="filterContactTable(this.value)">
+                </div>
+                <button type="button" id="contact-add-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">+ 항목 추가</button>
+                <button type="button" id="contact-close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#888;">&#x2715;</button>
+            </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:0 20px;">
+            <table id="contact-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr>
+                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:15%;">이름</th>
+                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:15%;">직책/소속</th>
+                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:18%;">전화번호</th>
+                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:18%;">이메일</th>
+                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;">비고</th>
+                        <th style="background:#f1f5f9;padding:14px 16px;text-align:center;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:80px;">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="contact-tbody"></tbody>
+            </table>
+            <div id="contact-empty" style="display:none;text-align:center;color:#94a3b8;font-size:13px;padding:40px 0;">등록된 연락처가 없습니다.<br><small>+ 항목 추가 버튼을 눌러 추가하세요.</small></div>
+        </div>
+    </div>
+</div>
+
 <!-- 이미지 확대 오버레이 -->
 <div id="img-preview-overlay" onclick="this.classList.remove('visible')">
     <img id="img-preview-img" src="" alt="미리보기">
@@ -761,6 +797,7 @@
             <div id="quick-box">
                 <button type="button" id="memo-open-btn" class="quick-btn">📝 MEMO</button>
                 <button type="button" id="idinfo-open-btn" class="quick-btn">🔐 업무ID</button>
+                <button type="button" id="contact-open-btn" class="quick-btn">📞 업무연락처</button>
             </div>
 
             <!-- 루틴 업무 -->
@@ -2148,6 +2185,93 @@ function addAttachment(date, idx, file, afterRender) {
 /* ════════════════════════════════════
    ID 정보 관리
 ════════════════════════════════════ */
+/* ════════════════════════════════════
+   업무연락처
+════════════════════════════════════ */
+function filterContactTable(q) {
+    var keyword = q.trim().toLowerCase();
+    document.querySelectorAll('#contact-tbody tr').forEach(function(tr) {
+        var name = (tr.querySelector('.ct-name') ? tr.querySelector('.ct-name').value : '').toLowerCase();
+        tr.style.display = (!keyword || name.indexOf(keyword) !== -1) ? '' : 'none';
+    });
+}
+
+function openContactPopup() {
+    if (!wpData.contacts) wpData.contacts = [];
+    var s = document.getElementById('contact-search'); if(s) s.value='';
+    renderContactTable();
+    document.getElementById('contact-overlay').style.display = 'block';
+}
+function closeContactPopup() {
+    document.getElementById('contact-overlay').style.display = 'none';
+}
+function addContactRow() {
+    if (!wpData.contacts) wpData.contacts = [];
+    wpData.contacts.push({ name:'', dept:'', tel:'', email:'', memo:'' });
+    saveAll(); renderContactTable();
+    var rows = document.querySelectorAll('#contact-tbody tr');
+    if (rows.length) rows[rows.length-1].querySelector('.ct-name').focus();
+}
+function renderContactTable() {
+    var tbody = document.getElementById('contact-tbody');
+    var empty = document.getElementById('contact-empty');
+    tbody.innerHTML = '';
+    var list = wpData.contacts || [];
+    if (!list.length) { empty.style.display='block'; return; }
+    empty.style.display = 'none';
+    list.forEach(function(item, idx) {
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td><input type="text" value="' + esc(item.name||'') + '" placeholder="' + (item.name||item.tel ? '' : '이름') + '" class="ct-name" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+            '<td><input type="text" value="' + esc(item.dept||'') + '" placeholder="' + (item.name||item.tel ? '' : '직책/소속') + '" class="ct-dept" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+            '<td><input type="text" value="' + esc(item.tel||'') + '" placeholder="' + (item.name||item.tel ? '' : '010-0000-0000') + '" class="ct-tel" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+            '<td><input type="text" value="' + esc(item.email||'') + '" placeholder="' + (item.name||item.tel ? '' : '이메일') + '" class="ct-email" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+            '<td><input type="text" value="' + esc(item.memo||'') + '" placeholder="' + (item.name||item.tel ? '' : '비고') + '" class="ct-memo" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+            '<td style="text-align:center;"><button type="button" class="ct-del idinfo-row-del">삭제</button></td>';
+
+        // input focus 스타일
+        tr.querySelectorAll('input').forEach(function(inp){
+            inp.addEventListener('focus', function(){ this.style.borderColor='#6366f1'; this.style.background='white'; });
+            inp.addEventListener('blur',  function(){ this.style.borderColor='transparent'; this.style.background='transparent'; });
+        });
+
+        (function(i) {
+            function autoSave() {
+                wpData.contacts[i] = {
+                    name:  tr.querySelector('.ct-name').value.trim(),
+                    dept:  tr.querySelector('.ct-dept').value.trim(),
+                    tel:   tr.querySelector('.ct-tel').value.trim(),
+                    email: tr.querySelector('.ct-email').value.trim(),
+                    memo:  tr.querySelector('.ct-memo').value.trim()
+                };
+                saveAll();
+            }
+            ['ct-name','ct-dept','ct-tel','ct-email','ct-memo'].forEach(function(cls){
+                tr.querySelector('.'+cls).addEventListener('change', autoSave);
+                tr.querySelector('.'+cls).addEventListener('blur',   autoSave);
+            });
+            var ctPh = {name:'이름', dept:'직책/소속', tel:'010-0000-0000', email:'이메일', memo:'비고'};
+            function toggleCtPh() {
+                var filled = tr.querySelector('.ct-name').value.trim() || tr.querySelector('.ct-tel').value.trim();
+                ['name','dept','tel','email','memo'].forEach(function(k){
+                    tr.querySelector('.ct-'+k).placeholder = filled ? '' : ctPh[k];
+                });
+            }
+            ['ct-name','ct-tel'].forEach(function(cls){
+                tr.querySelector('.'+cls).addEventListener('input', toggleCtPh);
+            });
+            toggleCtPh();
+            tr.querySelector('.ct-del').onclick = function() {
+                if (!confirm('이 연락처를 삭제하시겠습니까?')) return;
+                wpData.contacts.splice(i, 1);
+                saveAll(); renderContactTable();
+            };
+        })(idx);
+
+        tbody.appendChild(tr);
+    });
+}
+
 function filterIdinfoTable(q) {
     var keyword = q.trim().toLowerCase();
     var groups = document.querySelectorAll('#idinfo-tbody tr[data-group-id]');
@@ -2213,9 +2337,9 @@ function renderIdinfoTable() {
 
         // 나머지 셀
         var restHtml =
-            '<td><input type="text" value="' + esc(item.id||'') + '" placeholder="아이디" class="ii-id"></td>' +
-            '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(item.pw||'') + '" placeholder="비밀번호" class="ii-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
-            '<td><input type="text" value="' + esc(item.url||'') + '" placeholder="https://..." class="ii-url"></td>' +
+            '<td><input type="text" value="' + esc(item.id||'') + '" placeholder="' + (item.service?'':'아이디') + '" class="ii-id"></td>' +
+            '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(item.pw||'') + '" placeholder="' + (item.service?'':'비밀번호') + '" class="ii-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
+            '<td><input type="text" value="' + esc(item.url||'') + '" placeholder="' + (item.service?'':'https://...') + '" class="ii-url"></td>' +
             '<td class="ii-memo-td"></td>' +
             '<td style="text-align:center;white-space:nowrap;"><button type="button" class="idinfo-row-del">삭제</button></td>';
         tr.insertAdjacentHTML('beforeend', restHtml);
@@ -2287,6 +2411,23 @@ function renderIdinfoTable() {
                 tr.querySelector('.'+cls).addEventListener('blur',autoSaveRow);
             });
             if(tr.querySelector('.ii-memo')){ tr.querySelector('.ii-memo').addEventListener('change',autoSaveRow); tr.querySelector('.ii-memo').addEventListener('blur',autoSaveRow); }
+
+            // 제목 입력 시 같은 행 placeholder 토글
+            var otherInputs = [tr.querySelector('.ii-id'), tr.querySelector('.ii-pw'), tr.querySelector('.ii-url')];
+            var memoInp = tr.querySelector('.ii-memo');
+            var placeholders = { id:'아이디', pw:'비밀번호', url:'https://...', memo:'내용&사진첨부가능' };
+            function togglePlaceholders() {
+                var hasTitle = tr.querySelector('.ii-service').value.trim() !== '';
+                otherInputs.forEach(function(inp) {
+                    if (!inp) return;
+                    var key = inp.className.replace('ii-','');
+                    inp.placeholder = hasTitle ? '' : placeholders[key];
+                });
+                if (memoInp) memoInp.placeholder = hasTitle ? '' : placeholders.memo;
+            }
+            tr.querySelector('.ii-service').addEventListener('input', togglePlaceholders);
+            tr.querySelector('.ii-service').addEventListener('blur',  togglePlaceholders);
+            togglePlaceholders(); // 초기 적용
             tr.querySelector('.idinfo-row-del').onclick=function(){ if(!confirm('이 항목을 삭제하시겠습니까?')) return; wpData.idinfo.splice(i,1); saveAll();renderIdinfoTable(); };
             tr.querySelector('.ii-sub-add-btn').onclick=function(){ if(!wpData.idinfo[i].subRows) wpData.idinfo[i].subRows=[]; wpData.idinfo[i].subRows.push({id:'',pw:'',url:'',memo:''}); saveAll();renderIdinfoTable(); };
         })(idx, imgFileInput);
@@ -2300,10 +2441,10 @@ function renderIdinfoTable() {
             subTr.setAttribute('data-service', item.service || '');
             subTr.style.background = '#f8faff';
             subTr.innerHTML =
-                '<td><input type="text" value="' + esc(sub.id||'') + '" placeholder="아이디" class="sub-id"></td>' +
-                '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(sub.pw||'') + '" placeholder="비밀번호" class="sub-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
-                '<td><input type="text" value="' + esc(sub.url||'') + '" placeholder="https://..." class="sub-url"></td>' +
-                '<td><input type="text" value="' + esc(sub.memo||'') + '" placeholder="내용&사진첨부가능" class="sub-memo" style="width:100%;border:1px solid transparent;border-radius:5px;padding:5px 7px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+                '<td><input type="text" value="' + esc(sub.id||'') + '" placeholder="' + (item.service?'':'아이디') + '" class="sub-id"></td>' +
+                '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(sub.pw||'') + '" placeholder="' + (item.service?'':'비밀번호') + '" class="sub-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
+                '<td><input type="text" value="' + esc(sub.url||'') + '" placeholder="' + (item.service?'':'https://...') + '" class="sub-url"></td>' +
+                '<td><input type="text" value="' + esc(sub.memo||'') + '" placeholder="' + (item.service?'':'내용&사진첨부가능') + '" class="sub-memo" style="width:100%;border:1px solid transparent;border-radius:5px;padding:5px 7px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
                 '<td style="text-align:center;"><button type="button" class="sub-del-btn idinfo-row-del">삭제</button></td>';
             var spw=subTr.querySelector('.sub-pw');
             subTr.querySelector('.idinfo-pw-toggle').onclick=function(){ spw.type=spw.type==='password'?'text':'password'; };
@@ -2972,6 +3113,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('idinfo-open-btn').onclick  = openIdinfoPopup;
     document.getElementById('idinfo-close').onclick     = closeIdinfoPopup;
     document.getElementById('idinfo-add-btn').onclick   = addIdinfoRow;
+    document.getElementById('contact-open-btn').onclick = openContactPopup;
+    document.getElementById('contact-close').onclick    = closeContactPopup;
+    document.getElementById('contact-add-btn').onclick  = addContactRow;
+    document.getElementById('contact-overlay').onclick  = function(e){ if(e.target===this) closeContactPopup(); };
     document.getElementById('idinfo-overlay').addEventListener('click', function(e) {
         if (e.target === this) closeIdinfoPopup();
     });
@@ -3118,6 +3263,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 wpData     = saved.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[] };
                 if (!wpData.meetings) wpData.meetings = [];
                 if (!wpData.idinfo)   wpData.idinfo   = [];
+                if (!wpData.contacts) wpData.contacts = [];
             }
             startApp();
         });
