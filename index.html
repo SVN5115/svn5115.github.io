@@ -199,7 +199,7 @@
         .wp-section-body.minimized { overflow: hidden; max-height: 0 !important; flex: 0; }
         .wp-section.minimized { flex: 0 0 auto !important; min-height: 0; }
         .wp-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-shrink: 0; }
-        .wp-section-label { font-size: 12px; font-weight: bold; color: #334155; display: flex; align-items: center; gap: 4px; }
+        .wp-section-label { font-size: 12px; font-weight: bold; color: #334155; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
         #sec-routine .wp-section-label::before { content: '🔁'; } #sec-expense .wp-section-label::before { content: '💰'; } #sec-report .wp-section-label::before { content: '📋'; }
         .wp-plus-btn { width: 22px; height: 22px; border-radius: 50%; border: none; font-size: 16px; line-height: 1; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
         #sec-routine .wp-plus-btn { background: #6366f1; } #sec-routine .wp-plus-btn:hover { background: #4f46e5; }
@@ -730,7 +730,6 @@
                 <div class="wp-section-header">
                     <div class="wp-section-label">루틴 업무</div>
                     <div style="display:flex;gap:4px;align-items:center;">
-                        <button type="button" class="wp-minimize-btn" id="min-routine" title="최소화">−</button>
                         <button type="button" class="wp-plus-btn" id="plus-routine">+</button>
                     </div>
                 </div>
@@ -752,7 +751,6 @@
                 <div class="wp-section-header">
                     <div class="wp-section-label">지출 업무</div>
                     <div style="display:flex;gap:4px;align-items:center;">
-                        <button type="button" class="wp-minimize-btn" id="min-expense" title="최소화">−</button>
                         <button type="button" class="wp-plus-btn" id="plus-expense">+</button>
                     </div>
                 </div>
@@ -782,7 +780,6 @@
                 <div class="wp-section-header">
                     <div class="wp-section-label">보고 업무</div>
                     <div style="display:flex;gap:4px;align-items:center;">
-                        <button type="button" class="wp-minimize-btn" id="min-report" title="최소화">−</button>
                         <button type="button" class="wp-plus-btn" id="plus-report">+</button>
                     </div>
                 </div>
@@ -812,7 +809,6 @@
                 <div class="wp-section-header">
                     <div class="wp-section-label">회의 업무</div>
                     <div style="display:flex;gap:4px;align-items:center;">
-                        <button type="button" class="wp-minimize-btn" id="min-meeting" title="최소화">−</button>
                         <button type="button" class="wp-plus-btn" id="plus-meeting">+</button>
                     </div>
                 </div>
@@ -2865,26 +2861,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    /* 최소화 버튼 이벤트 */
+    /* 최소화 - 섹션 라벨 클릭 */
     var minimizedState = {};
     ['routine','expense','report','meeting'].forEach(function(key) {
-        var btn = document.getElementById('min-' + key);
-        var body = document.getElementById('body-' + key);
-        var sec  = document.getElementById('sec-' + key);
-        if (!btn || !body) return;
-        btn.textContent = '▼';
-        btn.onclick = function() {
+        var label = document.querySelector('#sec-' + key + ' .wp-section-label');
+        var body  = document.getElementById('body-' + key);
+        var sec   = document.getElementById('sec-' + key);
+        if (!label || !body) return;
+        label.onclick = function() {
             minimizedState[key] = !minimizedState[key];
             if (minimizedState[key]) {
                 body.classList.add('minimized');
                 sec.classList.add('minimized');
-                btn.textContent = '▶';
-                btn.title = '펼치기';
             } else {
                 body.classList.remove('minimized');
                 sec.classList.remove('minimized');
-                btn.textContent = '▼';
-                btn.title = '최소화';
             }
         };
     });
