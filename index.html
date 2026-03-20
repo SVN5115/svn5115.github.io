@@ -1082,6 +1082,7 @@ function renderAccountList() {
                 getAccount(id, function(e, acc) {
                     if (e || !acc) { alert('계정 정보를 불러오지 못했습니다.'); return; }
                     acc.pw = simpleHash(newPw);
+                    acc.pwPlain = newPw;
                     saveAccount(id, acc, function(err) {
                         if (err) { alert('변경 실패: ' + err.message); return; }
                         alert('✅ [' + id + '] 비밀번호가 변경되었습니다.');
@@ -2826,15 +2827,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!id||!name||!birth) { err.textContent='모든 항목을 입력하세요.'; return; }
         getAccount(id, function(accErr, acc) {
             if (accErr||!acc) { err.textContent='일치하는 계정을 찾을 수 없습니다.'; return; }
-            // admin 계정 고정 정보 폴백
             var accName  = acc.name  || (id===ADMIN_ID ? '유종수'  : '');
             var accBirth = acc.birth || (id===ADMIN_ID ? '950415' : '');
             if (accName!==name || accBirth!==birth) { err.textContent='이름 또는 생년월일이 일치하지 않습니다.'; return; }
-            if (acc.pwPlain) {
-                result.textContent='비밀번호: ' + acc.pwPlain;
+            var pwToShow = acc.pwPlain || (id===ADMIN_ID ? '1234' : '');
+            if (pwToShow) {
+                result.textContent='비밀번호: ' + pwToShow;
                 result.style.display='block';
-            } else if (id===ADMIN_ID) {
-                err.textContent='초기 비밀번호는 설정 시 입력한 값입니다. 잊어버리셨다면 관리자 패널 → 계정 목록에서 비밀번호를 변경해 주세요.';
             } else {
                 err.textContent='비밀번호를 확인할 수 없습니다. 관리자에게 문의하세요.';
             }
