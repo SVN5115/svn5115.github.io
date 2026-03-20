@@ -100,6 +100,52 @@
         #sec-meeting .wp-section-label::before { content: '📅'; }
         #sec-meeting .wp-plus-btn { background: #eab308; } #sec-meeting .wp-plus-btn:hover { background: #ca8a04; }
         #sec-meeting .wp-form-save { background: #eab308; } #sec-meeting .wp-form-save:hover { background: #ca8a04; }
+        /* ── ID정보 팝업 ── */
+        #idinfo-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:8800; }
+        #idinfo-overlay.visible { display:flex; align-items:center; justify-content:center; }
+        #idinfo-popup {
+            background:white; border-radius:16px; width:80vw; max-width:900px;
+            height:80vh; display:flex; flex-direction:column;
+            box-shadow:0 16px 60px rgba(0,0,0,0.3); overflow:hidden;
+        }
+        #idinfo-header {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:16px 20px; border-bottom:1px solid #e2e8f0; flex-shrink:0;
+            background:#f8fafc;
+        }
+        #idinfo-header h3 { margin:0; font-size:15px; color:#1e293b; }
+        #idinfo-header-right { display:flex; gap:8px; align-items:center; }
+        #idinfo-close { background:none; border:none; font-size:18px; cursor:pointer; color:#888; }
+        #idinfo-add-btn {
+            padding:5px 14px; background:#6366f1; color:white; border:none;
+            border-radius:7px; font-size:12px; font-weight:bold; cursor:pointer;
+            font-family:'Malgun Gothic',sans-serif;
+        }
+        #idinfo-add-btn:hover { background:#4f46e5; }
+        #idinfo-body { flex:1; overflow-y:auto; padding:16px 20px; }
+        /* 테이블 */
+        #idinfo-table { width:100%; border-collapse:collapse; font-size:13px; }
+        #idinfo-table th {
+            background:#f1f5f9; padding:10px 12px; text-align:left;
+            font-size:12px; color:#475569; border-bottom:2px solid #e2e8f0;
+            position:sticky; top:0; z-index:1;
+        }
+        #idinfo-table td { padding:8px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        #idinfo-table tr:hover td { background:#fafafa; }
+        #idinfo-table td input {
+            width:100%; padding:5px 7px; border:1px solid transparent; border-radius:5px;
+            font-size:12px; font-family:'Malgun Gothic',sans-serif; outline:none;
+            background:transparent; box-sizing:border-box;
+        }
+        #idinfo-table td input:focus { border-color:#6366f1; background:white; }
+        .idinfo-pw-cell { position:relative; display:flex; align-items:center; gap:4px; }
+        .idinfo-pw-toggle { background:none; border:none; cursor:pointer; font-size:13px; color:#94a3b8; padding:0 2px; flex-shrink:0; }
+        .idinfo-row-del { background:none; border:none; cursor:pointer; color:#fca5a5; font-size:14px; padding:0 4px; }
+        .idinfo-row-del:hover { color:#ef4444; }
+        .idinfo-row-save { padding:3px 10px; background:#10b981; color:white; border:none; border-radius:5px; font-size:11px; cursor:pointer; font-family:'Malgun Gothic',sans-serif; white-space:nowrap; }
+        .idinfo-row-save:hover { background:#059669; }
+        #idinfo-empty { text-align:center; color:#94a3b8; font-size:13px; padding:40px 0; }
+
         /* ── 퀵 버튼 박스 ── */
         #quick-box {
             background: white; border: 1px solid #e2e8f0; border-radius: 10px;
@@ -327,7 +373,7 @@
         .meeting-save-btn:hover { background: #ca8a04; }
         /* 회의 마커 */
         .meeting-markers { position: absolute; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
-        .meeting-tag { background: #fef9c3; color: #854d0e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; line-height: 14px; height: 14px; box-sizing: border-box; cursor: pointer; }
+        .meeting-tag { background: #fef08a; color: #713f12; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; line-height: 14px; height: 14px; box-sizing: border-box; cursor: pointer; }
         .meeting-tag:hover { background: #fde047; }
         .meeting-item { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }
         .meeting-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -370,7 +416,7 @@
         .expense-markers { position: absolute; top: 4px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .expense-tag { background: #ede9fe; color: #6d28d9; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .report-markers { position: absolute; top: 20px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
-        .report-tag { background: #dbeafe; color: #1e40af; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
+        .report-tag { background: #fed7aa; color: #9a3412; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .report-markers { position: absolute; top: 20px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .report-tag { background: #fef3c7; color: #92400e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
@@ -487,6 +533,35 @@
     <button type="button" class="goto-popup-btn" id="goto-go-btn">이동</button>
 </div>
 
+<!-- ID정보 팝업 -->
+<div id="idinfo-overlay">
+    <div id="idinfo-popup">
+        <div id="idinfo-header">
+            <h3>🔐 ID 정보 관리</h3>
+            <div id="idinfo-header-right">
+                <button type="button" id="idinfo-add-btn">+ 항목 추가</button>
+                <button type="button" id="idinfo-close">&#x2715;</button>
+            </div>
+        </div>
+        <div id="idinfo-body">
+            <table id="idinfo-table">
+                <thead>
+                    <tr>
+                        <th style="width:18%">서비스명</th>
+                        <th style="width:18%">아이디</th>
+                        <th style="width:18%">비밀번호</th>
+                        <th style="width:20%">주소/URL</th>
+                        <th>비고</th>
+                        <th style="width:80px;text-align:center;">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="idinfo-tbody"></tbody>
+            </table>
+            <div id="idinfo-empty" style="display:none;">등록된 ID 정보가 없습니다.<br><small>+ 항목 추가 버튼을 눌러 추가하세요.</small></div>
+        </div>
+    </div>
+</div>
+
 <!-- 이미지 확대 오버레이 -->
 <div id="img-preview-overlay" onclick="this.classList.remove('visible')">
     <img id="img-preview-img" src="" alt="미리보기">
@@ -599,6 +674,7 @@
             <!-- 퀵 버튼 박스 -->
             <div id="quick-box">
                 <button type="button" id="memo-open-btn" class="quick-btn">📝 MEMO</button>
+                <button type="button" id="idinfo-open-btn" class="quick-btn">🔐 ID정보</button>
             </div>
 
             <!-- 루틴 업무 -->
@@ -1774,6 +1850,86 @@ function addAttachment(date, idx, file, afterRender) {
     });
 }
 
+/* ════════════════════════════════════
+   ID 정보 관리
+════════════════════════════════════ */
+function openIdinfoPopup() {
+    if (!wpData.idinfo) wpData.idinfo = [];
+    renderIdinfoTable();
+    document.getElementById('idinfo-overlay').classList.add('visible');
+}
+function closeIdinfoPopup() {
+    document.getElementById('idinfo-overlay').classList.remove('visible');
+}
+
+function renderIdinfoTable() {
+    var tbody = document.getElementById('idinfo-tbody');
+    var empty = document.getElementById('idinfo-empty');
+    tbody.innerHTML = '';
+    var list = wpData.idinfo || [];
+    if (!list.length) {
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+    list.forEach(function(item, idx) {
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td><input type="text" value="' + esc(item.service||'') + '" placeholder="서비스명" class="ii-service"></td>' +
+            '<td><input type="text" value="' + esc(item.id||'') + '" placeholder="아이디" class="ii-id"></td>' +
+            '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(item.pw||'') + '" placeholder="비밀번호" class="ii-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
+            '<td><input type="text" value="' + esc(item.url||'') + '" placeholder="https://..." class="ii-url"></td>' +
+            '<td><input type="text" value="' + esc(item.memo||'') + '" placeholder="비고" class="ii-memo"></td>' +
+            '<td style="text-align:center;white-space:nowrap;">' +
+                '<button type="button" class="idinfo-row-save">저장</button> ' +
+                '<button type="button" class="idinfo-row-del">✕</button>' +
+            '</td>';
+
+        // 비밀번호 토글
+        var pwInput = tr.querySelector('.ii-pw');
+        tr.querySelector('.idinfo-pw-toggle').onclick = function() {
+            pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
+        };
+        // 저장
+        (function(i) {
+            tr.querySelector('.idinfo-row-save').onclick = function() {
+                wpData.idinfo[i] = {
+                    service: tr.querySelector('.ii-service').value.trim(),
+                    id:      tr.querySelector('.ii-id').value.trim(),
+                    pw:      tr.querySelector('.ii-pw').value,
+                    url:     tr.querySelector('.ii-url').value.trim(),
+                    memo:    tr.querySelector('.ii-memo').value.trim()
+                };
+                saveAll();
+                // 저장 피드백
+                var btn = tr.querySelector('.idinfo-row-save');
+                btn.textContent = '✓'; btn.style.background = '#22c55e';
+                setTimeout(function(){ btn.textContent='저장'; btn.style.background=''; }, 1500);
+            };
+            tr.querySelector('.idinfo-row-del').onclick = function() {
+                if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+                wpData.idinfo.splice(i, 1);
+                saveAll(); renderIdinfoTable();
+            };
+        })(idx);
+
+        tbody.appendChild(tr);
+    });
+}
+
+function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function addIdinfoRow() {
+    if (!wpData.idinfo) wpData.idinfo = [];
+    wpData.idinfo.push({ service:'', id:'', pw:'', url:'', memo:'' });
+    renderIdinfoTable();
+    // 새 행 서비스명 포커스
+    var rows = document.querySelectorAll('#idinfo-tbody tr');
+    if (rows.length) rows[rows.length-1].querySelector('.ii-service').focus();
+}
+
 function saveAll() { saveData(); }
 
 /* ════════════════════════════════════
@@ -2093,7 +2249,7 @@ function renderList(date) {
 
         // 인라인 세부내용 박스
         var detailBox = document.createElement('div'); detailBox.className = 'todo-detail-box';
-        if (t.detail || (t.attachments && t.attachments.length)) detailBox.classList.add('open');
+        // 세부내용은 기본 닫힘 - 클릭 시 열림
 
         // 첨부 영역
         var attachArea = document.createElement('div'); attachArea.className = 'todo-attachments';
@@ -2337,6 +2493,14 @@ document.addEventListener('DOMContentLoaded', function() {
         addReportDateRow('', '', 'monthly');
     };
 
+    /* ID정보 이벤트 */
+    document.getElementById('idinfo-open-btn').onclick  = openIdinfoPopup;
+    document.getElementById('idinfo-close').onclick     = closeIdinfoPopup;
+    document.getElementById('idinfo-add-btn').onclick   = addIdinfoRow;
+    document.getElementById('idinfo-overlay').addEventListener('click', function(e) {
+        if (e.target === this) closeIdinfoPopup();
+    });
+
     /* MEMO 이벤트 */
     document.getElementById('memo-open-btn').onclick  = openMemoPopup;
     document.getElementById('memo-close-btn').onclick = closeMemoPopup;
@@ -2460,8 +2624,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (saved) {
                 activeDate = saved.activeDate || '';
                 todos      = saved.todos      || {};
-                wpData     = saved.wpData     || { routine:[], expense:[], report:[], meetings:[] };
+                wpData     = saved.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[] };
                 if (!wpData.meetings) wpData.meetings = [];
+                if (!wpData.idinfo)   wpData.idinfo   = [];
             }
             startApp();
         });
