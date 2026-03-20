@@ -2063,11 +2063,18 @@ function addAttachment(date, idx, file, afterRender) {
    ID 정보 관리
 ════════════════════════════════════ */
 function filterIdinfoTable(q) {
-    var rows = document.querySelectorAll('#idinfo-tbody tr');
     var keyword = q.trim().toLowerCase();
-    rows.forEach(function(tr) {
-        var service = (tr.querySelector('.ii-service') ? tr.querySelector('.ii-service').value : '').toLowerCase();
-        tr.style.display = (!keyword || service.indexOf(keyword) !== -1) ? '' : 'none';
+    var groups = document.querySelectorAll('#idinfo-tbody tr[data-group-id]');
+    var seen = {};
+    groups.forEach(function(tr) {
+        var gid = tr.getAttribute('data-group-id');
+        if (seen[gid]) return;
+        seen[gid] = true;
+        var service = tr.getAttribute('data-service') || '';
+        var match = !keyword || service.toLowerCase().indexOf(keyword) !== -1;
+        document.querySelectorAll('#idinfo-tbody tr[data-group-id="' + gid + '"]').forEach(function(r) {
+            r.style.display = match ? '' : 'none';
+        });
     });
 }
 
@@ -2086,136 +2093,132 @@ function renderIdinfoTable() {
     var empty = document.getElementById('idinfo-empty');
     tbody.innerHTML = '';
     var list = wpData.idinfo || [];
-    if (!list.length) {
-        empty.style.display = 'block';
-        return;
-    }
+    if (!list.length) { empty.style.display='block'; return; }
     empty.style.display = 'none';
+
     list.forEach(function(item, idx) {
+        var subRows = item.subRows || [];
+        var totalRows = 1 + subRows.length; // 메인행 + 하위행 수
+
+        // ── 메인 행 ──
         var tr = document.createElement('tr');
-        tr.innerHTML =
-            '<td><input type="text" value="' + esc(item.service||'') + '" placeholder="제목" class="ii-service"></td>' +
+        tr.setAttribute('data-group-id', idx);
+        tr.setAttribute('data-service', item.service || '');
+
+        // 제목 셀 (rowspan)
+        var tdService = document.createElement('td');
+        tdService.rowSpan = totalRows;
+        tdService.style.cssText = 'vertical-align:middle;white-space:nowrap;border-right:2px solid #e2e8f0;background:#f8fafc;';
+        tdService.innerHTML =
+            '<div style="display:flex;align-items:center;gap:4px;">' +
+            '<input type="text" value="' + esc(item.service||'') + '" placeholder="제목" class="ii-service" style="flex:1;min-width:0;">' +
+            '<button type="button" class="ii-sub-add-btn" title="하위 행 추가" style="background:none;border:none;color:#94a3b8;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;padding:0 2px;font-weight:bold;">+</button>' +
+            '</div>';
+        tr.appendChild(tdService);
+
+        // 나머지 셀
+        var restHtml =
             '<td><input type="text" value="' + esc(item.id||'') + '" placeholder="아이디" class="ii-id"></td>' +
             '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(item.pw||'') + '" placeholder="비밀번호" class="ii-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
             '<td><input type="text" value="' + esc(item.url||'') + '" placeholder="https://..." class="ii-url"></td>' +
             '<td class="ii-memo-td"></td>' +
-            '<td style="text-align:center;white-space:nowrap;">' +
-                '<button type="button" class="idinfo-row-del">삭제</button>' +
-            '</td>';
+            '<td style="text-align:center;white-space:nowrap;"><button type="button" class="idinfo-row-del">삭제</button></td>';
+        tr.insertAdjacentHTML('beforeend', restHtml);
 
-        // 비고 셀 - 텍스트 + 이미지 첨부
+        // 비고 셀
         var memoTd = tr.querySelector('.ii-memo-td');
-        var memoCell = document.createElement('div'); memoCell.className = 'ii-memo-cell';
+        var memoCell = document.createElement('div'); memoCell.className='ii-memo-cell';
         var memoInput = document.createElement('input'); memoInput.type='text'; memoInput.className='ii-memo'; memoInput.placeholder='내용&사진첨부가능'; memoInput.value=item.memo||'';
         var imgFileInput = document.createElement('input'); imgFileInput.type='file'; imgFileInput.accept='image/*'; imgFileInput.style.display='none';
         memoCell.appendChild(memoInput); memoCell.appendChild(imgFileInput);
-        // 기존 이미지 썸네일 표시
         if (item.memoImg) {
             var thumb = document.createElement('img'); thumb.className='ii-img-thumb'; thumb.src=item.memoImg;
-            thumb.onclick = function() {
-                document.getElementById('img-preview-img').src = item.memoImg;
-                document.getElementById('img-preview-overlay').classList.add('visible');
-            };
-            var imgDel = document.createElement('button'); imgDel.type='button'; imgDel.className='ii-img-del'; imgDel.textContent='✕';
-            (function(i){ imgDel.onclick = function(){ wpData.idinfo[i].memoImg=''; saveAll(); renderIdinfoTable(); }; })(idx);
+            thumb.onclick=(function(img){ return function(){ document.getElementById('img-preview-img').src=img; document.getElementById('img-preview-overlay').classList.add('visible'); }; })(item.memoImg);
+            var imgDel=document.createElement('button'); imgDel.type='button'; imgDel.className='ii-img-del'; imgDel.textContent='✕';
+            (function(i){ imgDel.onclick=function(){ wpData.idinfo[i].memoImg=''; saveAll(); renderIdinfoTable(); }; })(idx);
             memoCell.appendChild(thumb); memoCell.appendChild(imgDel);
         }
         memoTd.appendChild(memoCell);
 
-        // 비밀번호 토글
+        // pw toggle
         var pwInput = tr.querySelector('.ii-pw');
-        tr.querySelector('.idinfo-pw-toggle').onclick = function() {
-            pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
-        };
-        // 저장
+        tr.querySelector('.idinfo-pw-toggle').onclick = function(){ pwInput.type=pwInput.type==='password'?'text':'password'; };
+
+        // auto save + del
         (function(i, mImgInput) {
-            // 이미지 업로드 - 200KB로 압축
             mImgInput.onchange = function() {
                 if (!this.files.length) return;
-                var file = this.files[0];
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    // Canvas로 리사이즈 압축 (max 400px, quality 0.5)
                     var img = new Image();
                     img.onload = function() {
-                        var canvas = document.createElement('canvas');
-                        var maxSize = 800;
-                        var w = img.width, h = img.height;
-                        if (w > maxSize || h > maxSize) {
-                            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-                            else       { w = Math.round(w * maxSize / h); h = maxSize; }
-                        }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        var compressed = canvas.toDataURL('image/jpeg', 0.8);
-                        wpData.idinfo[i].memoImg = compressed;
+                        var canvas=document.createElement('canvas'), ms=800, w=img.width, h=img.height;
+                        if(w>ms||h>ms){ if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;} }
+                        canvas.width=w; canvas.height=h;
+                        canvas.getContext('2d').drawImage(img,0,0,w,h);
+                        wpData.idinfo[i].memoImg=canvas.toDataURL('image/jpeg',0.8);
                         saveAll(); renderIdinfoTable();
                     };
-                    img.src = e.target.result;
+                    img.src=e.target.result;
                 };
-                reader.readAsDataURL(file);
-                this.value = '';
+                reader.readAsDataURL(this.files[0]); this.value='';
             };
-
-            // 비고란 Ctrl+V 이미지 붙여넣기
             memoInput.addEventListener('paste', function(e) {
-                var items = e.clipboardData && e.clipboardData.items;
-                if (!items) return;
-                for (var j = 0; j < items.length; j++) {
-                    if (items[j].type.indexOf('image') !== -1) {
+                var items=e.clipboardData&&e.clipboardData.items; if(!items) return;
+                for(var j=0;j<items.length;j++) {
+                    if(items[j].type.indexOf('image')!==-1) {
                         e.preventDefault();
-                        var file = items[j].getAsFile();
-                        if (!file) return;
-                        var rd = new FileReader();
-                        rd.onload = function(ev) {
-                            var img2 = new Image();
-                            img2.onload = function() {
-                                var c2 = document.createElement('canvas');
-                                var ms = 800, w2 = img2.width, h2 = img2.height;
-                                if (w2 > ms || h2 > ms) {
-                                    if (w2 > h2) { h2 = Math.round(h2*ms/w2); w2=ms; }
-                                    else         { w2 = Math.round(w2*ms/h2); h2=ms; }
-                                }
-                                c2.width=w2; c2.height=h2;
-                                c2.getContext('2d').drawImage(img2,0,0,w2,h2);
-                                wpData.idinfo[i].memoImg = c2.toDataURL('image/jpeg', 0.8);
-                                saveAll(); renderIdinfoTable();
-                            };
-                            img2.src = ev.target.result;
-                        };
-                        rd.readAsDataURL(file);
-                        break;
+                        var rd=new FileReader();
+                        rd.onload=function(ev){ var img2=new Image(); img2.onload=function(){ var c2=document.createElement('canvas'),ms=800,w2=img2.width,h2=img2.height; if(w2>ms||h2>ms){if(w2>h2){h2=Math.round(h2*ms/w2);w2=ms;}else{w2=Math.round(w2*ms/h2);h2=ms;}} c2.width=w2;c2.height=h2; c2.getContext('2d').drawImage(img2,0,0,w2,h2); wpData.idinfo[i].memoImg=c2.toDataURL('image/jpeg',0.8); saveAll();renderIdinfoTable(); }; img2.src=ev.target.result; };
+                        rd.readAsDataURL(items[j].getAsFile()); break;
                     }
                 }
             });
-
             function autoSaveRow() {
-                wpData.idinfo[i] = Object.assign(wpData.idinfo[i] || {}, {
-                    service: tr.querySelector('.ii-service').value.trim(),
-                    id:      tr.querySelector('.ii-id').value.trim(),
-                    pw:      tr.querySelector('.ii-pw').value,
-                    url:     tr.querySelector('.ii-url').value.trim(),
-                    memo:    tr.querySelector('.ii-memo') ? tr.querySelector('.ii-memo').value.trim() : '',
-                    memoImg: wpData.idinfo[i] ? (wpData.idinfo[i].memoImg || '') : ''
+                wpData.idinfo[i]=Object.assign(wpData.idinfo[i]||{},{
+                    service:tr.querySelector('.ii-service').value.trim(),
+                    id:tr.querySelector('.ii-id').value.trim(),
+                    pw:tr.querySelector('.ii-pw').value,
+                    url:tr.querySelector('.ii-url').value.trim(),
+                    memo:tr.querySelector('.ii-memo')?tr.querySelector('.ii-memo').value.trim():'',
+                    memoImg:wpData.idinfo[i]?(wpData.idinfo[i].memoImg||''):''
                 });
+                // service 변경 시 rowspan 셀 data-service 갱신
+                tr.setAttribute('data-service', tr.querySelector('.ii-service').value.trim());
                 saveAll();
             }
-            ['ii-service','ii-id','ii-pw','ii-url'].forEach(function(cls) {
-                tr.querySelector('.'+cls).addEventListener('change', autoSaveRow);
-                tr.querySelector('.'+cls).addEventListener('blur', autoSaveRow);
+            ['ii-service','ii-id','ii-pw','ii-url'].forEach(function(cls){
+                tr.querySelector('.'+cls).addEventListener('change',autoSaveRow);
+                tr.querySelector('.'+cls).addEventListener('blur',autoSaveRow);
             });
-            if (tr.querySelector('.ii-memo')) {
-                tr.querySelector('.ii-memo').addEventListener('change', autoSaveRow);
-                tr.querySelector('.ii-memo').addEventListener('blur', autoSaveRow);
-            }
-            tr.querySelector('.idinfo-row-del').onclick = function() {
-                if (!confirm('이 항목을 삭제하시겠습니까?')) return;
-                wpData.idinfo.splice(i, 1);
-                saveAll(); renderIdinfoTable();
-            };
+            if(tr.querySelector('.ii-memo')){ tr.querySelector('.ii-memo').addEventListener('change',autoSaveRow); tr.querySelector('.ii-memo').addEventListener('blur',autoSaveRow); }
+            tr.querySelector('.idinfo-row-del').onclick=function(){ if(!confirm('이 항목을 삭제하시겠습니까?')) return; wpData.idinfo.splice(i,1); saveAll();renderIdinfoTable(); };
+            tr.querySelector('.ii-sub-add-btn').onclick=function(){ if(!wpData.idinfo[i].subRows) wpData.idinfo[i].subRows=[]; wpData.idinfo[i].subRows.push({id:'',pw:'',url:'',memo:''}); saveAll();renderIdinfoTable(); };
         })(idx, imgFileInput);
 
         tbody.appendChild(tr);
+
+        // ── 하위 행들 ──
+        subRows.forEach(function(sub, si) {
+            var subTr = document.createElement('tr');
+            subTr.setAttribute('data-group-id', idx);
+            subTr.setAttribute('data-service', item.service || '');
+            subTr.style.background = '#f8faff';
+            subTr.innerHTML =
+                '<td><input type="text" value="' + esc(sub.id||'') + '" placeholder="아이디" class="sub-id"></td>' +
+                '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(sub.pw||'') + '" placeholder="비밀번호" class="sub-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
+                '<td><input type="text" value="' + esc(sub.url||'') + '" placeholder="https://..." class="sub-url"></td>' +
+                '<td><input type="text" value="' + esc(sub.memo||'') + '" placeholder="내용&사진첨부가능" class="sub-memo" style="width:100%;border:1px solid transparent;border-radius:5px;padding:5px 7px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+                '<td style="text-align:center;"><button type="button" class="sub-del-btn idinfo-row-del">삭제</button></td>';
+            var spw=subTr.querySelector('.sub-pw');
+            subTr.querySelector('.idinfo-pw-toggle').onclick=function(){ spw.type=spw.type==='password'?'text':'password'; };
+            (function(pi,si2){
+                function saveSubRow(){ if(!wpData.idinfo[pi].subRows) wpData.idinfo[pi].subRows=[]; wpData.idinfo[pi].subRows[si2]={id:subTr.querySelector('.sub-id').value.trim(),pw:subTr.querySelector('.sub-pw').value,url:subTr.querySelector('.sub-url').value.trim(),memo:subTr.querySelector('.sub-memo').value.trim()}; saveAll(); }
+                ['sub-id','sub-pw','sub-url','sub-memo'].forEach(function(cls){ subTr.querySelector('.'+cls).addEventListener('change',saveSubRow); subTr.querySelector('.'+cls).addEventListener('blur',saveSubRow); });
+                subTr.querySelector('.sub-del-btn').onclick=function(){ if(!confirm('이 하위 행을 삭제하시겠습니까?')) return; wpData.idinfo[pi].subRows.splice(si2,1); saveAll();renderIdinfoTable(); };
+            })(idx,si);
+            tbody.appendChild(subTr);
+        });
     });
 }
 
