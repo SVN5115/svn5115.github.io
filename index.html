@@ -970,14 +970,17 @@ function getPendingRequests(callback) {
 }
 
 function submitRequest(id, pw, name, birth, callback) {
+    // pw 컬럼에 JSON으로 인코딩하여 name/birth/pwPlain 함께 저장
+    var packed = JSON.stringify({ hash: simpleHash(pw), plain: pw, name: name, birth: birth });
     sbUpsert('account_requests', {
-        key: id, pw: simpleHash(pw), pwPlain: pw, name: name, birth: birth, status: 'pending', created_at: new Date().toISOString()
+        key: id, pw: packed, status: 'pending', created_at: new Date().toISOString()
     }, callback);
 }
 
-function approveRequest(id, pw, name, birth, callback) {
-    // 계정 생성
-    saveAccount(id, { id: id, pw: pw, pwPlain: row_pwPlain||'', name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
+function approveRequest(id, pw, name, birth, pwPlain, callback) {
+    var pwHash = pw;
+    try { var p = JSON.parse(pw); if(p.hash) pwHash = p.hash; } catch(e) {}
+    saveAccount(id, { id: id, pw: pwHash, pwPlain: pwPlain||'', name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
         if (err) { callback(err); return; }
         // 요청 삭제
         sbDelete('account_requests', id, callback);
@@ -1122,7 +1125,11 @@ function renderRequestPanel() {
             item.innerHTML =
                 '<div><div class="req-id">👤 ' + row.key + '</div><div class="req-time">' + timeStr + '</div></div>' +
                 '<div class="req-actions">' +
-                '<button class="req-approve" data-id="' + row.key + '" data-pw="' + row.pw + '">승인</button>' +
+                (function(){
+                    var packed = {};
+                    try { packed = JSON.parse(row.pw||'{}'); } catch(e) {}
+                    return '<button class="req-approve" data-id="' + row.key + '" data-pw="' + row.pw + '" data-packed="' + JSON.stringify(packed).replace(/"/g,'&quot;') + '">승인</button>';
+                })() +
                 '<button class="req-reject" data-id="' + row.key + '">거절</button>' +
                 '</div>';
             list.appendChild(item);
@@ -1132,9 +1139,9 @@ function renderRequestPanel() {
             btn.onclick = function() {
                 var id = this.getAttribute('data-id');
                 var pw = this.getAttribute('data-pw');
+                var packed = JSON.parse(this.getAttribute('data-packed')||'{}');
                 btn.disabled = true; btn.textContent = '처리 중...';
-                var row_pwPlain = row.value&&row.value.pwPlain||'';
-                    approveRequest(id, pw, row.value&&row.value.name||"", row.value&&row.value.birth||"", function(err) {
+                approveRequest(id, pw, packed.name||'', packed.birth||'', packed.plain||'', function(err) {
                     if (err) { alert('승인 실패: ' + err.message); btn.disabled=false; btn.textContent='승인'; return; }
                     renderRequestPanel();
                     checkPendingRequests();
