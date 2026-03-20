@@ -725,6 +725,7 @@
     <div class="admin-tabs">
         <button class="admin-tab active" data-tab="requests">🔔 승인 요청 <span id="req-count"></span></button>
         <button class="admin-tab" data-tab="accounts">👥 계정 목록</button>
+        <button class="admin-tab" data-tab="transfer">📦 데이터 이관</button>
     </div>
     <div class="admin-tab-content">
         <div class="admin-tab-pane active" id="tab-requests">
@@ -732,6 +733,21 @@
         </div>
         <div class="admin-tab-pane" id="tab-accounts">
             <div id="account-list"></div>
+        </div>
+        <div class="admin-tab-pane" id="tab-transfer">
+            <div style="padding:14px;">
+                <div style="font-size:11px;color:#64748b;margin-bottom:10px;">선택한 계정의 모든 데이터를 다른 계정으로 이관합니다.</div>
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">원본 계정 (이관할 데이터의 주인)</label>
+                    <select id="transfer-from" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:'Malgun Gothic',sans-serif;outline:none;"></select>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:11px;font-weight:bold;color:#64748b;display:block;margin-bottom:4px;">대상 계정 (데이터를 받을 계정)</label>
+                    <select id="transfer-to" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:'Malgun Gothic',sans-serif;outline:none;"></select>
+                </div>
+                <div id="transfer-error" style="font-size:11px;color:#ef4444;min-height:14px;margin-bottom:8px;"></div>
+                <button id="transfer-btn" style="width:100%;padding:8px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">📦 이관 실행</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1048,6 +1064,48 @@ function deleteAccount(id, callback) {
     xhr.send();
 }
 
+function renderTransferPanel() {
+    getAllAccounts(function(err, rows) {
+        if (err || !rows) return;
+        var ids = rows.map(function(r){ return r.key.replace('account_',''); });
+        ['transfer-from','transfer-to'].forEach(function(selId) {
+            var sel = document.getElementById(selId);
+            sel.innerHTML = ids.map(function(id){ return '<option value="'+id+'">'+id+'</option>'; }).join('');
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var transferBtn = document.getElementById('transfer-btn');
+    if (transferBtn) {
+        transferBtn.onclick = function() {
+            var from = document.getElementById('transfer-from').value;
+            var to   = document.getElementById('transfer-to').value;
+            var errEl = document.getElementById('transfer-error');
+            errEl.textContent = '';
+            if (!from || !to) { errEl.textContent='계정을 선택하세요.'; return; }
+            if (from === to) { errEl.textContent='같은 계정끼리는 이관할 수 없습니다.'; return; }
+            if (!confirm('['+from+'] → ['+to+'] 으로 데이터를 이관합니다.\n대상 계정의 기존 데이터는 덮어씌워집니다. 계속하시겠습니까?')) return;
+            transferBtn.disabled = true; transferBtn.textContent = '이관 중...';
+            sbGet('planner_data', PLANNER_KEY + from, function(err, row) {
+                if (err || !row) {
+                    errEl.textContent = '원본 데이터를 불러올 수 없습니다.';
+                    transferBtn.disabled=false; transferBtn.textContent='📦 이관 실행'; return;
+                }
+                sbUpsert('planner_data', {
+                    key: PLANNER_KEY + to,
+                    value: row.value,
+                    updated_at: new Date().toISOString()
+                }, function(e) {
+                    transferBtn.disabled=false; transferBtn.textContent='📦 이관 실행';
+                    if (e) { errEl.textContent='이관 실패: '+e.message; return; }
+                    alert('✅ ['+from+'] → ['+to+'] 데이터 이관이 완료되었습니다.');
+                });
+            });
+        };
+    }
+});
+
 function renderAccountList() {
     var list = document.getElementById('account-list');
     list.innerHTML = '<div style="padding:14px;font-size:11px;color:#94a3b8;">불러오는 중...</div>';
@@ -1126,11 +1184,7 @@ function renderRequestPanel() {
             item.innerHTML =
                 '<div><div class="req-id">👤 ' + row.key + '</div><div class="req-time">' + timeStr + '</div></div>' +
                 '<div class="req-actions">' +
-                (function(){
-                    var packed = {};
-                    try { packed = JSON.parse(row.pw||'{}'); } catch(e) {}
-                    return '<button class="req-approve" data-id="' + row.key + '" data-pw="' + row.pw + '" data-packed="' + JSON.stringify(packed).replace(/"/g,'&quot;') + '">승인</button>';
-                })() +
+                '<button class="req-approve" data-id="' + row.key + '" data-pw="' + encodeURIComponent(row.pw||'') + '">승인</button>' +
                 '<button class="req-reject" data-id="' + row.key + '">거절</button>' +
                 '</div>';
             list.appendChild(item);
@@ -1139,10 +1193,11 @@ function renderRequestPanel() {
         list.querySelectorAll('.req-approve').forEach(function(btn) {
             btn.onclick = function() {
                 var id = this.getAttribute('data-id');
-                var pw = this.getAttribute('data-pw');
-                var packed = JSON.parse(this.getAttribute('data-packed')||'{}');
+                var rawPw = decodeURIComponent(this.getAttribute('data-pw')||'');
+                var packed = {};
+                try { packed = JSON.parse(rawPw); } catch(e) {}
                 btn.disabled = true; btn.textContent = '처리 중...';
-                approveRequest(id, pw, packed.name||'', packed.birth||'', packed.plain||'', function(err) {
+                approveRequest(id, rawPw, packed.name||'', packed.birth||'', packed.plain||'', function(err) {
                     if (err) { alert('승인 실패: ' + err.message); btn.disabled=false; btn.textContent='승인'; return; }
                     renderRequestPanel();
                     checkPendingRequests();
@@ -2999,6 +3054,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pane.classList.add('active');
             if (this.getAttribute('data-tab') === 'accounts') renderAccountList();
             if (this.getAttribute('data-tab') === 'requests') renderRequestPanel();
+            if (this.getAttribute('data-tab') === 'transfer') renderTransferPanel();
         };
     });
 
