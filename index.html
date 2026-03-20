@@ -2076,11 +2076,9 @@ function renderIdinfoTable() {
         // 비고 셀 - 텍스트 + 이미지 첨부
         var memoTd = tr.querySelector('.ii-memo-td');
         var memoCell = document.createElement('div'); memoCell.className = 'ii-memo-cell';
-        var memoInput = document.createElement('input'); memoInput.type='text'; memoInput.className='ii-memo'; memoInput.placeholder='비고'; memoInput.value=item.memo||'';
+        var memoInput = document.createElement('input'); memoInput.type='text'; memoInput.className='ii-memo'; memoInput.placeholder='내용&사진첨부가능'; memoInput.value=item.memo||'';
         var imgFileInput = document.createElement('input'); imgFileInput.type='file'; imgFileInput.accept='image/*'; imgFileInput.style.display='none';
-        var imgBtn = document.createElement('button'); imgBtn.type='button'; imgBtn.className='ii-img-btn'; imgBtn.textContent='📷';
-        imgBtn.title='이미지 첨부';
-        memoCell.appendChild(memoInput); memoCell.appendChild(imgFileInput); memoCell.appendChild(imgBtn);
+        memoCell.appendChild(memoInput); memoCell.appendChild(imgFileInput);
         // 기존 이미지 썸네일 표시
         if (item.memoImg) {
             var thumb = document.createElement('img'); thumb.className='ii-img-thumb'; thumb.src=item.memoImg;
@@ -2100,9 +2098,8 @@ function renderIdinfoTable() {
             pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
         };
         // 저장
-        (function(i, mImgInput, mImgBtn) {
+        (function(i, mImgInput) {
             // 이미지 업로드 - 200KB로 압축
-            mImgBtn.onclick = function() { mImgInput.click(); };
             mImgInput.onchange = function() {
                 if (!this.files.length) return;
                 var file = this.files[0];
@@ -2181,7 +2178,7 @@ function renderIdinfoTable() {
                 wpData.idinfo.splice(i, 1);
                 saveAll(); renderIdinfoTable();
             };
-        })(idx, imgFileInput, imgBtn);
+        })(idx, imgFileInput);
 
         tbody.appendChild(tr);
     });
