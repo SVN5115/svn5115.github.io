@@ -104,7 +104,7 @@
         #idinfo-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:8800; }
         #idinfo-overlay.visible { display:flex; align-items:center; justify-content:center; }
         #idinfo-popup {
-            background:white; border-radius:20px; width:98vw; max-width:2025px;
+            background:white; border-radius:20px; width:98vw; max-width:1400px;
             height:92vh; display:flex; flex-direction:column;
             box-shadow:0 16px 60px rgba(0,0,0,0.3); overflow:hidden;
         }
@@ -124,14 +124,37 @@
         #idinfo-add-btn:hover { background:#4f46e5; }
         #idinfo-body { flex:1; overflow-y:auto; padding:0 20px; }
         /* 테이블 */
-        #idinfo-table { width:100%; border-collapse:collapse; font-size:13px; }
+        #idinfo-table { width:100%; border-collapse:separate; border-spacing:6px 6px; font-size:13px; }
         #idinfo-table th {
-            background:#f1f5f9; padding:14px 16px; text-align:left;
-            font-size:12px; color:#475569; border-bottom:2px solid #e2e8f0;
+            background:#e2e8f0; padding:14px 16px; text-align:left;
+            font-size:12px; color:#475569; border-bottom:2px solid #cbd5e1;
             position:sticky; top:0; z-index:1;
         }
-        #idinfo-table td { padding:11px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        #idinfo-table td { padding:11px 14px; border-bottom:1px solid #f1f5f9; border-right:1px solid #f0f0f0; vertical-align:middle; }
+        #idinfo-table td:last-child { border-right:none; }
+        #idinfo-table th { border-right:1px solid #e2e8f0; }
+        #idinfo-table th:last-child { border-right:none; }
+        /* 그룹 카드 스타일 */
+        #idinfo-tbody tr[data-group-id] td { background:#f8fafc; border-top:1px solid #e8eaf0; border-bottom:1px solid #e8eaf0; }
+        #idinfo-tbody tr[data-group-id] td:first-child { border-left:1px solid #e8eaf0; }
+        #idinfo-tbody tr[data-group-id] td:last-child  { border-right:1px solid #e8eaf0; box-shadow:3px 3px 5px rgba(0,0,0,0.1); background:#f8fafc; }
+        #idinfo-tbody tr.group-first td:first-child { border-top-left-radius:6px; }
+        #idinfo-tbody tr.group-first td:last-child  { border-top-right-radius:6px; }
+        #idinfo-tbody tr.group-last  td:first-child { border-bottom-left-radius:6px; }
+        #idinfo-tbody tr.group-last  td:last-child  { border-bottom-right-radius:6px; }
+        #contact-table td { border-right:1px solid #f0f0f0; }
+        #contact-table td:last-child { border-right:none; }
+        #contact-table th { border-right:1px solid #e2e8f0; }
+        #contact-table th:last-child { border-right:none; }
+        #contact-tbody tr[data-ct-group] td { background:#f8fafc; border-top:1px solid #e8eaf0; border-bottom:1px solid #e8eaf0; }
+        #contact-tbody tr[data-ct-group] td:first-child { border-left:1px solid #e8eaf0; }
+        #contact-tbody tr[data-ct-group] td:last-child  { border-right:1px solid #e8eaf0; box-shadow:3px 3px 5px rgba(0,0,0,0.1); background:#f8fafc; }
+        #contact-tbody tr.group-first td:first-child { border-top-left-radius:6px; }
+        #contact-tbody tr.group-first td:last-child  { border-top-right-radius:6px; }
+        #contact-tbody tr.group-last  td:first-child { border-bottom-left-radius:6px; }
+        #contact-tbody tr.group-last  td:last-child  { border-bottom-right-radius:6px; }
         #idinfo-table tr:hover td { background:#fafafa; }
+
         #idinfo-table td input {
             width:100%; padding:7px 10px; border:1px solid transparent; border-radius:6px;
             font-size:12px; font-family:'Malgun Gothic',sans-serif; outline:none;
@@ -589,7 +612,7 @@
                         <th style="width:18%">비밀번호 <button type="button" id="idinfo-pw-all-toggle" title="전체 비밀번호 표시/숨김" style="background:none;border:none;cursor:pointer;font-size:13px;color:#94a3b8;vertical-align:middle;padding:0 2px;">👁</button></th>
                         <th style="width:20%">주소/URL</th>
                         <th>비고</th>
-                        <th style="width:80px;text-align:center;">관리</th>
+                        <th style="width:80px;text-align:center;background:#e2e8f0;padding:14px 16px;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;position:sticky;top:0;z-index:1;">관리</th>
                     </tr>
                 </thead>
                 <tbody id="idinfo-tbody"></tbody>
@@ -617,15 +640,15 @@
             </div>
         </div>
         <div style="flex:1;overflow-y:auto;padding:0 20px;">
-            <table id="contact-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+            <table id="contact-table" style="width:100%;border-collapse:separate;border-spacing:6px 6px;font-size:13px;">
                 <thead>
                     <tr>
-                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:15%;">이름</th>
-                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:15%;">직책/소속</th>
-                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:18%;">전화번호</th>
-                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:18%;">이메일</th>
-                        <th style="background:#f1f5f9;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;">비고</th>
-                        <th style="background:#f1f5f9;padding:14px 16px;text-align:center;font-size:12px;color:#475569;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:1;width:80px;">관리</th>
+                        <th style="background:#e2e8f0;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #e2e8f0;position:sticky;top:0;z-index:1;width:15%;">이름</th>
+                        <th style="background:#e2e8f0;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;position:sticky;top:0;z-index:1;width:15%;">직책/소속</th>
+                        <th style="background:#e2e8f0;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;position:sticky;top:0;z-index:1;width:18%;">전화번호</th>
+                        <th style="background:#e2e8f0;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;position:sticky;top:0;z-index:1;width:18%;">이메일</th>
+                        <th style="background:#e2e8f0;padding:14px 16px;text-align:left;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;position:sticky;top:0;z-index:1;">비고</th>
+                        <th style="background:#e2e8f0;padding:14px 16px;text-align:center;font-size:12px;color:#475569;border-bottom:2px solid #cbd5e1;position:sticky;top:0;z-index:1;width:80px;">관리</th>
                     </tr>
                 </thead>
                 <tbody id="contact-tbody"></tbody>
@@ -2190,9 +2213,16 @@ function addAttachment(date, idx, file, afterRender) {
 ════════════════════════════════════ */
 function filterContactTable(q) {
     var keyword = q.trim().toLowerCase();
-    document.querySelectorAll('#contact-tbody tr').forEach(function(tr) {
+    var seen = {};
+    document.querySelectorAll('#contact-tbody tr[data-ct-group]').forEach(function(tr) {
+        var gid = tr.getAttribute('data-ct-group');
+        if (seen[gid]) return;
+        seen[gid] = true;
         var name = (tr.querySelector('.ct-name') ? tr.querySelector('.ct-name').value : '').toLowerCase();
-        tr.style.display = (!keyword || name.indexOf(keyword) !== -1) ? '' : 'none';
+        var match = !keyword || name.indexOf(keyword) !== -1;
+        document.querySelectorAll('#contact-tbody tr[data-ct-group="' + gid + '"]').forEach(function(r) {
+            r.style.display = match ? '' : 'none';
+        });
     });
 }
 
@@ -2219,17 +2249,37 @@ function renderContactTable() {
     var list = wpData.contacts || [];
     if (!list.length) { empty.style.display='block'; return; }
     empty.style.display = 'none';
-    list.forEach(function(item, idx) {
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-            '<td><input type="text" value="' + esc(item.name||'') + '" placeholder="' + (item.name||item.tel ? '' : '이름') + '" class="ct-name" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
-            '<td><input type="text" value="' + esc(item.dept||'') + '" placeholder="' + (item.name||item.tel ? '' : '직책/소속') + '" class="ct-dept" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
-            '<td><input type="text" value="' + esc(item.tel||'') + '" placeholder="' + (item.name||item.tel ? '' : '010-0000-0000') + '" class="ct-tel" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
-            '<td><input type="text" value="' + esc(item.email||'') + '" placeholder="' + (item.name||item.tel ? '' : '이메일') + '" class="ct-email" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
-            '<td><input type="text" value="' + esc(item.memo||'') + '" placeholder="' + (item.name||item.tel ? '' : '비고') + '" class="ct-memo" style="width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
-            '<td style="text-align:center;"><button type="button" class="ct-del idinfo-row-del">삭제</button></td>';
 
-        // input focus 스타일
+    var inpStyle = 'width:100%;padding:5px 7px;border:1px solid transparent;border-radius:5px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;';
+
+    list.forEach(function(item, idx) {
+        var subRows = item.subRows || [];
+        var totalRows = 1 + subRows.length;
+        var filled = item.name || item.tel;
+
+        // ── 메인 행 ──
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-ct-group', idx);
+
+        // 이름 셀 (rowspan + + 버튼)
+        var tdName = document.createElement('td');
+        tdName.rowSpan = totalRows;
+        tdName.style.cssText = 'vertical-align:middle;border-right:2px solid #e2e8f0;background:#f8fafc;white-space:nowrap;';
+        tdName.innerHTML =
+            '<div style="display:flex;align-items:center;gap:4px;">' +
+            '<input type="text" value="' + esc(item.name||'') + '" placeholder="' + (filled?'':'이름') + '" class="ct-name" style="flex:1;min-width:0;' + inpStyle + '">' +
+            '<button type="button" class="ct-sub-add-btn" style="background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 2px;font-weight:bold;">+</button>' +
+            '</div>';
+        tr.appendChild(tdName);
+
+        tr.insertAdjacentHTML('beforeend',
+            '<td><input type="text" value="' + esc(item.dept||'') + '" placeholder="' + (filled?'':'직책/소속') + '" class="ct-dept" style="' + inpStyle + '"></td>' +
+            '<td><input type="text" value="' + esc(item.tel||'') + '" placeholder="' + (filled?'':'010-0000-0000') + '" class="ct-tel" style="' + inpStyle + '"></td>' +
+            '<td><input type="text" value="' + esc(item.email||'') + '" placeholder="' + (filled?'':'이메일') + '" class="ct-email" style="' + inpStyle + '"></td>' +
+            '<td><input type="text" value="' + esc(item.memo||'') + '" placeholder="' + (filled?'':'비고') + '" class="ct-memo" style="' + inpStyle + '"></td>' +
+            '<td style="text-align:center;"><button type="button" class="ct-del idinfo-row-del">삭제</button></td>'
+        );
+
         tr.querySelectorAll('input').forEach(function(inp){
             inp.addEventListener('focus', function(){ this.style.borderColor='#6366f1'; this.style.background='white'; });
             inp.addEventListener('blur',  function(){ this.style.borderColor='transparent'; this.style.background='transparent'; });
@@ -2237,13 +2287,13 @@ function renderContactTable() {
 
         (function(i) {
             function autoSave() {
-                wpData.contacts[i] = {
+                wpData.contacts[i] = Object.assign(wpData.contacts[i]||{}, {
                     name:  tr.querySelector('.ct-name').value.trim(),
                     dept:  tr.querySelector('.ct-dept').value.trim(),
                     tel:   tr.querySelector('.ct-tel').value.trim(),
                     email: tr.querySelector('.ct-email').value.trim(),
                     memo:  tr.querySelector('.ct-memo').value.trim()
-                };
+                });
                 saveAll();
             }
             ['ct-name','ct-dept','ct-tel','ct-email','ct-memo'].forEach(function(cls){
@@ -2252,23 +2302,69 @@ function renderContactTable() {
             });
             var ctPh = {name:'이름', dept:'직책/소속', tel:'010-0000-0000', email:'이메일', memo:'비고'};
             function toggleCtPh() {
-                var filled = tr.querySelector('.ct-name').value.trim() || tr.querySelector('.ct-tel').value.trim();
-                ['name','dept','tel','email','memo'].forEach(function(k){
-                    tr.querySelector('.ct-'+k).placeholder = filled ? '' : ctPh[k];
-                });
+                var f = tr.querySelector('.ct-name').value.trim() || tr.querySelector('.ct-tel').value.trim();
+                ['name','dept','tel','email','memo'].forEach(function(k){ tr.querySelector('.ct-'+k).placeholder = f ? '' : ctPh[k]; });
             }
-            ['ct-name','ct-tel'].forEach(function(cls){
-                tr.querySelector('.'+cls).addEventListener('input', toggleCtPh);
-            });
+            ['ct-name','ct-tel'].forEach(function(cls){ tr.querySelector('.'+cls).addEventListener('input', toggleCtPh); });
             toggleCtPh();
             tr.querySelector('.ct-del').onclick = function() {
                 if (!confirm('이 연락처를 삭제하시겠습니까?')) return;
-                wpData.contacts.splice(i, 1);
+                wpData.contacts.splice(i, 1); saveAll(); renderContactTable();
+            };
+            tr.querySelector('.ct-sub-add-btn').onclick = function() {
+                if (!wpData.contacts[i].subRows) wpData.contacts[i].subRows = [];
+                wpData.contacts[i].subRows.push({ dept:'', tel:'', email:'', memo:'' });
                 saveAll(); renderContactTable();
             };
         })(idx);
 
+        tr.classList.add('group-first');
+        if (subRows.length === 0) tr.classList.add('group-last');
+        tr.classList.add('group-first');
+        if (subRows.length === 0) tr.classList.add('group-last');
         tbody.appendChild(tr);
+
+        // ── 하위 행들 ──
+        subRows.forEach(function(sub, si) {
+            var subTr = document.createElement('tr');
+            subTr.setAttribute('data-ct-group', idx);
+            subTr.innerHTML =
+                '<td><input type="text" value="' + esc(sub.dept||'') + '" placeholder="" class="sub-ct-dept" style="' + inpStyle + '"></td>' +
+                '<td><input type="text" value="' + esc(sub.tel||'') + '" placeholder="" class="sub-ct-tel" style="' + inpStyle + '"></td>' +
+                '<td><input type="text" value="' + esc(sub.email||'') + '" placeholder="" class="sub-ct-email" style="' + inpStyle + '"></td>' +
+                '<td><input type="text" value="' + esc(sub.memo||'') + '" placeholder="" class="sub-ct-memo" style="' + inpStyle + '"></td>' +
+                '<td style="text-align:center;"><button type="button" class="sub-ct-del idinfo-row-del">삭제</button></td>';
+
+            subTr.querySelectorAll('input').forEach(function(inp){
+                inp.addEventListener('focus', function(){ this.style.borderColor='#6366f1'; this.style.background='white'; });
+                inp.addEventListener('blur',  function(){ this.style.borderColor='transparent'; this.style.background='transparent'; });
+            });
+
+            (function(pi, si2) {
+                function saveSubCt() {
+                    if (!wpData.contacts[pi].subRows) wpData.contacts[pi].subRows = [];
+                    wpData.contacts[pi].subRows[si2] = {
+                        dept:  subTr.querySelector('.sub-ct-dept').value.trim(),
+                        tel:   subTr.querySelector('.sub-ct-tel').value.trim(),
+                        email: subTr.querySelector('.sub-ct-email').value.trim(),
+                        memo:  subTr.querySelector('.sub-ct-memo').value.trim()
+                    };
+                    saveAll();
+                }
+                ['sub-ct-dept','sub-ct-tel','sub-ct-email','sub-ct-memo'].forEach(function(cls){
+                    subTr.querySelector('.'+cls).addEventListener('change', saveSubCt);
+                    subTr.querySelector('.'+cls).addEventListener('blur',   saveSubCt);
+                });
+                subTr.querySelector('.sub-ct-del').onclick = function() {
+                    if (!confirm('이 하위 항목을 삭제하시겠습니까?')) return;
+                    wpData.contacts[pi].subRows.splice(si2, 1);
+                    saveAll(); renderContactTable();
+                };
+            })(idx, si);
+
+            if (si === subRows.length - 1) subTr.classList.add('group-last');
+            tbody.appendChild(subTr);
+        });
     });
 }
 
@@ -2432,6 +2528,8 @@ function renderIdinfoTable() {
             tr.querySelector('.ii-sub-add-btn').onclick=function(){ if(!wpData.idinfo[i].subRows) wpData.idinfo[i].subRows=[]; wpData.idinfo[i].subRows.push({id:'',pw:'',url:'',memo:''}); saveAll();renderIdinfoTable(); };
         })(idx, imgFileInput);
 
+        tr.classList.add('group-first');
+        if (subRows.length === 0) tr.classList.add('group-last');
         tbody.appendChild(tr);
 
         // ── 하위 행들 ──
@@ -2439,7 +2537,6 @@ function renderIdinfoTable() {
             var subTr = document.createElement('tr');
             subTr.setAttribute('data-group-id', idx);
             subTr.setAttribute('data-service', item.service || '');
-            subTr.style.background = '#f8faff';
             subTr.innerHTML =
                 '<td><input type="text" value="' + esc(sub.id||'') + '" placeholder="' + (item.service?'':'아이디') + '" class="sub-id"></td>' +
                 '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(sub.pw||'') + '" placeholder="' + (item.service?'':'비밀번호') + '" class="sub-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
@@ -2453,6 +2550,7 @@ function renderIdinfoTable() {
                 ['sub-id','sub-pw','sub-url','sub-memo'].forEach(function(cls){ subTr.querySelector('.'+cls).addEventListener('change',saveSubRow); subTr.querySelector('.'+cls).addEventListener('blur',saveSubRow); });
                 subTr.querySelector('.sub-del-btn').onclick=function(){ if(!confirm('이 하위 행을 삭제하시겠습니까?')) return; wpData.idinfo[pi].subRows.splice(si2,1); saveAll();renderIdinfoTable(); };
             })(idx,si);
+            if (si === subRows.length - 1) subTr.classList.add('group-last');
             tbody.appendChild(subTr);
         });
     });
