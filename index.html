@@ -1037,7 +1037,7 @@ function renderAccountList() {
         }
         rows.forEach(function(row) {
             var id = row.key.replace('account_', '');
-            var role = (row.value && row.value.role) || 'user';
+            var accData = row.value || {};
             var isAdmin = id === ADMIN_ID;
             var item = document.createElement('div');
             item.className = 'acc-item';
@@ -1046,8 +1046,27 @@ function renderAccountList() {
                 '<div class="acc-id">' + (isAdmin ? '👑 ' : '👤 ') + id + '</div>' +
                 '<div class="acc-role">' + (isAdmin ? '관리자' : '일반 사용자') + '</div>' +
                 '</div>' +
-                (!isAdmin ? '<button class="acc-del" data-id="' + id + '">삭제</button>' : '<span style="font-size:11px;color:#c0c8d4;">삭제 불가</span>');
+                '<div style="display:flex;gap:5px;align-items:center;">' +
+                '<button class="acc-pw-btn" data-id="' + id + '" style="padding:4px 10px;background:none;border:1px solid #a5b4fc;color:#6366f1;border-radius:5px;font-size:11px;cursor:pointer;">비밀번호 변경</button>' +
+                (!isAdmin ? '<button class="acc-del" data-id="' + id + '">삭제</button>' : '<span style="font-size:11px;color:#c0c8d4;">삭제 불가</span>') +
+                '</div>';
             list.appendChild(item);
+        });
+        list.querySelectorAll('.acc-pw-btn').forEach(function(btn) {
+            btn.onclick = function() {
+                var id = this.getAttribute('data-id');
+                var newPw = prompt('[' + id + '] 새 비밀번호를 입력하세요 (4자 이상):');
+                if (newPw === null) return;
+                if (!newPw || newPw.length < 4) { alert('비밀번호는 4자 이상이어야 합니다.'); return; }
+                getAccount(id, function(e, acc) {
+                    if (e || !acc) { alert('계정 정보를 불러오지 못했습니다.'); return; }
+                    acc.pw = simpleHash(newPw);
+                    saveAccount(id, acc, function(err) {
+                        if (err) { alert('변경 실패: ' + err.message); return; }
+                        alert('✅ [' + id + '] 비밀번호가 변경되었습니다.');
+                    });
+                });
+            };
         });
         list.querySelectorAll('.acc-del').forEach(function(btn) {
             btn.onclick = function() {
@@ -1056,7 +1075,6 @@ function renderAccountList() {
                 btn.disabled = true; btn.textContent = '삭제 중...';
                 deleteAccount(id, function(err) {
                     if (err) { alert('삭제 실패: ' + err.message); btn.disabled=false; btn.textContent='삭제'; return; }
-                    // 해당 사용자 데이터도 삭제
                     sbDelete('planner_data', PLANNER_KEY + id, function() {
                         renderAccountList();
                         alert('✅ [' + id + '] 계정이 삭제되었습니다.');
@@ -2086,7 +2104,6 @@ function renderIdinfoTable() {
             '<td><input type="text" value="' + esc(item.url||'') + '" placeholder="https://..." class="ii-url"></td>' +
             '<td class="ii-memo-td"></td>' +
             '<td style="text-align:center;white-space:nowrap;">' +
-                '<button type="button" class="idinfo-row-save">저장</button> ' +
                 '<button type="button" class="idinfo-row-del">삭제</button>' +
             '</td>';
 
@@ -2176,20 +2193,25 @@ function renderIdinfoTable() {
                 }
             });
 
-            tr.querySelector('.idinfo-row-save').onclick = function() {
+            function autoSaveRow() {
                 wpData.idinfo[i] = Object.assign(wpData.idinfo[i] || {}, {
                     service: tr.querySelector('.ii-service').value.trim(),
                     id:      tr.querySelector('.ii-id').value.trim(),
                     pw:      tr.querySelector('.ii-pw').value,
                     url:     tr.querySelector('.ii-url').value.trim(),
-                    memo:    tr.querySelector('.ii-memo').value.trim(),
+                    memo:    tr.querySelector('.ii-memo') ? tr.querySelector('.ii-memo').value.trim() : '',
                     memoImg: wpData.idinfo[i] ? (wpData.idinfo[i].memoImg || '') : ''
                 });
                 saveAll();
-                var btn = tr.querySelector('.idinfo-row-save');
-                btn.textContent = '✓'; btn.style.background = '#22c55e';
-                setTimeout(function(){ btn.textContent='저장'; btn.style.background=''; }, 1500);
-            };
+            }
+            ['ii-service','ii-id','ii-pw','ii-url'].forEach(function(cls) {
+                tr.querySelector('.'+cls).addEventListener('change', autoSaveRow);
+                tr.querySelector('.'+cls).addEventListener('blur', autoSaveRow);
+            });
+            if (tr.querySelector('.ii-memo')) {
+                tr.querySelector('.ii-memo').addEventListener('change', autoSaveRow);
+                tr.querySelector('.ii-memo').addEventListener('blur', autoSaveRow);
+            }
             tr.querySelector('.idinfo-row-del').onclick = function() {
                 if (!confirm('이 항목을 삭제하시겠습니까?')) return;
                 wpData.idinfo.splice(i, 1);
@@ -2208,7 +2230,7 @@ function esc(str) {
 function addIdinfoRow() {
     if (!wpData.idinfo) wpData.idinfo = [];
     wpData.idinfo.push({ service:'', id:'', pw:'', url:'', memo:'' });
-    renderIdinfoTable();
+    saveAll(); renderIdinfoTable();
     // 새 행 제목 포커스
     var rows = document.querySelectorAll('#idinfo-tbody tr');
     if (rows.length) rows[rows.length-1].querySelector('.ii-service').focus();
