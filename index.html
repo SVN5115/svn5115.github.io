@@ -3149,6 +3149,10 @@ document.addEventListener('DOMContentLoaded', function() {
         var body  = document.getElementById('body-' + key);
         var sec   = document.getElementById('sec-' + key);
         if (!label || !body) return;
+        // 초기 최소화
+        minimizedState[key] = true;
+        body.classList.add('minimized');
+        sec.classList.add('minimized');
         label.onclick = function() {
             minimizedState[key] = !minimizedState[key];
             if (minimizedState[key]) {
