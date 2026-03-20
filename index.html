@@ -476,6 +476,7 @@
         <button id="login-btn" class="auth-btn">로그인</button>
         <div class="auth-divider"><span>또는</span></div>
         <button id="goto-signup-btn" class="auth-btn gray">계정 생성 요청</button>
+        <button id="goto-findpw-btn" class="auth-btn gray" style="margin-top:6px;">🔑 비밀번호 찾기</button>
     </div>
 </div>
 
@@ -488,6 +489,8 @@
             <div class="auth-sub">관리자 승인 후 로그인 가능합니다</div>
         </div>
         <div class="auth-field"><label>아이디</label><input type="text" id="signup-id" placeholder="사용할 아이디 입력" autocomplete="off"></div>
+        <div class="auth-field"><label>이름</label><input type="text" id="signup-name" placeholder="이름 입력"></div>
+        <div class="auth-field"><label>생년월일</label><input type="text" id="signup-birth" placeholder="YYMMDD (예: 901231)" maxlength="6"></div>
         <div class="auth-field">
             <label>비밀번호</label>
             <input type="password" id="signup-pw" placeholder="비밀번호 입력">
@@ -502,6 +505,25 @@
         <div id="signup-success" class="auth-success">✅ 요청이 전송되었습니다!<br>관리자 승인 후 로그인하실 수 있습니다.</div>
         <div class="auth-divider"><span></span></div>
         <button id="goto-login-btn" class="auth-btn gray">← 로그인으로 돌아가기</button>
+    </div>
+</div>
+
+<!-- 비밀번호 찾기 화면 -->
+<div id="findpw-screen" class="auth-screen hidden">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <div class="auth-icon">🔑</div>
+            <div class="auth-title">비밀번호 찾기</div>
+            <div class="auth-sub">등록된 정보로 비밀번호를 확인합니다</div>
+        </div>
+        <div class="auth-field"><label>아이디</label><input type="text" id="findpw-id" placeholder="아이디 입력" autocomplete="off"></div>
+        <div class="auth-field"><label>이름</label><input type="text" id="findpw-name" placeholder="이름 입력"></div>
+        <div class="auth-field"><label>생년월일</label><input type="text" id="findpw-birth" placeholder="YYMMDD (예: 901231)" maxlength="6"></div>
+        <div id="findpw-error" class="auth-error"></div>
+        <div id="findpw-result" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:13px;color:#166534;text-align:center;margin-bottom:8px;"></div>
+        <button id="findpw-btn" class="auth-btn">비밀번호 확인</button>
+        <div class="auth-divider"><span></span></div>
+        <button id="findpw-back-btn" class="auth-btn gray">← 로그인으로 돌아가기</button>
     </div>
 </div>
 
@@ -947,15 +969,15 @@ function getPendingRequests(callback) {
     sbGetAll('account_requests', 'status=eq.pending&order=created_at.asc', callback);
 }
 
-function submitRequest(id, pw, callback) {
+function submitRequest(id, pw, name, birth, callback) {
     sbUpsert('account_requests', {
-        key: id, pw: simpleHash(pw), status: 'pending', created_at: new Date().toISOString()
+        key: id, pw: simpleHash(pw), pwPlain: pw, name: name, birth: birth, status: 'pending', created_at: new Date().toISOString()
     }, callback);
 }
 
-function approveRequest(id, pw, callback) {
+function approveRequest(id, pw, name, birth, callback) {
     // 계정 생성
-    saveAccount(id, { id: id, pw: pw, role: 'user', createdAt: new Date().toISOString() }, function(err) {
+    saveAccount(id, { id: id, pw: pw, pwPlain: row_pwPlain||'', name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
         if (err) { callback(err); return; }
         // 요청 삭제
         sbDelete('account_requests', id, callback);
@@ -970,13 +992,13 @@ function rejectRequest(id, callback) {
    화면 전환
 ════════════════════════════════════ */
 function showScreen(name) {
-    ['login-screen','signup-screen','setup-screen'].forEach(function(s){
+    ['login-screen','signup-screen','setup-screen','findpw-screen'].forEach(function(s){
         document.getElementById(s).classList.add('hidden');
     });
     document.getElementById(name).classList.remove('hidden');
 }
 function hideAllScreens() {
-    ['login-screen','signup-screen','setup-screen'].forEach(function(s){
+    ['login-screen','signup-screen','setup-screen','findpw-screen'].forEach(function(s){
         document.getElementById(s).classList.add('hidden');
     });
 }
@@ -1111,7 +1133,8 @@ function renderRequestPanel() {
                 var id = this.getAttribute('data-id');
                 var pw = this.getAttribute('data-pw');
                 btn.disabled = true; btn.textContent = '처리 중...';
-                approveRequest(id, pw, function(err) {
+                var row_pwPlain = row.value&&row.value.pwPlain||'';
+                    approveRequest(id, pw, row.value&&row.value.name||"", row.value&&row.value.birth||"", function(err) {
                     if (err) { alert('승인 실패: ' + err.message); btn.disabled=false; btn.textContent='승인'; return; }
                     renderRequestPanel();
                     checkPendingRequests();
@@ -2740,19 +2763,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('signup-btn').onclick = function() {
         var id=document.getElementById('signup-id').value.trim();
+        var name=document.getElementById('signup-name').value.trim();
+        var birth=document.getElementById('signup-birth').value.trim();
         var pw=document.getElementById('signup-pw').value;
         var pw2=document.getElementById('signup-pw2').value;
         var err=document.getElementById('signup-error');
         if (!id||id.length<2) { err.textContent='아이디는 2자 이상이어야 합니다.'; return; }
         if (id===ADMIN_ID) { err.textContent='사용할 수 없는 아이디입니다.'; return; }
+        if (!name) { err.textContent='이름을 입력하세요.'; return; }
+        if (!/^\d{6}$/.test(birth)) { err.textContent='생년월일을 YYMMDD 6자리로 입력하세요.'; return; }
         if (!pw||pw.length<4) { err.textContent='비밀번호는 4자 이상이어야 합니다.'; return; }
         if (pw!==pw2) { err.textContent='비밀번호가 일치하지 않습니다.'; return; }
         var btn=document.getElementById('signup-btn');
         btn.disabled=true; btn.textContent='전송 중...'; err.textContent='';
-        // 이미 계정이 있는지 확인
         getAccount(id, function(accErr, acc) {
             if (acc) { err.textContent='이미 존재하는 아이디입니다.'; btn.disabled=false; btn.textContent='요청 보내기'; return; }
-            submitRequest(id, pw, function(e) {
+            submitRequest(id, pw, name, birth, function(e) {
                 if (e) { err.textContent='전송 실패: '+e.message; btn.disabled=false; btn.textContent='요청 보내기'; return; }
                 document.getElementById('signup-success').style.display='block';
                 btn.style.display='none';
@@ -2766,9 +2792,46 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('signup-btn').disabled=false;
         document.getElementById('signup-btn').textContent='요청 보내기';
         document.getElementById('signup-id').value='';
+        document.getElementById('signup-name').value='';
+        document.getElementById('signup-birth').value='';
         document.getElementById('signup-pw').value='';
         document.getElementById('signup-pw2').value='';
         document.getElementById('signup-error').textContent='';
+    };
+
+    /* ── 비밀번호 찾기 ── */
+    document.getElementById('goto-findpw-btn').onclick = function() { showScreen('findpw-screen'); };
+    document.getElementById('findpw-back-btn').onclick = function() {
+        showScreen('login-screen');
+        document.getElementById('findpw-id').value='';
+        document.getElementById('findpw-name').value='';
+        document.getElementById('findpw-birth').value='';
+        document.getElementById('findpw-error').textContent='';
+        document.getElementById('findpw-result').style.display='none';
+    };
+    document.getElementById('findpw-btn').onclick = function() {
+        var id=document.getElementById('findpw-id').value.trim();
+        var name=document.getElementById('findpw-name').value.trim();
+        var birth=document.getElementById('findpw-birth').value.trim();
+        var err=document.getElementById('findpw-error');
+        var result=document.getElementById('findpw-result');
+        err.textContent=''; result.style.display='none';
+        if (!id||!name||!birth) { err.textContent='모든 항목을 입력하세요.'; return; }
+        getAccount(id, function(accErr, acc) {
+            if (accErr||!acc) { err.textContent='일치하는 계정을 찾을 수 없습니다.'; return; }
+            // admin 계정 고정 정보 폴백
+            var accName  = acc.name  || (id===ADMIN_ID ? '유종수'  : '');
+            var accBirth = acc.birth || (id===ADMIN_ID ? '950415' : '');
+            if (accName!==name || accBirth!==birth) { err.textContent='이름 또는 생년월일이 일치하지 않습니다.'; return; }
+            if (acc.pwPlain) {
+                result.textContent='비밀번호: ' + acc.pwPlain;
+                result.style.display='block';
+            } else if (id===ADMIN_ID) {
+                err.textContent='초기 비밀번호는 설정 시 입력한 값입니다. 잊어버리셨다면 관리자 패널 → 계정 목록에서 비밀번호를 변경해 주세요.';
+            } else {
+                err.textContent='비밀번호를 확인할 수 없습니다. 관리자에게 문의하세요.';
+            }
+        });
     };
 
     /* ── 관리자 초기 설정 화면 ── */
@@ -2787,7 +2850,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (pw!==pw2) { err.textContent='비밀번호가 일치하지 않습니다.'; return; }
         var btn=document.getElementById('setup-btn');
         btn.disabled=true; btn.textContent='생성 중...';
-        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), role:'admin', createdAt:new Date().toISOString() }, function(e) {
+        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), pwPlain:pw, name:'유종수', birth:'950415', role:'admin', createdAt:new Date().toISOString() }, function(e) {
             if (e) { err.textContent='저장 실패: '+e.message; btn.disabled=false; btn.textContent='관리자 계정 생성'; return; }
             currentUser = { id:ADMIN_ID, role:'admin' };
             sessionStorage.setItem('planner_user', JSON.stringify(currentUser));
