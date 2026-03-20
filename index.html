@@ -547,7 +547,7 @@
             <table id="idinfo-table">
                 <thead>
                     <tr>
-                        <th style="width:18%">서비스명</th>
+                        <th style="width:18%">제목</th>
                         <th style="width:18%">아이디</th>
                         <th style="width:18%">비밀번호</th>
                         <th style="width:20%">주소/URL</th>
@@ -1875,7 +1875,7 @@ function renderIdinfoTable() {
     list.forEach(function(item, idx) {
         var tr = document.createElement('tr');
         tr.innerHTML =
-            '<td><input type="text" value="' + esc(item.service||'') + '" placeholder="서비스명" class="ii-service"></td>' +
+            '<td><input type="text" value="' + esc(item.service||'') + '" placeholder="제목" class="ii-service"></td>' +
             '<td><input type="text" value="' + esc(item.id||'') + '" placeholder="아이디" class="ii-id"></td>' +
             '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(item.pw||'') + '" placeholder="비밀번호" class="ii-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
             '<td><input type="text" value="' + esc(item.url||'') + '" placeholder="https://..." class="ii-url"></td>' +
@@ -1925,7 +1925,7 @@ function addIdinfoRow() {
     if (!wpData.idinfo) wpData.idinfo = [];
     wpData.idinfo.push({ service:'', id:'', pw:'', url:'', memo:'' });
     renderIdinfoTable();
-    // 새 행 서비스명 포커스
+    // 새 행 제목 포커스
     var rows = document.querySelectorAll('#idinfo-tbody tr');
     if (rows.length) rows[rows.length-1].querySelector('.ii-service').focus();
 }
