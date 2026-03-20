@@ -253,6 +253,44 @@
         .goto-popup-btn:hover { background: #4f46e5; }
         .goto-error { font-size: 11px; color: #ef4444; min-height: 14px; margin-bottom: 6px; }
 
+        /* ── 일정 세부내용 인라인 ── */
+        .todo-item { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .todo-item-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+        .todo-detail-box {
+            display: none; margin-top: 6px; margin-left: 22px;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px;
+            overflow: hidden;
+        }
+        .todo-detail-box.open { display: block; }
+        .todo-detail-textarea {
+            width: 100%; padding: 8px 10px; border: none; outline: none;
+            font-size: 12px; font-family: 'Malgun Gothic', sans-serif;
+            line-height: 1.6; color: #334155; resize: none; background: transparent;
+            box-sizing: border-box; min-height: 60px;
+        }
+        .todo-detail-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 4px 8px 6px; border-top: 1px solid #e2e8f0; }
+        .td-inline-cancel { padding: 3px 10px; background: none; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
+        .td-inline-save   { padding: 3px 12px; background: #6366f1; color: white; border: none; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; font-family: 'Malgun Gothic', sans-serif; }
+        .td-inline-save:hover { background: #4f46e5; }
+        /* 첨부 영역 */
+        .todo-attach-bar { display:flex; align-items:center; gap:6px; padding:5px 10px; border-top:1px solid #e2e8f0; background:#f8fafc; }
+        .todo-attach-btn { display:flex; align-items:center; gap:4px; padding:3px 9px; background:white; border:1px solid #d1d5db; border-radius:5px; font-size:11px; color:#64748b; cursor:pointer; font-family:'Malgun Gothic',sans-serif; }
+        .todo-attach-btn:hover { background:#f1f5f9; border-color:#94a3b8; }
+        .todo-attach-paste-hint { font-size:10px; color:#94a3b8; }
+        .todo-attachments { padding:6px 10px; display:flex; flex-wrap:wrap; gap:8px; }
+        .todo-attach-item { position:relative; display:inline-flex; flex-direction:column; align-items:center; gap:3px; }
+        .todo-attach-img { width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0; cursor:pointer; }
+        .todo-attach-img:hover { border-color:#6366f1; }
+        .todo-attach-file { display:flex; align-items:center; gap:5px; padding:5px 8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; font-size:11px; color:#334155; cursor:pointer; max-width:160px; }
+        .todo-attach-file span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .todo-attach-del { position:absolute; top:-5px; right:-5px; width:16px; height:16px; background:#ef4444; color:white; border:none; border-radius:50%; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; }
+        /* 이미지 확대 오버레이 */
+        #img-preview-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; cursor:zoom-out; }
+        #img-preview-overlay.visible { display:flex; }
+        #img-preview-overlay img { max-width:90vw; max-height:90vh; border-radius:8px; object-fit:contain; }
+        .todo-text.clickable { cursor: pointer; }
+        .todo-text.clickable:hover { color: #6366f1; }
+
         /* ── 회의 팝업 ── */
         #meeting-popup {
             display: none; position: fixed; top: 50%; left: 50%;
@@ -289,7 +327,7 @@
         .meeting-save-btn:hover { background: #ca8a04; }
         /* 회의 마커 */
         .meeting-markers { position: absolute; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
-        .meeting-tag { background: #fef08a; color: #713f12; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; line-height: 14px; height: 14px; box-sizing: border-box; cursor: pointer; }
+        .meeting-tag { background: #fef9c3; color: #854d0e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; line-height: 14px; height: 14px; box-sizing: border-box; cursor: pointer; }
         .meeting-tag:hover { background: #fde047; }
         .meeting-item { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }
         .meeting-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -332,7 +370,7 @@
         .expense-markers { position: absolute; top: 4px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .expense-tag { background: #ede9fe; color: #6d28d9; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .report-markers { position: absolute; top: 20px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
-        .report-tag { background: #fdf3e7; color: #92400e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
+        .report-tag { background: #dbeafe; color: #1e40af; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .report-markers { position: absolute; top: 20px; right: 6px; display: flex; flex-wrap: wrap; gap: 2px; max-width: 80%; justify-content: flex-end; z-index: 1; }
         .report-tag { background: #fef3c7; color: #92400e; border-radius: 3px; font-size: 8px; font-weight: bold; padding: 1px 4px; white-space: nowrap; max-width: 60px; overflow: hidden; text-overflow: ellipsis; line-height: 14px; height: 14px; box-sizing: border-box; }
         .todo-section { background: white; border: 1px solid #eee; border-radius: 12px; padding: 25px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; }
@@ -342,7 +380,6 @@
         .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Malgun Gothic', sans-serif; }
         .input-group button { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; }
         .todo-list { list-style: none; padding: 0; overflow-y: auto; flex: 1; }
-        .todo-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
         .delete-btn { color: #ff4d4f; cursor: pointer; border: none; background: none; }
         .todo-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; accent-color: #6366f1; }
         .todo-text.done { text-decoration: line-through; color: #9ca3af; }
@@ -448,6 +485,11 @@
     </div>
     <div id="goto-error" class="goto-error"></div>
     <button type="button" class="goto-popup-btn" id="goto-go-btn">이동</button>
+</div>
+
+<!-- 이미지 확대 오버레이 -->
+<div id="img-preview-overlay" onclick="this.classList.remove('visible')">
+    <img id="img-preview-img" src="" alt="미리보기">
 </div>
 
 <!-- MEMO 오버레이 + 팝업 -->
@@ -1669,6 +1711,69 @@ function saveMemo() {
     closeMemoPopup();
 }
 
+
+/* ════════════════════════════════════
+   첨부파일/이미지
+════════════════════════════════════ */
+var MAX_ATTACH_SIZE = 1 * 1024 * 1024; // 1MB
+
+function fileToBase64(file, callback) {
+    if (file.size > MAX_ATTACH_SIZE) {
+        alert('파일 크기가 1MB를 초과합니다.\n(' + (file.size/1024/1024).toFixed(1) + 'MB)');
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) { callback(e.target.result); };
+    reader.readAsDataURL(file);
+}
+
+function renderAttachments(attachments, container, date, idx) {
+    container.innerHTML = '';
+    if (!attachments || !attachments.length) return;
+    attachments.forEach(function(att, ai) {
+        var item = document.createElement('div'); item.className = 'todo-attach-item';
+        var delBtn = document.createElement('button'); delBtn.className = 'todo-attach-del'; delBtn.type = 'button'; delBtn.textContent = '✕';
+        (function(aidx) {
+            delBtn.onclick = function(e) {
+                e.stopPropagation();
+                if (!confirm('첨부파일을 삭제하시겠습니까?')) return;
+                todos[date][idx].attachments.splice(aidx, 1);
+                saveAll();
+                renderAttachments(todos[date][idx].attachments, container, date, idx);
+            };
+        })(ai);
+        if (att.type === 'image') {
+            var img = document.createElement('img'); img.className = 'todo-attach-img';
+            img.src = att.data; img.title = att.name || '이미지';
+            img.onclick = function() {
+                document.getElementById('img-preview-img').src = att.data;
+                document.getElementById('img-preview-overlay').classList.add('visible');
+            };
+            item.appendChild(img);
+        } else {
+            var fileEl = document.createElement('div'); fileEl.className = 'todo-attach-file';
+            fileEl.innerHTML = '📎 <span>' + (att.name || '파일') + '</span>';
+            fileEl.onclick = function() {
+                var a = document.createElement('a'); a.href = att.data;
+                a.download = att.name || 'file'; a.click();
+            };
+            item.appendChild(fileEl);
+        }
+        item.appendChild(delBtn);
+        container.appendChild(item);
+    });
+}
+
+function addAttachment(date, idx, file, afterRender) {
+    fileToBase64(file, function(data) {
+        if (!todos[date][idx].attachments) todos[date][idx].attachments = [];
+        var isImage = file.type.startsWith('image/');
+        todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: data });
+        saveAll();
+        if (afterRender) afterRender();
+    });
+}
+
 function saveAll() { saveData(); }
 
 /* ════════════════════════════════════
@@ -1976,17 +2081,120 @@ function renderList(date) {
     (todos[date]||[]).forEach(function(t,i){
         var li = document.createElement('li'); li.className = 'todo-item';
         var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!t.done;
-        var span = document.createElement('span'); span.className = 'todo-text' + (t.done ? ' done' : ''); span.textContent = t.text;
+        var span = document.createElement('span');
+        span.className = 'todo-text clickable' + (t.done ? ' done' : '');
+        span.textContent = t.text;
+        if (t.detail) {
+            var dot = document.createElement('span');
+            dot.style.cssText = 'display:inline-block;width:6px;height:6px;background:#6366f1;border-radius:50%;margin-left:5px;vertical-align:middle;flex-shrink:0;';
+            span.appendChild(dot);
+        }
         var btn = document.createElement('button'); btn.className = 'delete-btn'; btn.innerHTML = '&#x2715;';
-        (function(d, idx) {
+
+        // 인라인 세부내용 박스
+        var detailBox = document.createElement('div'); detailBox.className = 'todo-detail-box';
+        if (t.detail || (t.attachments && t.attachments.length)) detailBox.classList.add('open');
+
+        // 첨부 영역
+        var attachArea = document.createElement('div'); attachArea.className = 'todo-attachments';
+        renderAttachments(t.attachments || [], attachArea, date, i);
+
+        var attachBar = document.createElement('div'); attachBar.className = 'todo-attach-bar';
+        var fileInput = document.createElement('input'); fileInput.type='file'; fileInput.style.display='none';
+        fileInput.accept = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt';
+        var attachBtn = document.createElement('button'); attachBtn.type='button'; attachBtn.className='todo-attach-btn';
+        attachBtn.innerHTML = '📎 파일 첨부';
+        var pasteHint = document.createElement('span'); pasteHint.className='todo-attach-paste-hint'; pasteHint.textContent='Ctrl+V로 이미지 붙여넣기';
+        attachBar.appendChild(fileInput); attachBar.appendChild(attachBtn); attachBar.appendChild(pasteHint);
+
+        var detailTa = document.createElement('textarea'); detailTa.className = 'todo-detail-textarea';
+        detailTa.placeholder = '세부 내용을 입력하세요... (이미지는 Ctrl+V로 붙여넣기)';
+        detailTa.value = t.detail || '';
+        detailTa.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        var detailActions = document.createElement('div'); detailActions.className = 'todo-detail-actions';
+        var cancelBtn = document.createElement('button'); cancelBtn.type='button'; cancelBtn.className='td-inline-cancel'; cancelBtn.textContent='취소';
+        var saveBtn   = document.createElement('button'); saveBtn.type='button';   saveBtn.className='td-inline-save';   saveBtn.textContent='저장';
+        detailActions.appendChild(cancelBtn); detailActions.appendChild(saveBtn);
+
+        detailBox.appendChild(attachArea);
+        detailBox.appendChild(detailTa);
+        detailBox.appendChild(attachBar);
+        detailBox.appendChild(detailActions);
+
+        var row = document.createElement('div'); row.className = 'todo-item-row';
+        row.appendChild(cb); row.appendChild(span); row.appendChild(btn);
+        li.appendChild(row); li.appendChild(detailBox);
+
+        (function(d, idx, dBox, dTa, aArea, aBtn, fInput) {
             cb.onchange = function() {
                 todos[d][idx].done = cb.checked;
-                span.className = 'todo-text' + (cb.checked ? ' done' : '');
+                span.className = 'todo-text clickable' + (cb.checked ? ' done' : '');
                 saveAll();
             };
+            span.onclick = function(e) {
+                e.stopPropagation();
+                // 다른 열린 박스 닫기
+                document.querySelectorAll('.todo-detail-box.open').forEach(function(b){
+                    if (b !== dBox) b.classList.remove('open');
+                });
+                dBox.classList.toggle('open');
+                if (dBox.classList.contains('open')) {
+                    setTimeout(function(){ dTa.focus(); dTa.style.height='auto'; dTa.style.height=dTa.scrollHeight+'px'; }, 50);
+                }
+            };
+            cancelBtn.onclick = function(e) {
+                e.stopPropagation();
+                dTa.value = todos[d][idx].detail || '';
+                dBox.classList.remove('open');
+            };
+            saveBtn.onclick = function(e) {
+                e.stopPropagation();
+                todos[d][idx].detail = dTa.value;
+                saveAll();
+                // dot 업데이트
+                var hasContent = dTa.value || (todos[d][idx].attachments && todos[d][idx].attachments.length);
+                var existDot = span.querySelector('span');
+                if (hasContent && !existDot) {
+                    var newDot = document.createElement('span');
+                    newDot.style.cssText = 'display:inline-block;width:6px;height:6px;background:#6366f1;border-radius:50%;margin-left:5px;vertical-align:middle;flex-shrink:0;';
+                    span.appendChild(newDot);
+                } else if (!hasContent && existDot) {
+                    span.removeChild(existDot);
+                }
+                dBox.classList.remove('open');
+            };
+            // 파일 첨부 버튼
+            aBtn.onclick = function(e) { e.stopPropagation(); fInput.click(); };
+            fInput.onchange = function() {
+                if (!this.files.length) return;
+                addAttachment(d, idx, this.files[0], function() {
+                    renderAttachments(todos[d][idx].attachments, aArea, d, idx);
+                });
+                this.value = '';
+            };
+            // Ctrl+V 이미지 붙여넣기
+            dTa.addEventListener('paste', function(e) {
+                var items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                for (var j = 0; j < items.length; j++) {
+                    if (items[j].type.indexOf('image') !== -1) {
+                        e.preventDefault();
+                        var file = items[j].getAsFile();
+                        if (file) {
+                            addAttachment(d, idx, file, function() {
+                                renderAttachments(todos[d][idx].attachments, aArea, d, idx);
+                            });
+                        }
+                        break;
+                    }
+                }
+            });
             btn.onclick = function() { removeItem(d, idx); };
-        })(date, i);
-        li.appendChild(cb); li.appendChild(span); li.appendChild(btn);
+        })(date, i, detailBox, detailTa, attachArea, attachBtn, fileInput);
         listEl.appendChild(li);
     });
 }
