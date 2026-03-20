@@ -155,6 +155,22 @@
         .wp-item-del { color: #ddd; cursor: pointer; border: none; background: none; font-size: 11px; padding: 0 1px; line-height: 1; flex-shrink: 0; }
         .wp-item-del:hover { color: #f87171; }
         .wp-empty { color: #c0c8d4; font-size: 11px; text-align: center; padding: 10px 0; }
+        .wp-body-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+        .wp-body-row { display: flex; align-items: center; gap: 5px; }
+        .wp-body-row input[type="text"] { flex: 1; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; }
+        .wp-body-row textarea { flex: 1; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px; font-family: 'Malgun Gothic', sans-serif; outline: none; resize: none; min-height: 28px; line-height: 1.5; overflow: hidden; }
+        .wp-body-row textarea:focus { border-color: #6366f1; }
+        #sec-expense .wp-body-row textarea:focus { border-color: #10b981; }
+        #sec-report  .wp-body-row textarea:focus { border-color: #f59e0b; }
+        .wp-body-row input[type="text"]:focus { border-color: #6366f1; }
+        #sec-expense .wp-body-row input[type="text"]:focus { border-color: #10b981; }
+        #sec-report  .wp-body-row input[type="text"]:focus { border-color: #f59e0b; }
+        .wp-body-rm { background: none; border: none; color: #d1d5db; cursor: pointer; font-size: 13px; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+        .wp-body-rm:hover { color: #f87171; }
+        .wp-add-body-btn { font-size: 11px; color: #6366f1; background: none; border: 1px dashed #6366f1; border-radius: 4px; padding: 3px 8px; cursor: pointer; margin-top: 3px; font-family: 'Malgun Gothic', sans-serif; width: 100%; }
+        #sec-expense .wp-add-body-btn { color: #10b981; border-color: #10b981; }
+        #sec-report  .wp-add-body-btn { color: #f59e0b; border-color: #f59e0b; }
+        .wp-add-body-btn:hover { opacity: 0.8; }
 
         /* ── 지출 날짜 입력 폼 ── */
         .expense-date-row { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; min-height: 28px; flex-shrink: 0; }
@@ -401,43 +417,55 @@
         <div id="calendar-container"><div id="calendar"></div></div>
         <div id="routine-panel" class="side-panel">
             <div class="wp-section" id="sec-routine">
-                <div class="wp-section-header"><div class="wp-section-label">루틴 업무</div><button class="wp-plus-btn" id="plus-routine">+</button></div>
+                <div class="wp-section-header"><div class="wp-section-label">루틴 업무</div><button class="wp-plus-btn" type="button" id="plus-routine">+</button></div>
                 <div class="wp-add-form" id="form-routine">
                     <div><label>대제목</label><input id="ftitle-routine" placeholder="대제목을 입력하세요"></div>
-                    <div><label>내용</label><textarea id="fbody-routine" placeholder="내용을 입력하세요"></textarea></div>
-                    <div class="wp-form-actions"><button class="wp-form-cancel" id="fcancel-routine">취소</button><button class="wp-form-save" id="fsave-routine">저장</button></div>
+                    <div>
+                        <label>내용</label>
+                        <div class="wp-body-list" id="body-list-routine"></div>
+                        <button type="button" class="wp-add-body-btn" id="add-body-routine">+ 내용 추가</button>
+                    </div>
+                    <div class="wp-form-actions"><button class="wp-form-cancel" type="button" id="fcancel-routine">취소</button><button class="wp-form-save" type="button" id="fsave-routine">저장</button></div>
                 </div>
                 <div class="wp-groups" id="groups-routine"></div>
             </div>
             <div class="wp-section" id="sec-expense">
-                <div class="wp-section-header"><div class="wp-section-label">지출 업무</div><button class="wp-plus-btn" id="plus-expense">+</button></div>
+                <div class="wp-section-header"><div class="wp-section-label">지출 업무</div><button class="wp-plus-btn" type="button" id="plus-expense">+</button></div>
                 <div class="wp-add-form" id="form-expense" style="overflow-y:auto;max-height:calc(100% - 60px);flex-shrink:1;">
                     <div><label>대제목</label><input id="ftitle-expense" placeholder="대제목을 입력하세요"></div>
-                    <div><label>내용</label><textarea id="fbody-expense" placeholder="내용을 입력하세요"></textarea></div>
+                    <div>
+                        <label>내용</label>
+                        <div class="wp-body-list" id="body-list-expense"></div>
+                        <button type="button" class="wp-add-body-btn" id="add-body-expense">+ 내용 추가</button>
+                    </div>
                     <div>
                         <label style="font-size:10px;color:#64748b;font-weight:bold;">지출 날짜</label>
                         <div id="expense-date-list" style="margin-top:5px;"></div>
                         <div style="display:flex;gap:5px;margin-top:6px;align-items:center;">
-                            <button class="add-date-btn" id="add-expense-date-btn" style="flex:1;margin-top:0;">+ 날짜 추가</button>
-                            <button class="wp-form-cancel" id="fcancel-expense">취소</button>
-                            <button class="wp-form-save" id="fsave-expense">저장</button>
+                            <button type="button" class="add-date-btn" id="add-expense-date-btn" style="flex:1;margin-top:0;">+ 날짜 추가</button>
+                            <button class="wp-form-cancel" type="button" id="fcancel-expense">취소</button>
+                            <button class="wp-form-save" type="button" id="fsave-expense">저장</button>
                         </div>
                     </div>
                 </div>
                 <div class="wp-groups" id="groups-expense"></div>
             </div>
             <div class="wp-section" id="sec-report">
-                <div class="wp-section-header"><div class="wp-section-label">보고 업무</div><button class="wp-plus-btn" id="plus-report">+</button></div>
+                <div class="wp-section-header"><div class="wp-section-label">보고 업무</div><button class="wp-plus-btn" type="button" id="plus-report">+</button></div>
                 <div class="wp-add-form" id="form-report" style="overflow-y:auto;max-height:calc(100% - 60px);flex-shrink:1;">
                     <div><label>대제목</label><input id="ftitle-report" placeholder="대제목을 입력하세요"></div>
-                    <div><label>내용</label><textarea id="fbody-report" placeholder="내용을 입력하세요"></textarea></div>
+                    <div>
+                        <label>내용</label>
+                        <div class="wp-body-list" id="body-list-report"></div>
+                        <button type="button" class="wp-add-body-btn" id="add-body-report">+ 내용 추가</button>
+                    </div>
                     <div>
                         <label style="font-size:10px;color:#64748b;font-weight:bold;">보고 날짜</label>
                         <div id="report-date-list" style="margin-top:5px;"></div>
                         <div style="display:flex;gap:5px;margin-top:6px;align-items:center;">
-                            <button class="add-date-btn" id="add-report-date-btn" style="flex:1;margin-top:0;border-color:#f59e0b;color:#f59e0b;">+ 날짜 추가</button>
-                            <button class="wp-form-cancel" id="fcancel-report">취소</button>
-                            <button class="wp-form-save" id="fsave-report">저장</button>
+                            <button type="button" class="add-date-btn" id="add-report-date-btn" style="flex:1;margin-top:0;border-color:#f59e0b;color:#f59e0b;">+ 날짜 추가</button>
+                            <button class="wp-form-cancel" type="button" id="fcancel-report">취소</button>
+                            <button class="wp-form-save" type="button" id="fsave-report">저장</button>
                         </div>
                     </div>
                 </div>
@@ -814,7 +842,7 @@ function addReportDateRow(day, label, repeat) {
           '<option value="monthly"' + (repeat==='monthly'?' selected':'') + '>매월 반복</option>' +
           '<option value="once"'   + (repeat==='once'   ?' selected':'') + '>특정일만</option>' +
         '</select>' +
-        '<button class="rm-date-btn" title="삭제">✕</button>';
+        '<button type="button" class="rm-date-btn" title="삭제">✕</button>';
     row.querySelector('.rm-date-btn').onclick = function() { list.removeChild(row); };
     list.appendChild(row);
 }
@@ -852,7 +880,7 @@ function addDateRow(listId, day, label, repeat, month) {
           '<option value="monthly"' + (!isOnce?' selected':'') + '>매월 반복</option>' +
           '<option value="once"'   + (isOnce?' selected':'') + '>특정일만</option>' +
         '</select>' +
-        '<button class="rm-date-btn" title="삭제">✕</button>';
+        '<button type="button" class="rm-date-btn" title="삭제">✕</button>';
     row.appendChild(baseDiv);
 
     // 특정일 선택 시: 월 입력 추가 행
@@ -1165,6 +1193,56 @@ function renderMeetingMarkers() {
     });
 }
 
+/* ── 내용 추가 행 관리 ── */
+function autoResizeTextarea(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+}
+function createBodyTextarea(text, onRemove) {
+    var row = document.createElement('div'); row.className = 'wp-body-row';
+    var ta = document.createElement('textarea'); ta.placeholder = '내용을 입력하세요'; ta.value = text || '';
+    ta.addEventListener('input', function() { autoResizeTextarea(this); });
+    ta.addEventListener('keydown', function(e) {
+        // Shift+Enter는 줄바꿈, Enter만 누르면 새 내용 추가
+        if (e.key === 'Enter' && !e.shiftKey) {
+            // 그냥 Enter = 줄바꿈 허용 (기본 동작)
+        }
+    });
+    var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'wp-body-rm'; rm.innerHTML = '✕';
+    rm.onclick = onRemove;
+    row.appendChild(ta); row.appendChild(rm);
+    setTimeout(function(){ autoResizeTextarea(ta); }, 0);
+    return { row: row, ta: ta };
+}
+function addBodyRow(key, text) {
+    var list = document.getElementById('body-list-' + key);
+    if (!list) return;
+    var result = createBodyTextarea(text, function(){ list.removeChild(result.row); });
+    list.appendChild(result.row);
+    result.ta.focus();
+}
+function getBodyItems(key) {
+    var list = document.getElementById('body-list-' + key);
+    if (!list) return [];
+    var items = [];
+    list.querySelectorAll('.wp-body-row textarea').forEach(function(ta){
+        if (ta.value.trim()) items.push(ta.value.trim());
+    });
+    return items;
+}
+// 하위 호환용
+function getBodyLines(key) { return getBodyItems(key).join('\n'); }
+function clearBodyList(key) {
+    var list = document.getElementById('body-list-' + key);
+    if (list) list.innerHTML = '';
+}
+function loadBodyLines(key, body) {
+    clearBodyList(key);
+    (body||'').split('\n').filter(function(l){ return l.trim(); }).forEach(function(line){
+        addBodyRow(key, line);
+    });
+}
+
 function saveAll() { saveData(); }
 
 /* ════════════════════════════════════
@@ -1194,15 +1272,38 @@ function renderSection(key) {
                 container.querySelectorAll('.wp-edit-form.visible').forEach(function(f){ f.classList.remove('visible'); });
                 if (!wasOpen) {
                     ef.querySelector('.wp-ei-title').value = wpData[k][idx].title;
-                    ef.querySelector('.wp-ei-body').value  = wpData[k][idx].body || '';
-                    // 지출/보고 날짜 불러오기
+                    var bodyListId = 'edit-body-list-' + k + '-' + idx;
+                    var bodyListEl = ef.querySelector('#' + bodyListId);
+                    if (bodyListEl) {
+                        bodyListEl.innerHTML = '';
+                        // items 배열 우선, 없으면 body 문자열을 1개 항목으로
+                        var existItems = wpData[k][idx].items;
+                        if (!existItems || !existItems.length) {
+                            var b = (wpData[k][idx].body||'').trim();
+                            existItems = b ? [b] : [];
+                        }
+                        existItems.forEach(function(txt){
+                            var r = createBodyTextarea(txt, null);
+                            (function(rr){ rr.row.querySelector('.wp-body-rm').onclick = function(){ bodyListEl.removeChild(rr.row); }; })(r);
+                            bodyListEl.appendChild(r.row);
+                        });
+                    }
+                    var addBodyBtn = ef.querySelector('.wp-ei-add-body');
+                    if (addBodyBtn) {
+                        addBodyBtn.onclick = function() {
+                            var r = createBodyTextarea('', null);
+                            (function(rr){ rr.row.querySelector('.wp-body-rm').onclick = function(){ bodyListEl.removeChild(rr.row); }; })(r);
+                            bodyListEl.appendChild(r.row); r.ta.focus();
+                        };
+                    }
                     if (k === 'expense' || k === 'report') {
                         var listId = 'edit-date-list-' + k + '-' + idx;
                         var dateList = ef.querySelector('#' + listId);
                         if (dateList) {
                             dateList.innerHTML = '';
-                            var existDates = wpData[k][idx].dates || [];
-                            existDates.forEach(function(d) { addDateRow(listId, d.day, d.label||'', d.repeat||'monthly', d.specificMonth||''); });
+                            (wpData[k][idx].dates || []).forEach(function(d) {
+                                addDateRow(listId, d.day, d.label||'', d.repeat||'monthly', d.specificMonth||'');
+                            });
                         }
                     }
                     ef.classList.add('visible');
@@ -1222,7 +1323,6 @@ function renderSection(key) {
 
         gDiv.appendChild(hdr);
         var ef = document.createElement('div'); ef.className = 'wp-edit-form';
-        // 지출/보고는 날짜 입력 UI 포함
         var dateHtml = '';
         if (key === 'expense' || key === 'report') {
             var dateColor = key === 'expense' ? '#10b981' : '#f59e0b';
@@ -1233,24 +1333,30 @@ function renderSection(key) {
                 '<button class="add-date-btn wp-ei-add-date" style="margin-top:5px;border-color:' + dateColor + ';color:' + dateColor + ';">+ 날짜 추가</button>' +
                 '</div>';
         }
+        var editBodyListId = 'edit-body-list-' + key + '-' + gi;
         ef.innerHTML = '<div><label>대제목</label><input class="wp-ei-title"></div>' +
-            '<div><label>내용</label><textarea class="wp-ei-body"></textarea></div>' +
+            '<div><label style="font-size:10px;color:#64748b;font-weight:bold;">내용</label>' +
+            '<div class="wp-body-list" id="' + editBodyListId + '"></div>' +
+            '<button class="wp-add-body-btn wp-ei-add-body" style="margin-top:3px;">+ 내용 추가</button></div>' +
             dateHtml +
-            '<div class="wp-edit-actions"><button class="wp-edit-cancel">취소</button><button class="wp-edit-save">저장</button></div>';
+            '<div class="wp-edit-actions"><button type="button" class="wp-edit-cancel">취소</button><button type="button" class="wp-edit-save">저장</button></div>';
         (function(k, idx) {
             ef.querySelector('.wp-edit-cancel').onclick = function() { ef.classList.remove('visible'); };
             ef.querySelector('.wp-edit-save').onclick = function() {
-                var nt=ef.querySelector('.wp-ei-title').value.trim(), nb=ef.querySelector('.wp-ei-body').value.trim();
+                var nt = ef.querySelector('.wp-ei-title').value.trim();
+                var bodyListId = 'edit-body-list-' + k + '-' + idx;
+                var bodyList = ef.querySelector('#' + bodyListId);
+                var editedItems = [];
+                if (bodyList) bodyList.querySelectorAll('.wp-body-row textarea').forEach(function(ta){ if(ta.value.trim()) editedItems.push(ta.value.trim()); });
                 if(!nt){ ef.querySelector('.wp-ei-title').focus(); return; }
-                wpData[k][idx].title=nt; wpData[k][idx].body=nb; wpData[k][idx].checked={};
-                // 지출/보고 날짜 저장
+                wpData[k][idx].title=nt; wpData[k][idx].items=editedItems; wpData[k][idx].body=''; wpData[k][idx].checked={};
                 if (k === 'expense' || k === 'report') {
                     var listId = 'edit-date-list-' + k + '-' + idx;
                     wpData[k][idx].dates = getDates(listId);
                 }
                 saveAll(); renderSection(k);
             };
-            ef.querySelector('.wp-ei-body').addEventListener('keydown', function(ev){ if(ev.key==='Enter'&&ev.ctrlKey) ef.querySelector('.wp-edit-save').click(); });
+
             // 날짜 추가 버튼
             var addBtn = ef.querySelector('.wp-ei-add-date');
             if (addBtn) {
@@ -1263,18 +1369,30 @@ function renderSection(key) {
         gDiv.appendChild(ef);
         if (g.open !== false) {
             var ul = document.createElement('ul'); ul.className = 'wp-item-list';
-            var lines = (g.body||'').split('\n').filter(function(l){ return l.trim(); });
-            lines.forEach(function(line, li) {
+            // items 배열 우선, 없으면 body 문자열을 항목 1개로 변환
+            var items = g.items;
+            if (!items || !items.length) {
+                var bodyText = (g.body||'').trim();
+                items = bodyText ? [bodyText] : [];
+            }
+            items.forEach(function(itemText, li) {
                 var item = document.createElement('li'); item.className = 'wp-item';
                 var cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!(g.checked&&g.checked[li]);
-                var span = document.createElement('span'); span.className='wp-item-text'+(cb.checked?' done':''); span.textContent=line;
-                var idel = document.createElement('button'); idel.className='wp-item-del'; idel.innerHTML='✕';
+                var span = document.createElement('span'); span.className='wp-item-text'+(cb.checked?' done':'');
+                span.style.whiteSpace = 'pre-wrap';
+                span.textContent = itemText;
+                var idel = document.createElement('button'); idel.type='button'; idel.className='wp-item-del'; idel.innerHTML='✕';
                 (function(k, idx, capturedLi) {
-                    cb.onchange = function() { if(!wpData[k][idx].checked) wpData[k][idx].checked={}; wpData[k][idx].checked[capturedLi]=cb.checked; saveAll(); renderSection(k); };
+                    cb.onchange = function() {
+                        if(!wpData[k][idx].checked) wpData[k][idx].checked={};
+                        wpData[k][idx].checked[capturedLi]=cb.checked;
+                        saveAll(); renderSection(k);
+                    };
                     idel.onclick = function() {
-                        var ls=(wpData[k][idx].body||'').split('\n').filter(function(l){ return l.trim(); });
-                        ls.splice(capturedLi,1); wpData[k][idx].body=ls.join('\n');
-                        var nc={}; ls.forEach(function(_,ni){ var oi=ni<capturedLi?ni:ni+1; if(g.checked&&g.checked[oi]) nc[ni]=true; });
+                        var its = wpData[k][idx].items || [];
+                        its.splice(capturedLi, 1);
+                        wpData[k][idx].items = its;
+                        var nc={}; its.forEach(function(_,ni){ var oi=ni<capturedLi?ni:ni+1; if(g.checked&&g.checked[oi]) nc[ni]=true; });
                         wpData[k][idx].checked=nc; saveAll(); renderSection(k);
                     };
                 })(key, gi, li);
@@ -1321,22 +1439,26 @@ function openForm(key){
     ['routine','expense','report'].forEach(function(k){
         document.getElementById('form-'+k).classList.remove('visible');
         document.getElementById('ftitle-'+k).value='';
-        document.getElementById('fbody-'+k).value='';
+        clearBodyList(k);
     });
+    var actEl = document.getElementById('form-expense-actions');
+    if (actEl) actEl.style.display = 'none';
     document.getElementById('form-'+key).classList.add('visible');
+    if (key === 'expense' && actEl) actEl.style.display = 'flex';
     document.getElementById('ftitle-'+key).focus();
 }
 function closeForm(key){
     document.getElementById('form-'+key).classList.remove('visible');
     document.getElementById('ftitle-'+key).value='';
-    document.getElementById('fbody-'+key).value='';
+    clearBodyList(key);
     if (key === 'expense') clearExpenseDateList();
     if (key === 'report')  clearReportDateList();
 }
 function saveForm(key){
-    var title=document.getElementById('ftitle-'+key).value.trim(), body=document.getElementById('fbody-'+key).value.trim();
+    var title = document.getElementById('ftitle-'+key).value.trim();
+    var items = getBodyItems(key);
     if(!title){ document.getElementById('ftitle-'+key).focus(); return; }
-    var item = {title:title, body:body, open:true, checked:{}};
+    var item = {title:title, items:items, body:'', open:true, checked:{}};
     if (key === 'expense') { item.dates = getExpenseDates(); }
     if (key === 'report')  { item.dates = getReportDates(); }
     wpData[key].push(item); saveAll(); renderSection(key); closeForm(key);
@@ -1559,6 +1681,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter' && e.ctrlKey) saveMeeting();
     });
 
+    // 내용 추가 버튼
+    ['routine','expense','report'].forEach(function(key) {
+        var btn = document.getElementById('add-body-' + key);
+        if (btn) btn.onclick = function() { addBodyRow(key, ''); };
+    });
+
     document.getElementById('add-expense-date-btn').onclick = function() {
         addExpenseDateRow('', '', 'monthly');
     };
@@ -1624,7 +1752,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
-                customButtons:{ meetingBtn:{ text:'📋 보고일정추가', click: function(){ openMeetingPopup(); } } },
+                customButtons:{ meetingBtn:{ text:'📋 회의 추가', click: function(){ openMeetingPopup(); } } },
                 headerToolbar:{ left:'title', center:'', right:'meetingBtn today prev,next' },
                 dayCellDidMount: function(arg) {
                     var topEl=arg.el.querySelector('.fc-daygrid-day-top');
@@ -1651,18 +1779,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
                 document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
                 document.getElementById('fsave-'+key).onclick   = function(){ saveForm(key); };
-                document.getElementById('fbody-'+key).addEventListener('keydown', function(e){ if(e.key==='Enter'&&e.ctrlKey) saveForm(key); });
+    
             });
-            document.getElementById('clear-all-btn').onclick = function() {
-            var date = document.getElementById('selected-date-display').innerText;
-            if (date === '날짜를 선택하세요' || !todos[date] || !todos[date].length) return;
-            if (!confirm(date + ' 일정을 모두 삭제하시겠습니까?')) return;
-            delete todos[date];
-            saveAll();
-            renderList(date);
-            renderCellTodos(date);
-            this.style.display = 'none';
-        };
+
 
         document.getElementById('clear-all-btn').onclick = function() {
             var date = document.getElementById('selected-date-display').innerText;
