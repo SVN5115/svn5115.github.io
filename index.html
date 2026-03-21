@@ -245,7 +245,44 @@
         }
         .quick-btn:hover { background: #e2e8f0; border-color: #94a3b8; }
 
-        /* ── MEMO 팝업 ── */
+        /* ── 예산관리 팝업 ── */
+        #budget-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:8800; align-items:center; justify-content:center; }
+        #budget-overlay.visible { display:flex; }
+        #budget-popup { background:white; border-radius:16px; width:480px; max-width:96vw; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 16px 60px rgba(0,0,0,0.25); overflow:hidden; }
+        #budget-header { padding:14px 20px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+        #budget-header h3 { margin:0; font-size:15px; color:#1e293b; }
+        #budget-body { flex:1; overflow-y:auto; padding:16px 20px; }
+        .budget-cat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        .budget-cat-card {
+            aspect-ratio:1; border:2px solid #e2e8f0; border-radius:12px;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:6px; cursor:pointer; background:#fff; transition:box-shadow 0.15s, border-color 0.15s;
+            padding:10px; text-align:center; position:relative;
+        }
+        .budget-cat-card:hover { box-shadow:0 4px 14px rgba(0,0,0,0.1); border-color:#a5b4fc; }
+        .budget-cat-card-icon { font-size:24px; }
+        .budget-cat-card-name { font-size:12px; font-weight:bold; color:#1e293b; word-break:break-all; }
+        .budget-cat-card-del { position:absolute; top:5px; right:6px; background:none; border:none; color:#fca5a5; font-size:13px; cursor:pointer; line-height:1; padding:0; }
+        .budget-cat-card-del:hover { color:#ef4444; }
+        /* 카테고리 상세 팝업 */
+        #budget-detail-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:8900; align-items:center; justify-content:center; }
+        #budget-detail-overlay.visible { display:flex; }
+        #budget-detail-popup { background:white; border-radius:16px; width:540px; max-width:96vw; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 16px 60px rgba(0,0,0,0.25); overflow:hidden; }
+        #budget-detail-header { padding:14px 20px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+        #budget-detail-header h3 { margin:0; font-size:15px; color:#1e293b; }
+        #budget-detail-body { flex:1; overflow-y:auto; padding:16px 20px; }
+        .budget-add-row { display:flex; gap:8px; margin-bottom:14px; }
+        .budget-add-row input { flex:1; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:12px; outline:none; font-family:'Malgun Gothic',sans-serif; }
+        .budget-add-row input:focus { border-color:#6366f1; }
+        .budget-add-row button { padding:7px 14px; background:#6366f1; color:white; border:none; border-radius:7px; font-size:12px; font-weight:bold; cursor:pointer; font-family:'Malgun Gothic',sans-serif; white-space:nowrap; }
+        .budget-entry { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:12px; }
+        .budget-entry:last-child { border-bottom:none; }
+        .budget-entry-date { color:#94a3b8; flex-shrink:0; }
+        .budget-entry-memo { flex:1; color:#334155; }
+        .budget-entry-amount { font-weight:bold; color:#6366f1; flex-shrink:0; }
+        .budget-entry-del { background:none; border:none; color:#fca5a5; cursor:pointer; font-size:13px; flex-shrink:0; }
+        .budget-entry-del:hover { color:#ef4444; }
+        /* ── MEMO 팝업 ── */        /* ── MEMO 팝업 ── */
         #memo-popup {
             display: none; position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
@@ -698,7 +735,42 @@
     </div>
 </div>
 
-<!-- 업무연락처 팝업 -->
+<!-- 예산관리 팝업 -->
+<div id="budget-overlay">
+    <div id="budget-popup">
+        <div id="budget-header">
+            <h3>💰 예산관리</h3>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button type="button" id="budget-add-cat-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">+ 카테고리 추가</button>
+                <button type="button" id="budget-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;">&#x2715;</button>
+            </div>
+        </div>
+        <div id="budget-body">
+            <div id="budget-add-form" style="display:none;margin-bottom:16px;">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="budget-cat-name-input" placeholder="카테고리 이름 입력" style="flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none;font-family:'Malgun Gothic',sans-serif;">
+                    <button type="button" id="budget-cat-save" style="padding:8px 16px;background:#6366f1;color:white;border:none;border-radius:8px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">확인</button>
+                    <button type="button" id="budget-cat-cancel" style="padding:8px 14px;background:none;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">취소</button>
+                </div>
+            </div>
+            <div id="budget-cat-grid" class="budget-cat-grid"></div>
+            <div id="budget-cat-empty" style="text-align:center;color:#94a3b8;font-size:13px;padding:40px 0;display:none;">카테고리가 없습니다.<br><small>+ 카테고리 추가를 눌러 시작하세요.</small></div>
+        </div>
+    </div>
+</div>
+
+<!-- 예산관리 카테고리 상세 팝업 -->
+<div id="budget-detail-overlay">
+    <div id="budget-detail-popup">
+        <div id="budget-detail-header">
+            <h3 id="budget-detail-title">카테고리</h3>
+            <button type="button" id="budget-detail-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;">&#x2715;</button>
+        </div>
+        <div id="budget-detail-body"></div>
+    </div>
+</div>
+
+<!-- 업무연락처 팝업 --><!-- 업무연락처 팝업 -->
 <div id="contact-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:8800;">
     <div id="contact-popup" style="background:white;border-radius:20px;width:98vw;max-width:1400px;height:88vh;display:flex;flex-direction:column;box-shadow:0 16px 60px rgba(0,0,0,0.3);overflow:hidden;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
         <div id="contact-header" style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid #e2e8f0;flex-shrink:0;background:#f8fafc;">
@@ -897,6 +969,7 @@
                 <button type="button" id="memo-open-btn" class="quick-btn">📝 MEMO</button>
                 <button type="button" id="idinfo-open-btn" class="quick-btn">🔐 업무ID</button>
                 <button type="button" id="contact-open-btn" class="quick-btn">📞 업무연락처</button>
+                <button type="button" id="budget-open-btn" class="quick-btn">💰 예산관리</button>
             </div>
 
             <!-- 루틴 업무 -->
@@ -1361,7 +1434,7 @@ function renderRequestPanel() {
 ════════════════════════════════════ */
 var activeDate = '';
 var todos  = {};
-var wpData = { routine: [], expense: [], report: [] };
+var wpData = { routine: [], expense: [], report: [], meetings: [], idinfo: [], contacts: [], budget: [] };
 var calendar, MAX_VISIBLE = 6;
 var vIconSvg = '<svg class="day-v-checkmark-svg" viewBox="0 0 12 12"><path d="M10.2,2.3L4.7,7.8L1.8,4.9L0.5,6.2L4.7,10.4L11.5,3.6L10.2,2.3z"/></svg>';
 
@@ -2333,6 +2406,7 @@ function filterContactTable(q) {
 
 function openContactPopup() {
     if (!wpData.contacts) wpData.contacts = [];
+                if (!wpData.budget) wpData.budget = [];
     var s = document.getElementById('contact-search'); if(s) s.value='';
     renderContactTable();
     document.getElementById('contact-overlay').style.display = 'block';
@@ -2342,6 +2416,7 @@ function closeContactPopup() {
 }
 function addContactRow() {
     if (!wpData.contacts) wpData.contacts = [];
+                if (!wpData.budget) wpData.budget = [];
     wpData.contacts.push({ name:'', dept:'', tel:'', email:'', memo:'' });
     saveAll(); renderContactTable();
     var rows = document.querySelectorAll('#contact-tbody tr');
@@ -2564,6 +2639,7 @@ function uploadCSV(type, input) {
                 iTel  = header.indexOf('전화번호'), iEmail= header.indexOf('이메일'), iMemo2= header.indexOf('비고');
             if (iName < 0) { alert('올바른 업무연락처 서식이 아닙니다.\n첫 행에 이름,직책/소속,전화번호,이메일,비고 헤더가 있어야 합니다.'); input.value=''; return; }
             if (!wpData.contacts) wpData.contacts = [];
+                if (!wpData.budget) wpData.budget = [];
             var prevName = '', ctGroupIdx = -1;
             dataRows.forEach(function(r) {
                 var name  = String(iName>=0  ? r[iName]||''  : '').trim();
@@ -2633,6 +2709,135 @@ function exportContactExcel() {
     ws['!cols'] = [20,20,20,25,25].map(function(w){ return {wch:w}; });
     XLSX.utils.book_append_sheet(wb, ws, '업무연락처');
     XLSX.writeFile(wb, (currentUser ? currentUser.id : '') + '의 업무연락처.xlsx');
+}
+
+/* ════════════════════════════════════
+   예산관리
+════════════════════════════════════ */
+var BUDGET_ICONS = ['📂','🍔','🚗','🛒','💊','🏠','🎮','👗','✈️','📚','💡','🎁'];
+
+function saveBudgetCat() {
+    var name = document.getElementById('budget-cat-name-input').value.trim();
+    if (!name) { document.getElementById('budget-cat-name-input').focus(); return; }
+    if (!wpData.budget) wpData.budget = [];
+    var colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#ec4899','#8b5cf6','#14b8a6'];
+    var color = colors[wpData.budget.length % colors.length];
+    var icons = ['📂','🍔','🚗','🛒','💊','🏠','🎮','👗','✈️','📚','💡','🎁'];
+    var icon = icons[wpData.budget.length % icons.length];
+    wpData.budget.push({ name:name, color:color, icon:icon, entries:[] });
+    saveAll(); renderBudgetCatGrid();
+    document.getElementById('budget-add-form').style.display = 'none';
+    document.getElementById('budget-cat-name-input').value = '';
+}
+
+function openBudgetPopup() {
+    if (!wpData.budget) wpData.budget = [];
+    document.getElementById('budget-add-form').style.display = 'none';
+    document.getElementById('budget-cat-name-input').value = '';
+    renderBudgetCatGrid();
+    document.getElementById('budget-overlay').classList.add('visible');
+}
+function closeBudgetPopup() {
+    document.getElementById('budget-overlay').classList.remove('visible');
+}
+
+function renderBudgetCatGrid() {
+    var grid = document.getElementById('budget-cat-grid');
+    var empty = document.getElementById('budget-cat-empty');
+    grid.innerHTML = '';
+    var cats = wpData.budget || [];
+    if (!cats.length) { empty.style.display='block'; return; }
+    empty.style.display = 'none';
+    cats.forEach(function(cat, ci) {
+        var card = document.createElement('div');
+        card.className = 'budget-cat-card';
+        card.style.borderColor = cat.color || '#e2e8f0';
+        card.innerHTML =
+            '<button type="button" class="budget-cat-card-del" title="삭제">✕</button>' +
+            '<div class="budget-cat-card-icon">' + (cat.icon || '📂') + '</div>' +
+            '<div class="budget-cat-card-name">' + esc(cat.name) + '</div>';
+        (function(idx) {
+            card.querySelector('.budget-cat-card-del').onclick = function(e) {
+                e.stopPropagation();
+                if (!confirm('[' + cats[idx].name + '] 카테고리를 삭제하시겠습니까?')) return;
+                wpData.budget.splice(idx, 1);
+                saveAll(); renderBudgetCatGrid();
+            };
+            card.onclick = function(e) {
+                if (e.target.classList.contains('budget-cat-card-del')) return;
+                openBudgetDetail(idx);
+            };
+        })(ci);
+        grid.appendChild(card);
+    });
+}
+
+function numberFmt(n) {
+    return (n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function openBudgetDetail(catIdx) {
+    var cat = wpData.budget[catIdx];
+    if (!cat) return;
+    var now = new Date();
+    var mk = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+    var todayStr = now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2) + '-' + ('0'+now.getDate()).slice(-2);
+
+    document.getElementById('budget-detail-title').textContent = (cat.icon || '📂') + ' ' + cat.name;
+    var body = document.getElementById('budget-detail-body');
+    body.innerHTML = '';
+
+    // 입력 행
+    var addRow = document.createElement('div'); addRow.className = 'budget-add-row';
+    addRow.innerHTML =
+        '<input type="text" id="bde-memo" placeholder="내용 (예: 점심식사)">' +
+        '<input type="number" id="bde-amount" placeholder="금액(원)" style="width:110px;flex:none;">' +
+        '<input type="date" id="bde-date" style="width:130px;flex:none;">' +
+        '<button type="button" id="bde-add-btn">추가</button>';
+    body.appendChild(addRow);
+    body.querySelector('#bde-date').value = todayStr;
+    body.querySelector('#bde-add-btn').onclick = function() {
+        var memo = body.querySelector('#bde-memo').value.trim();
+        var amount = parseInt(body.querySelector('#bde-amount').value) || 0;
+        var date = body.querySelector('#bde-date').value || todayStr;
+        if (!memo || !amount) { alert('내용과 금액을 입력하세요.'); return; }
+        if (!wpData.budget[catIdx].entries) wpData.budget[catIdx].entries = [];
+        wpData.budget[catIdx].entries.push({ memo: memo, amount: amount, date: date, month: date.slice(0,7) });
+        saveAll(); openBudgetDetail(catIdx);
+    };
+
+    // 이번 달 합계
+    var entries = (cat.entries || []).filter(function(e){ return e.month === mk; });
+    var total = entries.reduce(function(s, e){ return s + (e.amount || 0); }, 0);
+    var summaryDiv = document.createElement('div');
+    summaryDiv.style.cssText = 'background:#f8fafc;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#334155;';
+    summaryDiv.innerHTML = '이번 달 합계: <strong style="color:#6366f1;">' + numberFmt(total) + '원</strong>';
+    body.appendChild(summaryDiv);
+
+    // 내역 목록
+    var listDiv = document.createElement('div');
+    if (!entries.length) {
+        listDiv.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px 0;">이번 달 내역이 없습니다.</div>';
+    } else {
+        entries.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); })
+        .forEach(function(e) {
+            var eIdx = wpData.budget[catIdx].entries.indexOf(e);
+            var row = document.createElement('div'); row.className = 'budget-entry';
+            row.innerHTML =
+                '<div class="budget-entry-date">' + (e.date||'') + '</div>' +
+                '<div class="budget-entry-memo">' + esc(e.memo) + '</div>' +
+                '<div class="budget-entry-amount">' + numberFmt(e.amount) + '원</div>' +
+                '<button type="button" class="budget-entry-del">✕</button>';
+            (function(i){ row.querySelector('.budget-entry-del').onclick = function(){
+                if (!confirm('삭제하시겠습니까?')) return;
+                wpData.budget[catIdx].entries.splice(i, 1);
+                saveAll(); openBudgetDetail(catIdx);
+            }; })(eIdx);
+            listDiv.appendChild(row);
+        });
+    }
+    body.appendChild(listDiv);
+    document.getElementById('budget-detail-overlay').classList.add('visible');
 }
 
 function filterIdinfoTable(q) {
@@ -3862,6 +4067,20 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('idinfo-close').onclick     = closeIdinfoPopup;
     document.getElementById('idinfo-add-btn').onclick   = addIdinfoRow;
     document.getElementById('contact-open-btn').onclick = openContactPopup;
+    document.getElementById('budget-open-btn').onclick  = openBudgetPopup;
+    document.getElementById('budget-close').onclick     = closeBudgetPopup;
+    document.getElementById('budget-overlay').onclick   = function(e){ if(e.target===this) closeBudgetPopup(); };
+    document.getElementById('budget-detail-close').onclick = function(){ document.getElementById('budget-detail-overlay').classList.remove('visible'); };
+    document.getElementById('budget-detail-overlay').onclick = function(e){ if(e.target===this) this.classList.remove('visible'); };
+    document.getElementById('budget-add-cat-btn').onclick = function(){
+        document.getElementById('budget-add-form').style.display='block';
+        document.getElementById('budget-cat-name-input').focus();
+    };
+    document.getElementById('budget-cat-cancel').onclick = function(){
+        document.getElementById('budget-add-form').style.display='none';
+        document.getElementById('budget-cat-name-input').value='';
+    };
+    document.getElementById('budget-cat-save').onclick = saveBudgetCat;
     document.getElementById('contact-close').onclick    = closeContactPopup;
     document.getElementById('contact-add-btn').onclick  = addContactRow;
     document.getElementById('contact-overlay').onclick  = function(e){ if(e.target===this) closeContactPopup(); };
@@ -4014,10 +4233,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (saved) {
                 activeDate = saved.activeDate || '';
                 todos      = saved.todos      || {};
-                wpData     = saved.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[] };
+                wpData     = saved.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[], contacts:[], budget:[] };
                 if (!wpData.meetings) wpData.meetings = [];
                 if (!wpData.idinfo)   wpData.idinfo   = [];
                 if (!wpData.contacts) wpData.contacts = [];
+                if (!wpData.budget)   wpData.budget   = [];
+                if (!wpData.contacts) wpData.contacts = [];
+                if (!wpData.budget) wpData.budget = [];
             }
             startApp();
         });
