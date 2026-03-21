@@ -96,7 +96,7 @@
         .side-panel { width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
         #routine-panel { display: flex; flex-direction: column; flex: 1; gap: 10px; min-height: 0; }
         #routine-panel.hidden { display: none; }
-        .wp-section { flex: 1; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 10px; padding: 11px 12px 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        .wp-section { flex: 1; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 10px; padding: 11px 12px 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; overflow: auto; }
         #sec-routine { border-top: 3px solid #6366f1; } #sec-expense { border-top: 3px solid #10b981; } #sec-report { border-top: 3px solid #f59e0b; } #sec-meeting { border-top: 3px solid #eab308; }
         #sec-meeting .wp-section-label::before { content: '📅'; }
         #sec-meeting .wp-plus-btn { background: #eab308; } #sec-meeting .wp-plus-btn:hover { background: #ca8a04; }
@@ -1018,9 +1018,9 @@
         <button id="admin-panel-close">✕</button>
     </div>
     <div class="admin-tabs">
-        <button class="admin-tab active" data-tab="requests">🔔 승인 요청 <span id="req-count"></span></button>
-        <button class="admin-tab" data-tab="accounts">👥 계정 목록</button>
-        <button class="admin-tab" data-tab="transfer">📦 데이터 이관</button>
+        <button class="admin-tab active" data-tab="requests" onclick="event.stopPropagation();document.querySelectorAll('.admin-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.admin-tab-pane').forEach(function(p){p.classList.remove('active');});this.classList.add('active');document.getElementById('tab-requests').classList.add('active');renderRequestPanel();">🔔 승인 요청 <span id="req-count"></span></button>
+        <button class="admin-tab" data-tab="accounts" onclick="event.stopPropagation();document.querySelectorAll('.admin-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.admin-tab-pane').forEach(function(p){p.classList.remove('active');});this.classList.add('active');document.getElementById('tab-accounts').classList.add('active');renderAccountList();">👥 계정 목록</button>
+        <button class="admin-tab" data-tab="transfer" onclick="event.stopPropagation();document.querySelectorAll('.admin-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.admin-tab-pane').forEach(function(p){p.classList.remove('active');});this.classList.add('active');document.getElementById('tab-transfer').classList.add('active');renderTransferPanel();">📦 데이터 이관</button>
     </div>
     <div class="admin-tab-content">
         <div class="admin-tab-pane active" id="tab-requests">
@@ -4780,6 +4780,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('admin-panel-close').onclick = function() {
         document.getElementById('admin-panel').classList.remove('visible');
     };
+    document.getElementById('admin-panel').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
     document.addEventListener('click', function(e) {
         var panel = document.getElementById('admin-panel');
         var btn   = document.getElementById('notify-btn');
@@ -4927,19 +4930,7 @@ document.addEventListener('DOMContentLoaded', function() {
         addReportDateRow('', '', 'monthly');
     };
 
-    /* 탭 전환 */
-    document.querySelectorAll('.admin-tab').forEach(function(tab) {
-        tab.onclick = function() {
-            document.querySelectorAll('.admin-tab').forEach(function(t){ t.classList.remove('active'); });
-            document.querySelectorAll('.admin-tab-pane').forEach(function(p){ p.classList.remove('active'); });
-            this.classList.add('active');
-            var pane = document.getElementById('tab-' + this.getAttribute('data-tab'));
-            pane.classList.add('active');
-            if (this.getAttribute('data-tab') === 'accounts') renderAccountList();
-            if (this.getAttribute('data-tab') === 'requests') renderRequestPanel();
-            if (this.getAttribute('data-tab') === 'transfer') renderTransferPanel();
-        };
-    });
+    /* 탭 전환 - 인라인 onclick으로 처리 */
 
     /* ── 세션 복원 or 최초 진입 ── */
     var savedUser = sessionStorage.getItem('planner_user');
@@ -5070,17 +5061,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             calendar.render();
             window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
-            ['routine','expense','report'].forEach(function(key) {
-                document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
-                document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
-                if (document.getElementById('fsave-'+key))
-                    document.getElementById('fsave-'+key).onclick = function(){ saveForm(key); };
-            });
-            // 회의 버튼 별도 바인딩 (ID 충돌 방지)
-            document.getElementById('plus-meeting').onclick = function(){ openForm('meeting'); };
-            document.getElementById('side-fcancel-meeting').onclick = function(){ closeForm('meeting'); };
-            document.getElementById('side-fsave-meeting').onclick   = function(){ saveSideMeeting(); };
+        }
+        ['routine','expense','report'].forEach(function(key) {
+            document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
+            document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
+            if (document.getElementById('fsave-'+key))
+                document.getElementById('fsave-'+key).onclick = function(){ saveForm(key); };
+        });
+        // 회의 버튼 별도 바인딩 (ID 충돌 방지)
+        document.getElementById('plus-meeting').onclick = function(){ openForm('meeting'); };
+        document.getElementById('side-fcancel-meeting').onclick = function(){ closeForm('meeting'); };
+        document.getElementById('side-fsave-meeting').onclick   = function(){ saveSideMeeting(); };
 
+        // 내용 추가 버튼
+        ['routine','expense','report'].forEach(function(key) {
+            var btn = document.getElementById('add-body-' + key);
+            if (btn) btn.onclick = function() { addBodyRow(key, ''); };
+        });
+
+        document.getElementById('add-expense-date-btn').onclick = function() {
+            addExpenseDateRow('', '', 'monthly');
+        };
+        document.getElementById('add-report-date-btn').onclick = function() {
+            addReportDateRow('', '', 'monthly');
+        };
 
         document.getElementById('clear-all-btn').onclick = function() {
             var date = document.getElementById('selected-date-display').innerText;
@@ -5093,16 +5097,15 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         document.getElementById('close-todo-btn').onclick = function() {
-                document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
-                activeDate=''; saveAll(); MAX_VISIBLE=6;
-                document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
-                document.getElementById('todo-list').innerHTML='';
-                document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
-                showRoutine(); refreshCalendar();
-            };
-            document.getElementById('add-btn').onclick = addTodo;
-            document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
-        }
+            document.querySelectorAll('.v-box').forEach(function(b){ b.classList.remove('is-checked'); });
+            activeDate=''; saveAll(); MAX_VISIBLE=6;
+            document.getElementById('selected-date-display').innerText='날짜를 선택하세요';
+            document.getElementById('todo-list').innerHTML='';
+            document.querySelectorAll('.fc-daygrid-day').forEach(function(d){ d.classList.remove('selected-day'); });
+            showRoutine(); refreshCalendar();
+        };
+        document.getElementById('add-btn').onclick = addTodo;
+        document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
         ['routine','expense','report','meeting'].forEach(function(k){ renderSection(k); });
         if (activeDate) { showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
         refreshCalendar();
