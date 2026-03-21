@@ -261,7 +261,7 @@
         }
         .budget-cat-card:hover { opacity:0.88; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
         .budget-cat-card-bar { display:none; }
-        .budget-cat-card-name { font-size:12px; font-weight:bold; color:#fff; white-space:nowrap; }
+        .budget-cat-card-name { font-size:12px; font-weight:bold; color:#fff; white-space:pre-wrap; text-align:center; }
         .budget-cat-card-color-btn { background:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.5); border-radius:4px; width:16px; height:16px; cursor:pointer; flex-shrink:0; padding:0; }
         .budget-cat-card-color-btn:hover { background:rgba(255,255,255,0.5); }
         .budget-cat-card-edit-btn { background:none; border:none; cursor:pointer; font-size:11px; color:rgba(255,255,255,0.8); padding:0; flex-shrink:0; line-height:1; }
@@ -318,7 +318,7 @@
         .bd-add-row-btn:hover { background:#f5f3ff; }
         .bd-del-row { background:none; border:none; color:#fca5a5; cursor:pointer; font-size:13px; }
         .bd-del-row:hover { color:#ef4444; }
-        .bd-title-box { text-align:center; padding:12px; font-size:16px; font-weight:bold; border:2px solid #334155; border-radius:4px; margin-bottom:14px; font-family:'Malgun Gothic',sans-serif; }
+        .bd-title-box { text-align:center; padding:12px; font-size:16px; font-weight:bold; border:2px solid #334155; border-radius:4px; margin-bottom:14px; font-family:'Malgun Gothic',sans-serif; width:100%; box-sizing:border-box; resize:none; overflow:hidden; line-height:1.5; display:block; }
         /* 수식 빌더 */
         .bd-formula-bar { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; margin-bottom:10px; flex-wrap:wrap; }
         .bd-formula-bar label { font-size:11px; font-weight:bold; color:#475569; white-space:nowrap; }
@@ -848,8 +848,11 @@
 <div id="budget-detail-overlay">
     <div id="budget-detail-popup">
         <div id="budget-detail-header">
-            <h3 id="budget-detail-title">카테고리</h3>
-            <button type="button" id="budget-detail-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;">&#x2715;</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" id="budget-detail-back" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0 4px;">&#x2190;</button>
+                <h3 id="budget-detail-title" style="margin:0;"></h3>
+            </div>
+            <button type="button" id="budget-detail-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0 4px;">&#x2715;</button>
         </div>
         <div id="budget-detail-body"></div>
     </div>
@@ -2882,6 +2885,7 @@ function renderBudgetCatGrid() {
         nameEl.className = 'budget-cat-card-name';
         nameEl.textContent = cat.name;
         nameEl.style.paddingRight='6px';
+        nameEl.style.whiteSpace='pre-wrap';
         card.appendChild(nameEl);
 
         // 수정 버튼 (기본 표시)
@@ -2898,8 +2902,10 @@ function renderBudgetCatGrid() {
 
         // 색상 버튼 (수정모드에서 표시)
         var colorBtn = document.createElement('button');
-        colorBtn.type = 'button'; colorBtn.className = 'budget-cat-card-color-btn';
-        colorBtn.title = '색상 변경'; colorBtn.style.background = color;
+        colorBtn.type = 'button'; colorBtn.className = 'budget-cat-card-color-btn'; colorBtn.style.width='auto'; colorBtn.style.height='auto'; colorBtn.style.padding='0 2px';
+        colorBtn.title = '색상 변경'; colorBtn.style.background = 'transparent';
+        colorBtn.style.border='none'; colorBtn.style.fontSize='14px'; colorBtn.style.lineHeight='1'; colorBtn.style.display='flex'; colorBtn.style.alignItems='center'; colorBtn.style.justifyContent='center';
+        colorBtn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.37 2.63L14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 0 0-3-3z"/><path d="M9 8c-2 3-4 3.5-7 4l8 8c1-.5 3.5-2 4-7"/><path d="M14.5 17.5L4.5 15"/></svg>';
         colorBtn.style.display='none';
 
         // 삭제 버튼 (수정모드에서 표시)
@@ -2913,16 +2919,18 @@ function renderBudgetCatGrid() {
             function enterEditMode(e){
                 e.stopPropagation();
                 if(inp) return;
-                // 이름 → input
-                inp = document.createElement('input');
+                // 이름 → textarea
+                inp = document.createElement('textarea');
                 inp.value = wpData.budget[idx].name;
-                inp.style.cssText = 'flex:1;border:none;border-bottom:1px solid rgba(255,255,255,0.8);outline:none;font-size:12px;font-weight:bold;font-family:\'Malgun Gothic\',sans-serif;color:#fff;background:transparent;width:60px;min-width:40px;';
+                inp.style.cssText = 'flex:1;border:none;border-bottom:1px solid rgba(255,255,255,0.8);outline:none;font-size:12px;font-weight:bold;font-family:\'Malgun Gothic\',sans-serif;color:#fff;background:transparent;width:80px;min-width:40px;resize:none;overflow:hidden;line-height:1.4;padding:0;';
+                inp.rows=1;
                 inp.onkeydown = function(e2){
-                    if(e2.key==='Enter'){ e2.preventDefault(); saveEdit(); }
                     if(e2.key==='Escape'){ inp=null; renderBudgetCatGrid(); }
                 };
+                inp.oninput = function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; };
                 ne.textContent = ''; ne.appendChild(inp);
                 inp.focus(); inp.select();
+                setTimeout(function(){ inp.style.height='auto'; inp.style.height=inp.scrollHeight+'px'; },0);
                 // 버튼 토글
                 eb.style.display='none';
                 cb2.style.display='inline-block';
@@ -3004,12 +3012,15 @@ function openBudgetDetail(catIdx) {
     }
     if (!cat.entries) cat.entries=[];
 
-    document.getElementById('budget-detail-title').textContent=(cat.icon||'📂')+' '+cat.name;
+    document.getElementById('budget-detail-title').textContent=cat.name;
     var body=document.getElementById('budget-detail-body'); body.innerHTML='';
 
-    var titleBox=document.createElement('div'); titleBox.className='bd-title-box';
-    titleBox.contentEditable='true'; titleBox.textContent=cat.formTitle||'내용입력';
-    titleBox.oninput=function(){ cat.formTitle=this.textContent.trim(); saveAll(); };
+    var titleBox=document.createElement('textarea'); titleBox.className='bd-title-box';
+    titleBox.value=cat.formTitle||'';  titleBox.placeholder='내용입력';
+    titleBox.rows=1;
+    function autoResize(){ titleBox.style.height='auto'; titleBox.style.height=titleBox.scrollHeight+'px'; }
+    titleBox.oninput=function(){ cat.formTitle=this.value; saveAll(); autoResize(); };
+    setTimeout(autoResize,0);
     body.appendChild(titleBox);
 
     var btnBar=document.createElement('div'); btnBar.className='bd-btn-bar';
@@ -3052,8 +3063,20 @@ function openBudgetDetail(catIdx) {
         }
         return 0;
     }
+    function isNumericVal(v){
+        if(v===null||v===undefined||v==='') return true;
+        var raw=String(v).replace(/,/g,'');
+        return !isNaN(Number(raw));
+    }
     function getOptions(){
-        var opts = cat.rows.map(function(r,i){ return {key:'r_'+i,label:(r.label||'행'+(i+1))}; });
+        var opts = cat.rows
+            .map(function(r,i){ return {key:'r_'+i,label:(r.label||'행'+(i+1)),_kind:r.kind||r.rowType,_val:r.val}; })
+            .filter(function(o){
+                // 기본행이면서 혼용값(숫자 아님)이면 수식 대상에서 제외
+                if(o._kind==='basic' && !isNumericVal(o._val)) return false;
+                return true;
+            })
+            .map(function(o){ return {key:o.key,label:o.label}; });
         var kinds = cat.rows.map(function(r){ return r.kind||r.rowType; });
         if(kinds.indexOf('exec_sum')<0)    opts.push({key:'exec_sum',    label:'집행금액합계'});
         if(kinds.indexOf('daily_sum')<0)   opts.push({key:'daily_sum',   label:'일상경비합계'});
@@ -3137,9 +3160,18 @@ function openBudgetDetail(catIdx) {
             var tdV=document.createElement('div'); tdV.className='bd-set-val';
             var inpV=document.createElement('input'); inpV.type='text'; inpV.value=fmtNum(row.val); inpV.placeholder='내용입력';
             (function(i){ inpV.oninput=function(){
-                var raw=this.value.replace(/,/g,''); cat.rows[i].val=raw;
-                var pos=this.selectionStart,ol=this.value.length;
-                this.value=fmtNum(raw); this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
+                var raw=this.value.replace(/,/g,'');
+                var isPureNum = raw!=='' && !isNaN(Number(raw));
+                if(isPureNum){
+                    // 순수 숫자: 콤마 포맷 적용
+                    cat.rows[i].val=raw;
+                    var pos=this.selectionStart,ol=this.value.length;
+                    this.value=fmtNum(raw); this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
+                } else {
+                    // 혼용: 콤마 없이 그대로 저장
+                    cat.rows[i].val=this.value.replace(/,/g,'');
+                    this.value=this.value.replace(/,/g,'');
+                }
                 saveAll(); refreshResults();
             }; })(ri);
             tdV.appendChild(inpV); set.appendChild(tdV);
@@ -4789,7 +4821,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('budget-open-btn').onclick  = openBudgetPopup;
     document.getElementById('budget-close').onclick     = closeBudgetPopup;
     document.getElementById('budget-overlay').onclick   = function(e){ if(e.target===this) closeBudgetPopup(); };
-    document.getElementById('budget-detail-close').onclick = function(){ document.getElementById('budget-detail-overlay').classList.remove('visible'); };
+    document.getElementById('budget-detail-back').onclick = function(){
+        document.getElementById('budget-detail-overlay').classList.remove('visible');
+        openBudgetPopup();
+    };
+    document.getElementById('budget-detail-close').onclick = function(){
+        document.getElementById('budget-detail-overlay').classList.remove('visible');
+        closeBudgetPopup();
+    };
     /* budget-detail-overlay 외부 클릭 닫기 비활성화 */
     document.getElementById('budget-add-cat-btn').onclick = function(){
         document.getElementById('budget-add-form').style.display='block';
