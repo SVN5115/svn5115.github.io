@@ -171,6 +171,7 @@
         #idinfo-empty { text-align:center; color:#94a3b8; font-size:13px; padding:40px 0; }
         .ii-memo-cell { display:flex; align-items:center; gap:5px; }
         .ii-memo-input { flex:1; min-width:0; }
+        .ii-memo-cell .ii-memo { flex:1; min-width:0; }
         .ii-img-btn { background:none; border:1px solid #e2e8f0; border-radius:4px; font-size:11px; padding:3px 6px; cursor:pointer; color:#64748b; white-space:nowrap; flex-shrink:0; }
         .ii-img-btn:hover { background:#f1f5f9; }
         .ii-img-thumb { width:32px; height:32px; object-fit:cover; border-radius:4px; border:1px solid #e2e8f0; cursor:pointer; flex-shrink:0; }
@@ -3665,9 +3666,11 @@ function renderIdinfoTable() {
         // 비고 셀
         var memoTd = tr.querySelector('.ii-memo-td');
         var memoCell = document.createElement('div'); memoCell.className='ii-memo-cell';
-        var memoInput = document.createElement('input'); memoInput.type='text'; memoInput.className='ii-memo'; memoInput.placeholder='내용&사진첨부가능'; memoInput.value=item.memo||'';
+        var memoInput = document.createElement('input'); memoInput.type='text'; memoInput.className='ii-memo'; memoInput.placeholder='비고 내용 입력'; memoInput.value=item.memo||'';
         var imgFileInput = document.createElement('input'); imgFileInput.type='file'; imgFileInput.accept='image/*'; imgFileInput.style.display='none';
-        memoCell.appendChild(memoInput); memoCell.appendChild(imgFileInput);
+        var imgBtn = document.createElement('button'); imgBtn.type='button'; imgBtn.className='ii-img-btn'; imgBtn.textContent='📷';
+        imgBtn.title='사진 첨부'; imgBtn.onclick = function(){ imgFileInput.click(); };
+        memoCell.appendChild(memoInput); memoCell.appendChild(imgBtn); memoCell.appendChild(imgFileInput);
         if (item.memoImg) {
             var thumb = document.createElement('img'); thumb.className='ii-img-thumb'; thumb.src=item.memoImg;
             thumb.onclick=(function(img){ return function(){ document.getElementById('img-preview-img').src=img; document.getElementById('img-preview-overlay').classList.add('visible'); }; })(item.memoImg);
@@ -3763,13 +3766,70 @@ function renderIdinfoTable() {
                 '<td><input type="text" value="' + esc(sub.id||'') + '" placeholder="' + (item.service?'':'아이디') + '" class="sub-id"></td>' +
                 '<td><div class="idinfo-pw-cell"><input type="password" value="' + esc(sub.pw||'') + '" placeholder="' + (item.service?'':'비밀번호') + '" class="sub-pw"><button type="button" class="idinfo-pw-toggle" title="비밀번호 표시">👁</button></div></td>' +
                 '<td><input type="text" value="' + esc(sub.url||'') + '" placeholder="' + (item.service?'':'https://...') + '" class="sub-url"></td>' +
-                '<td><input type="text" value="' + esc(sub.memo||'') + '" placeholder="' + (item.service?'':'내용&사진첨부가능') + '" class="sub-memo" style="width:100%;border:1px solid transparent;border-radius:5px;padding:5px 7px;font-size:12px;box-sizing:border-box;background:transparent;outline:none;"></td>' +
+                '<td class="ii-memo-td"></td>' +
                 '<td style="text-align:center;"><button type="button" class="sub-del-btn idinfo-row-del">삭제</button></td>';
+
+            // 하위행 비고 셀 (메인행과 동일하게 사진 첨부 가능)
+            var subMemoTd = subTr.querySelector('.ii-memo-td');
+            var subMemoCell = document.createElement('div'); subMemoCell.className='ii-memo-cell';
+            var subMemoInput = document.createElement('input'); subMemoInput.type='text'; subMemoInput.className='sub-memo'; subMemoInput.placeholder=''; subMemoInput.value=sub.memo||'';
+            var subImgFileInput = document.createElement('input'); subImgFileInput.type='file'; subImgFileInput.accept='image/*'; subImgFileInput.style.display='none';
+            var subImgBtn = document.createElement('button'); subImgBtn.type='button'; subImgBtn.className='ii-img-btn'; subImgBtn.textContent='📷';
+            subImgBtn.title='사진 첨부'; subImgBtn.onclick = function(){ subImgFileInput.click(); };
+            subMemoCell.appendChild(subMemoInput); subMemoCell.appendChild(subImgBtn); subMemoCell.appendChild(subImgFileInput);
+            if (sub.memoImg) {
+                var subThumb = document.createElement('img'); subThumb.className='ii-img-thumb'; subThumb.src=sub.memoImg;
+                subThumb.onclick=(function(img){ return function(){ document.getElementById('img-preview-img').src=img; document.getElementById('img-preview-overlay').classList.add('visible'); }; })(sub.memoImg);
+                var subImgDel=document.createElement('button'); subImgDel.type='button'; subImgDel.className='ii-img-del'; subImgDel.textContent='✕';
+                (function(pi,si2){ subImgDel.onclick=function(){ wpData.idinfo[pi].subRows[si2].memoImg=''; saveAll(); renderIdinfoTable(); }; })(idx,si);
+                subMemoCell.appendChild(subThumb); subMemoCell.appendChild(subImgDel);
+            }
+            subMemoTd.appendChild(subMemoCell);
+
             var spw=subTr.querySelector('.sub-pw');
             subTr.querySelector('.idinfo-pw-toggle').onclick=function(){ spw.type=spw.type==='password'?'text':'password'; };
             (function(pi,si2){
-                function saveSubRow(){ if(!wpData.idinfo[pi].subRows) wpData.idinfo[pi].subRows=[]; wpData.idinfo[pi].subRows[si2]={id:subTr.querySelector('.sub-id').value.trim(),pw:subTr.querySelector('.sub-pw').value,url:subTr.querySelector('.sub-url').value.trim(),memo:subTr.querySelector('.sub-memo').value.trim()}; saveAll(); }
-                ['sub-id','sub-pw','sub-url','sub-memo'].forEach(function(cls){ subTr.querySelector('.'+cls).addEventListener('change',saveSubRow); subTr.querySelector('.'+cls).addEventListener('blur',saveSubRow); });
+                subImgFileInput.onchange = function() {
+                    if (!this.files.length) return;
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var img = new Image();
+                        img.onload = function() {
+                            var canvas=document.createElement('canvas'),ms=800,w=img.width,h=img.height;
+                            if(w>ms||h>ms){ if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;} }
+                            canvas.width=w; canvas.height=h;
+                            canvas.getContext('2d').drawImage(img,0,0,w,h);
+                            if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={};
+                            wpData.idinfo[pi].subRows[si2].memoImg=canvas.toDataURL('image/jpeg',0.8);
+                            saveAll(); renderIdinfoTable();
+                        };
+                        img.src=e.target.result;
+                    };
+                    reader.readAsDataURL(this.files[0]); this.value='';
+                };
+                subMemoInput.addEventListener('paste', function(e) {
+                    var items=e.clipboardData&&e.clipboardData.items; if(!items) return;
+                    for(var j=0;j<items.length;j++) {
+                        if(items[j].type.indexOf('image')!==-1) {
+                            e.preventDefault();
+                            var rd=new FileReader();
+                            rd.onload=function(ev){ var img2=new Image(); img2.onload=function(){ var c2=document.createElement('canvas'),ms=800,w2=img2.width,h2=img2.height; if(w2>ms||h2>ms){if(w2>h2){h2=Math.round(h2*ms/w2);w2=ms;}else{w2=Math.round(w2*ms/h2);h2=ms;}} c2.width=w2;c2.height=h2; c2.getContext('2d').drawImage(img2,0,0,w2,h2); if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={}; wpData.idinfo[pi].subRows[si2].memoImg=c2.toDataURL('image/jpeg',0.8); saveAll();renderIdinfoTable(); }; img2.src=ev.target.result; };
+                            rd.readAsDataURL(items[j].getAsFile()); break;
+                        }
+                    }
+                });
+                function saveSubRow(){
+                    if(!wpData.idinfo[pi].subRows) wpData.idinfo[pi].subRows=[];
+                    if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={};
+                    wpData.idinfo[pi].subRows[si2]=Object.assign(wpData.idinfo[pi].subRows[si2],{
+                        id:subTr.querySelector('.sub-id').value.trim(),
+                        pw:subTr.querySelector('.sub-pw').value,
+                        url:subTr.querySelector('.sub-url').value.trim(),
+                        memo:subTr.querySelector('.sub-memo').value.trim()
+                    });
+                    saveAll();
+                }
+                ['sub-id','sub-pw','sub-url','sub-memo'].forEach(function(cls){ var el=subTr.querySelector('.'+cls); if(el){ el.addEventListener('change',saveSubRow); el.addEventListener('blur',saveSubRow); } });
                 subTr.querySelector('.sub-del-btn').onclick=function(){ if(!confirm('이 하위 행을 삭제하시겠습니까?')) return; wpData.idinfo[pi].subRows.splice(si2,1); saveAll();renderIdinfoTable(); };
             })(idx,si);
             if (si === subRows.length - 1) subTr.classList.add('group-last');
