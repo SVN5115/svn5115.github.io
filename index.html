@@ -227,6 +227,8 @@
         .ts-item:last-child { border-bottom:none; }
         .ts-item-dot { width:6px; height:6px; border-radius:50%; background:#6366f1; margin-top:5px; flex-shrink:0; }
         .ts-empty { color:#94a3b8; font-size:12px; padding:6px 0; }
+        .ts-item-cb { width:14px; height:14px; cursor:pointer; accent-color:#6366f1; flex-shrink:0; margin-top:2px; }
+        .ts-item-text.done { text-decoration:line-through; color:#94a3b8; }
         /* ── 퀵 버튼 박스 ── */
         #quick-box {
             background: white; border: 1px solid #e2e8f0; border-radius: 10px;
@@ -2868,6 +2870,7 @@ function checkTodayHasSchedule() {
 }
 
 function openTodaySummary() {
+    autoResetTsChecked();
     var today = new Date();
     var yyyy = today.getFullYear();
     var mm   = String(today.getMonth()+1).padStart(2,'0');
@@ -2887,9 +2890,12 @@ function openTodaySummary() {
     var todoItems = todos[dateStr] || [];
     var todoTexts = todoItems.map(function(t){ return t.text; });
     var todoDetails = todoItems.map(function(t){ return { title: t.text, body: t.detail || '' }; });
+    var todoRefs = todoItems.map(function(t,ti){ return {type:'todo', dateStr:dateStr, itemIdx:ti}; });
     body.appendChild(makeTsSection('📅 일정', '#eff6ff', '#3b82f6',
         todoItems.length ? todoTexts : null,
-        todoItems.length ? todoDetails : null
+        todoItems.length ? todoDetails : null,
+        todoItems.length ? todoRefs : null,
+        dateStr
     ));
 
     // ② 루틴
@@ -2913,7 +2919,10 @@ function openTodaySummary() {
         var isDailyMatch = (titleStr === '일일업무' || titleStr === '매일');
         if (!isDowMatch && !isDateMatch && !isDailyMatch) return;
         var items = g.items || (g.body ? [g.body] : []);
-        routineItems.push({ title: g.title, items: items, detail: items.length ? items.join("\n") : (g.body||"") });
+        var gIdx = wpData.routine.indexOf(g);
+        var isMonthlyR = !!(g.dates && g.dates.length);
+        var mkR = isMonthlyR ? (yyyy+'-'+mm) : 'dow';
+        routineItems.push({ title: g.title, items: items, detail: items.length ? items.join("\n") : (g.body||""), wpRef:{type:'routine',idx:gIdx,mk:mkR,isMonthly:isMonthlyR} });
     });
     body.appendChild(makeTsSectionGroup('🔁 루틴 업무', '#f5f3ff', '#7c3aed', routineItems));
 
@@ -2926,7 +2935,10 @@ function openTodaySummary() {
         });
         if (!match) return;
         var items = g.items || (g.body ? [g.body] : []);
-        expenseItems.push({ title: g.title, items: items, detail: items.length ? items.join("\n") : (g.body||"") });
+        var gIdxE = wpData.expense.indexOf(g);
+        var isMonthlyE = g.dates.some(function(d){ return d.repeat==='monthly'; });
+        var mkE = isMonthlyE ? (yyyy+'-'+mm) : mmdd;
+        expenseItems.push({ title: g.title, items: items, detail: items.length ? items.join("\n") : (g.body||""), wpRef:{type:'expense',idx:gIdxE,mk:mkE,isMonthly:isMonthlyE} });
     });
     body.appendChild(makeTsSectionGroup('💰 지출 업무', '#f0fdf4', '#10b981', expenseItems));
 
@@ -2939,7 +2951,10 @@ function openTodaySummary() {
         });
         if (!match) return;
         var items = g.items || (g.body ? [g.body] : []);
-        reportItems.push({ title: g.title, items: items, detail: items.length ? items.join("\n") : (g.body||"") });
+        var gIdxR = wpData.report.indexOf(g);
+        var isMonthlyRp = g.dates.some(function(d){ return d.repeat==='monthly'; });
+        var mkRp = isMonthlyRp ? (yyyy+'-'+mm) : mmdd;
+        reportItems.push({ title: g.title, items: items, detail: items.length ? items.join("\n") : (g.body||""), wpRef:{type:'report',idx:gIdxR,mk:mkRp,isMonthly:isMonthlyRp} });
     });
     body.appendChild(makeTsSectionGroup('📋 보고 업무', '#fffbeb', '#f59e0b', reportItems));
 
@@ -2951,15 +2966,18 @@ function openTodaySummary() {
         if (m.items && m.items.length) body2 += (body2 ? '\n\n' : '') + '\u25aa ' + m.items.join('\n\u25aa ');
         return { title: m.title, body: body2 };
     });
+    var meetingRefs = meetings.map(function(m,mi){ return {type:'meeting', mIdx: wpData.meetings.indexOf(m), itemIdx:mi}; });
     body.appendChild(makeTsSection('🗓 회의', '#fff1f2', '#ef4444',
         meetings.length ? meetingTexts : null,
-        meetings.length ? meetingDetails : null
+        meetings.length ? meetingDetails : null,
+        meetings.length ? meetingRefs : null,
+        yyyy+'-'+mm
     ));
 
     document.getElementById('today-summary-overlay').classList.add('visible');
 }
 
-function makeTsSection(label, bgColor, dotColor, items, detailItems) {
+function makeTsSection(label, bgColor, dotColor, items, detailItems, wpRefs, mk) {
     var sec = document.createElement('div'); sec.className = 'ts-section';
     var hdr = document.createElement('div'); hdr.className = 'ts-section-header';
     hdr.style.background = bgColor;
@@ -2971,11 +2989,25 @@ function makeTsSection(label, bgColor, dotColor, items, detailItems) {
     } else {
         items.forEach(function(txt, i) {
             var row = document.createElement('div'); row.className = 'ts-item';
-            row.innerHTML = '<div class="ts-item-dot" style="background:' + dotColor + ';"></div><div>' + txt + '</div>';
+            var cb = document.createElement('input'); cb.type='checkbox'; cb.className='ts-item-cb';
+            var span = document.createElement('span'); span.className='ts-item-text'; span.textContent=txt;
+            // 기존 체크 상태 복원
+            var ref = wpRefs ? wpRefs[i] : null;
+            if (ref) {
+                var initChecked = getTsChecked(ref, mk);
+                cb.checked = initChecked;
+                if (initChecked) span.className='ts-item-text done';
+            }
+            cb.onchange = (function(r, sp){ return function(){
+                sp.className='ts-item-text'+(this.checked?' done':'');
+                if(r) setTsChecked(r, mk, this.checked);
+                checkAllTsDone();
+            }; })(ref, span);
+            row.appendChild(cb); row.appendChild(span);
             if (detailItems && detailItems[i] !== undefined) {
-                (function(d){ row.onclick = function(){ openTsDetail(d.title, d.body); }; })(detailItems[i]);
+                (function(d){ span.style.cursor='pointer'; span.onclick = function(){ openTsDetail(d.title, d.body); }; })(detailItems[i]);
             } else {
-                (function(t){ row.onclick = function(){ openTsDetail(t, ''); }; })(txt);
+                (function(t){ span.style.cursor='pointer'; span.onclick = function(){ openTsDetail(t, ''); }; })(txt);
             }
             bd.appendChild(row);
         });
@@ -3003,13 +3035,146 @@ function makeTsSectionGroup(label, bgColor, dotColor, groups) {
             bd.appendChild(titleDiv);
             (g.items||[]).forEach(function(txt, ii) {
                 var row = document.createElement('div'); row.className = 'ts-item';
-                row.innerHTML = '<div class="ts-item-dot" style="background:' + dotColor + ';"></div><div>' + txt + '</div>';
+                var cb = document.createElement('input'); cb.type='checkbox'; cb.className='ts-item-cb';
+                var span = document.createElement('span'); span.className='ts-item-text'; span.textContent=txt;
+                var ref2 = g.wpRef ? {type:g.wpRef.type, idx:g.wpRef.idx, itemIdx:ii} : null;
+                var mk2  = g.wpRef ? g.wpRef.mk : null;
+                var initC = ref2 ? getTsChecked(ref2, mk2) : false;
+                cb.checked = initC; if(initC) span.className='ts-item-text done';
+                cb.onchange = (function(r2, mk3, sp2){ return function(){
+                    sp2.className='ts-item-text'+(this.checked?' done':'');
+                    if(r2) setTsChecked(r2, mk3, this.checked);
+                    checkAllTsDone();
+                }; })(ref2, mk2, span);
+                row.appendChild(cb); row.appendChild(span);
                 bd.appendChild(row);
             });
         });
     }
     sec.appendChild(bd);
     return sec;
+}
+
+/* ── 주요일정 체크 상태 읽기/쓰기 (기존 wpData.checked와 동일 키 사용) ── */
+function getTsChecked(ref, mk) {
+    if (!ref) return false;
+    if (ref.type === 'todo') {
+        var t2 = todos[ref.dateStr] && todos[ref.dateStr][ref.itemIdx];
+        return !!(t2 && t2.done);
+    }
+    if (ref.type === 'meeting') {
+        var m = wpData.meetings && wpData.meetings[ref.mIdx];
+        return !!(m && m.checked && m.checked[mk]);
+    }
+    // routine/expense/report - 기존 checked 키 그대로 사용
+    var g = wpData[ref.type] && wpData[ref.type][ref.idx];
+    if (!g || !g.checked) return false;
+    if (ref.isMonthly !== false) {
+        return !!(g.checked[mk] && g.checked[mk][ref.itemIdx]);
+    }
+    return !!(g.checked[ref.itemIdx]);
+}
+
+function setTsChecked(ref, mk, val) {
+    if (!ref) return;
+    if (ref.type === 'todo') {
+        if (todos[ref.dateStr] && todos[ref.dateStr][ref.itemIdx]) {
+            todos[ref.dateStr][ref.itemIdx].done = val;
+            renderList(ref.dateStr);
+        }
+        saveAll(); return;
+    }
+    if (ref.type === 'meeting') {
+        var m = wpData.meetings && wpData.meetings[ref.mIdx];
+        if (!m) return;
+        if (!m.checked) m.checked = {};
+        m.checked[mk] = val;
+        saveAll(); return;
+    }
+    var g = wpData[ref.type] && wpData[ref.type][ref.idx];
+    if (!g) return;
+    if (!g.checked) g.checked = {};
+    if (ref.isMonthly !== false) {
+        if (!g.checked[mk]) g.checked[mk] = {};
+        g.checked[mk][ref.itemIdx] = val;
+    } else {
+        g.checked[ref.itemIdx] = val;
+    }
+    renderSection(ref.type);
+    saveAll();
+}
+
+/* ── 자정 자동 초기화 ── */
+var _lastResetDate = '';
+function scheduleAutoReset() {
+    var now = new Date();
+    var msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 5) - now;
+    setTimeout(function() {
+        doAutoReset();
+        scheduleAutoReset(); // 다음 자정 예약
+    }, msUntilMidnight);
+}
+
+function doAutoReset() {
+    var today2 = new Date();
+    var yyyy2 = today2.getFullYear();
+    var mm2 = ('0'+(today2.getMonth()+1)).slice(-2);
+    var dd2 = ('0'+today2.getDate()).slice(-2);
+    var todayStr = yyyy2+'-'+mm2+'-'+dd2;
+    var curMonth = yyyy2+'-'+mm2;
+    var dow2 = today2.getDay();
+    var dowNames2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    var dowShort2 = ['일','월','화','수','목','금','토'];
+
+    // 루틴 - 일일업무: 매일 자정 초기화 / 요일: 해당 요일 아닌 날 초기화
+    (wpData.routine||[]).forEach(function(g) {
+        var t = (g.title||'').trim();
+        var isDaily = (t==='일일업무'||t==='매일');
+        var isDow = (t===dowNames2[dow2]||t===dowShort2[dow2]||t===dowShort2[dow2]+'요일');
+        if (isDaily || !isDow) {
+            if (g.checked) {
+                // 오늘 날짜 키 삭제
+                Object.keys(g.checked).forEach(function(k){ delete g.checked[k]; });
+            }
+        }
+    });
+
+    // 지출/보고: 월이 바뀌면 이전 달 체크 삭제
+    ['expense','report'].forEach(function(type) {
+        (wpData[type]||[]).forEach(function(g) {
+            if (!g.checked) return;
+            Object.keys(g.checked).forEach(function(k) {
+                if (k.length===7 && k!==curMonth) delete g.checked[k];
+            });
+        });
+    });
+
+    // 회의: 월이 바뀌면 이전 달 체크 삭제
+    (wpData.meetings||[]).forEach(function(m) {
+        if (!m.checked) return;
+        Object.keys(m.checked).forEach(function(k) {
+            if (k.length===7 && k!==curMonth) delete m.checked[k];
+        });
+    });
+
+    // 일정: 당일 아닌 날짜 done 초기화 (전날치 초기화)
+    var yesterday = new Date(today2); yesterday.setDate(yesterday.getDate()-1);
+    var yStr = yesterday.getFullYear()+'-'+('0'+(yesterday.getMonth()+1)).slice(-2)+'-'+('0'+yesterday.getDate()).slice(-2);
+    if (todos[yStr]) todos[yStr].forEach(function(t){ t.done = false; });
+
+    saveAll();
+    renderSection('routine'); renderSection('expense'); renderSection('report');
+    checkTodayHasSchedule();
+}
+
+function autoResetTsChecked() { /* 팝업 열 때 별도 초기화 없이 wpData 공유 */ }
+
+function checkAllTsDone() {
+    var allCbs = document.querySelectorAll('#today-summary-body .ts-item-cb');
+    if (!allCbs.length) return;
+    var allChecked = Array.from(allCbs).every(function(cb){ return cb.checked; });
+    var bell = document.getElementById('today-summary-bell');
+    if (bell) bell.classList.toggle('visible', !allChecked);
 }
 
 function openTsDetail(title, bodyText) {
@@ -3832,6 +3997,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 브라우저 탭 타이틀 변경
         document.title = currentUser.id + '의 달력';
+        // 자정 자동 초기화 스케줄 등록
+        scheduleAutoReset();
 
         // 관리자만 알림 버튼 표시
         document.getElementById('notify-btn').style.display =
