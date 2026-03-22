@@ -2994,9 +2994,13 @@ function filterBudgetCatGrid(q){
 
 function fmtNum(val) {
     if (val === null || val === undefined || val === '') return '';
-    var n = parseFloat(String(val).replace(/,/g,''));
-    if (isNaN(n)) return String(val); // 숫자 아니면 그대로
-    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    var s = String(val).replace(/,/g,'');
+    // 순수 숫자(정수/실수)인 경우만 콤마 포맷 적용
+    if (/^-?\d+(\.\d+)?$/.test(s.trim())) {
+        var n = parseFloat(s);
+        return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return String(val); // 혼용이면 원본 그대로 반환
 }
 
 function numberFmt(n) {
@@ -3169,9 +3173,8 @@ function openBudgetDetail(catIdx) {
                     var pos=this.selectionStart,ol=this.value.length;
                     this.value=fmtNum(raw); this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
                 } else {
-                    // 혼용: 콤마 없이 그대로 저장
-                    cat.rows[i].val=this.value.replace(/,/g,'');
-                    this.value=this.value.replace(/,/g,'');
+                    // 혼용: 원본 그대로 저장 (콤마 제거 안 함)
+                    cat.rows[i].val=this.value;
                 }
                 saveAll(); refreshResults();
             }; })(ri);
@@ -3521,10 +3524,23 @@ function openBudgetDetail(catIdx) {
                 } else {
                     inp.type=type||'text'; inp.value=val||'';
                     if(key==='business'){ inp.style.textAlign='left'; inp.placeholder='사업명을 입력해주세요'; }
-                    if(key==='exec'){ inp.placeholder='0,000'; }
+                    if(key==='exec'){
+                        inp.type='text'; inp.placeholder='0,000'; inp.style.textAlign='right';
+                        var numVal=parseInt(String(val).replace(/,/g,'').replace('원',''))||0;
+                        inp.value=numVal?(numberFmt(numVal)):'';
+                    }
                     (function(i,k){ inp.oninput=function(){
                         if(k==='business') cat.entries[i].business=this.value;
-                        if(k==='exec')     { cat.entries[i].exec=parseInt(this.value)||0; (cat._allSumUpdaters||[]).forEach(function(fn){fn();}); refreshResults(); saveDataNow(); return; }
+                        if(k==='exec'){
+                            var raw=this.value.replace(/[^0-9]/g,'');
+                            cat.entries[i].exec=parseInt(raw)||0;
+                            (cat._allSumUpdaters||[]).forEach(function(fn){fn();});
+                            refreshResults();
+                            var pos=this.selectionStart, ol=this.value.length;
+                            this.value=raw?numberFmt(parseInt(raw)):'';
+                            this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
+                            saveDataNow(); return;
+                        }
                         saveAll();
                     }; })(ei,key);
                 }
