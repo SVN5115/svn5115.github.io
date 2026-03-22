@@ -311,7 +311,7 @@
         .bd-color-input { position:fixed; top:-100px; left:-100px; width:0; height:0; opacity:0; }
         .bd-set-val { flex:1; padding:4px 8px; font-size:12px; border-right:1px solid #cbd5e1; }
         .bd-set-val input { width:100%; border:none; outline:none; background:transparent; font-size:12px; font-family:'Malgun Gothic',sans-serif; }
-        .bd-set-del { width:40px; min-width:40px; text-align:center; flex-shrink:0; }
+        .bd-set-del { width:52px; min-width:52px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
         .bd-drag-handle { width:14px; flex-shrink:0; cursor:grab; color:#cbd5e1; font-size:14px; display:flex; align-items:center; justify-content:center; padding:0 3px; user-select:none; }
         .bd-drag-handle:hover { color:#94a3b8; }
         .bd-drag-handle:active { cursor:grabbing; }
@@ -358,7 +358,8 @@
         .bd-btn-bar { display:flex; gap:8px; margin-bottom:8px; }
         .bd-add-row-top-btn { background:none; border:1px dashed #6366f1; border-radius:4px; font-size:11px; color:#4338ca; cursor:pointer; padding:4px 14px; font-family:'Malgun Gothic',sans-serif; }
         .bd-add-row-top-btn:hover { background:#f5f3ff; }
-        .bd-hide-btn { background:none; border:none; cursor:pointer; font-size:10px; color:#94a3b8; padding:0 2px; line-height:1; flex-shrink:0; }
+        .bd-set-del .bd-btn-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; width:100%; }
+        .bd-hide-btn { background:none; border:none; cursor:pointer; font-size:10px; color:#94a3b8; padding:0 1px; line-height:1.3; flex-shrink:0; }
         .bd-hide-btn:hover { color:#6366f1; }
         .bd-show-hidden-btn { background:none; border:1px dashed #94a3b8; border-radius:4px; font-size:11px; color:#64748b; cursor:pointer; padding:4px 10px; font-family:'Malgun Gothic',sans-serif; position:relative; }
         .bd-show-hidden-btn:hover { background:#f8fafc; }
@@ -2853,6 +2854,7 @@ function openBudgetPopup() {
 }
 function closeBudgetPopup() {
     document.getElementById('budget-overlay').classList.remove('visible');
+    renderBudgetCatGrid(); // 카드 상태(inp) 완전 초기화
 }
 
 var PALETTE=['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#64748b','#0ea5e9','#84cc16'];
@@ -2981,8 +2983,20 @@ function renderBudgetCatGrid() {
 
             card.onclick = function(e){
                 var t=e.target;
-                if(t===eb||t===cb2||t===colb||t===db) return;
-                if(inp) return; // 편집 중엔 카드 클릭 무시
+                // 수정/확인/색상/삭제 버튼 클릭 시 무시
+                if(eb.contains(t)||cb2.contains(t)||colb.contains(t)||db.contains(t)) return;
+                // 편집 중이면 강제 저장
+                if(inp && card.contains(inp)){ saveEdit(); return; }
+                inp = null;
+                eb.style.display='inline-block';
+                cb2.style.display='none'; colb.style.display='none'; db.style.display='none';
+                openBudgetDetail(idx);
+            };
+
+            // 수정 버튼은 카드 클릭과 분리
+            nameEl.onclick = function(e){
+                if(inp) return; // 편집 중이면 무시
+                e.stopPropagation();
                 openBudgetDetail(idx);
             };
         })(ci, nameEl, editBtn2, confirmBtn2, colorBtn, delBtn);
@@ -3014,7 +3028,7 @@ function fmtNum(val) {
         var n = parseFloat(s);
         return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
-    return String(val); // 혼용이면 원본 그대로 반환
+    return s; // 혼용이면 콤마 제거한 값 반환
 }
 
 function numberFmt(n) {
@@ -3030,6 +3044,21 @@ function openBudgetDetail(catIdx) {
         (cat.metaRows||[]).forEach(function(m){ cat.rows.push({kind:'basic',label:m.label1||'제목',val:m.val1||''}); });
     }
     if (!cat.entries) cat.entries=[];
+
+    // _id 없는 행에 자동 부여 (기존 저장 데이터 호환)
+    cat.rows.forEach(function(r){ if(!r._id) r._id = Date.now()+Math.random(); });
+    // 수식 참조 r_N → id_ 형식으로 마이그레이션
+    cat.rows.forEach(function(r){
+        if(r.kind==='formula'){
+            if(r.a && r.a.indexOf('r_')===0){
+                var ai=parseInt(r.a.slice(2)); if(cat.rows[ai]&&cat.rows[ai]._id) r.a='id_'+cat.rows[ai]._id;
+            }
+            if(r.b && r.b.indexOf('r_')===0){
+                var bi=parseInt(r.b.slice(2)); if(cat.rows[bi]&&cat.rows[bi]._id) r.b='id_'+cat.rows[bi]._id;
+            }
+        }
+    });
+    saveAll();
 
     document.getElementById('budget-detail-title').textContent=cat.name;
     var body=document.getElementById('budget-detail-body'); body.innerHTML='';
@@ -3184,6 +3213,17 @@ function openBudgetDetail(catIdx) {
             // X(일반지출) 활성화된 행의 집행금액 합계
             return (cat.entries||[]).reduce(function(s,e){ return s+(!e.daily?(parseInt(e.exec)||0):0); },0);
         }
+        if(key.indexOf('id_')===0){
+            var _idVal=key.slice(3);
+            var r=null;
+            for(var _ii=0;_ii<cat.rows.length;_ii++){ if(String(cat.rows[_ii]._id)===String(_idVal)){ r=cat.rows[_ii]; break; } }
+            if(!r) return 0;
+            if(r.kind==='basic') return parseFloat(String(r.val||'').replace(/,/g,''))||0;
+            if(r.kind==='exec_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(parseInt(e.exec)||0); },0);
+            if(r.kind==='daily_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(e.daily?(parseInt(e.exec)||0):0); },0);
+            if(r.kind==='nondaily_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(!e.daily?(parseInt(e.exec)||0):0); },0);
+            return calcRow(r)||0;
+        }
         if(key.indexOf('r_')===0){
             var ri=parseInt(key.slice(2)), r=cat.rows[ri];
             if(!r) return 0;
@@ -3202,7 +3242,7 @@ function openBudgetDetail(catIdx) {
     }
     function getOptions(){
         var opts = cat.rows
-            .map(function(r,i){ return {key:'r_'+i,label:(r.label||'행'+(i+1)),_kind:r.kind||r.rowType,_val:r.val}; })
+            .map(function(r,i){ return {key:r._id?'id_'+r._id:'r_'+i,label:(r.label||'행'+(i+1)),_kind:r.kind||r.rowType,_val:r.val}; })
             .filter(function(o){
                 // 기본행이면서 혼용값(숫자 아님)이면 수식 대상에서 제외
                 if(o._kind==='basic' && !isNumericVal(o._val)) return false;
@@ -3220,12 +3260,22 @@ function openBudgetDetail(catIdx) {
     // ▼ 버튼 - 클릭 시 바로 드롭다운 오픈, 선택값 현재값 맨위 표시
     function makeKindToggle(row, ri, onChangeFn) {
         var curKind = row.rowType||row.kind||'basic';
-        var labels = {basic:'기본행', formula:'수식행', exec_sum:'집행금액합계', daily_sum:'일상경비합계', nondaily_sum:'일반지출합계'};
+
+        // cat.rows에서 각 kind의 실제 label을 동적으로 가져옴
+        function getDynamicLabels() {
+            var base = {basic:'기본행', formula:'수식행', exec_sum:'집행금액합계', daily_sum:'일상경비합계', nondaily_sum:'일반지출합계'};
+            (cat.rows||[]).forEach(function(r) {
+                if(r.kind && r.label && base[r.kind] !== undefined) base[r.kind] = r.label;
+            });
+            return base;
+        }
+
+        var labels = getDynamicLabels();
         var sel = document.createElement('select'); sel.className='bd-kind-select';
         // 현재 선택값을 맨 위에 한번 더 추가
         var curOpt=document.createElement('option'); curOpt.value=curKind; curOpt.textContent='✔ '+labels[curKind]; curOpt.disabled=false;
         sel.appendChild(curOpt);
-        [{v:'basic',t:'기본행'},{v:'formula',t:'수식행'},{v:'exec_sum',t:'집행금액합계'},{v:'daily_sum',t:'일상경비합계'},{v:'nondaily_sum',t:'일반지출합계'}].forEach(function(o){
+        [{v:'basic',t:'기본행'},{v:'formula',t:'수식행'},{v:'exec_sum',t:labels.exec_sum},{v:'daily_sum',t:labels.daily_sum},{v:'nondaily_sum',t:labels.nondaily_sum}].forEach(function(o){
             var op=document.createElement('option'); op.value=o.v; op.textContent=o.t; sel.appendChild(op);
         });
         sel.style.display='none';
@@ -3236,8 +3286,9 @@ function openBudgetDetail(catIdx) {
             var old2=document.getElementById('bd-kind-custom-dropdown');
             if(old2) old2.remove();
             var rect=btn.getBoundingClientRect();
-            var ddOpts=[{v:'basic',t:'기본행'},{v:'formula',t:'수식행'},{v:'exec_sum',t:'집행금액합계'},{v:'daily_sum',t:'일상경비합계'},{v:'nondaily_sum',t:'일반지출합계'}];
-            var allLabels={basic:'기본행',formula:'수식행',exec_sum:'집행금액합계',daily_sum:'일상경비합계',nondaily_sum:'일반지출합계'};
+            var lbl = getDynamicLabels();
+            var ddOpts=[{v:'basic',t:'기본행'},{v:'formula',t:'수식행'},{v:'exec_sum',t:lbl.exec_sum},{v:'daily_sum',t:lbl.daily_sum},{v:'nondaily_sum',t:lbl.nondaily_sum}];
+            var allLabels=lbl;
             var dd=document.createElement('div'); dd.id='bd-kind-custom-dropdown';
             dd.style.cssText='position:fixed;z-index:99999;background:white;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:120px;left:'+rect.left+'px;top:'+rect.bottom+'px;';
             // 현재 선택 항목 맨위 v표시
@@ -3280,11 +3331,14 @@ function openBudgetDetail(catIdx) {
             // 색상 버튼
             var colorBtnB=(function(i,lbl){ return makeColorPickerBtn(row.bgColor, function(c){ cat.rows[i].bgColor=c; lbl.style.background=c; saveAll(); }); })(ri,tdL);
             var kt1=makeKindToggle(row, ri, (function(i){ return function(v){
-                if(v==='basic')    { cat.rows[i]={kind:'basic',label:'기본행',val:'',rowType:'basic'}; }
-                if(v==='formula')  { cat.rows[i]={kind:'formula',label:'수식행',a:'',op:'-',b:'',rowType:'formula'}; }
-                if(v==='exec_sum')    { cat.rows[i]={kind:'exec_sum',label:'집행금액합계',rowType:'exec_sum'}; }
-                if(v==='daily_sum')   { cat.rows[i]={kind:'daily_sum',label:'일상경비합계',rowType:'daily_sum'}; }
-                if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:'일반지출합계',rowType:'nondaily_sum'}; }
+                var _prev=cat.rows[i]||{}; var _lbl=_prev.label; var _bg=_prev.bgColor;
+                var _defLabels={basic:'기본행',formula:'수식행',exec_sum:'집행금액합계',daily_sum:'일상경비합계',nondaily_sum:'일반지출합계'};
+                var _pid=_prev._id||(Date.now()+Math.random());
+                if(v==='basic')    { cat.rows[i]={kind:'basic',label:_lbl||_defLabels.basic,val:'',rowType:'basic',bgColor:_bg,_id:_pid}; }
+                if(v==='formula')  { cat.rows[i]={kind:'formula',label:_lbl||_defLabels.formula,a:_prev.a||'',op:_prev.op||'-',b:_prev.b||'',rowType:'formula',bgColor:_bg,_id:_pid}; }
+                if(v==='exec_sum')    { cat.rows[i]={kind:'exec_sum',label:_lbl||_defLabels.exec_sum,rowType:'exec_sum',bgColor:_bg,_id:_pid}; }
+                if(v==='daily_sum')   { cat.rows[i]={kind:'daily_sum',label:_lbl||_defLabels.daily_sum,rowType:'daily_sum',bgColor:_bg,_id:_pid}; }
+                if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:_lbl||_defLabels.nondaily_sum,rowType:'nondaily_sum',bgColor:_bg,_id:_pid}; }
                 saveAll(); renderRows();
             }; })(ri));
             tdLWrap.appendChild(inpL); tdLWrap.appendChild(colorBtnB); tdLWrap.appendChild(kt1.sel); tdLWrap.appendChild(kt1.btn);
@@ -3301,10 +3355,13 @@ function openBudgetDetail(catIdx) {
                     var pos=this.selectionStart,ol=this.value.length;
                     this.value=fmtNum(raw); this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
                 } else {
-                    // 혼용: 원본 그대로 저장 (콤마 제거 안 함)
-                    cat.rows[i].val=this.value;
+                    // 혼용(숫자+텍스트): 콤마 제거한 값으로 저장 및 표시
+                    cat.rows[i].val=raw;
+                    this.value=raw;
                 }
                 saveAll(); refreshResults();
+                // 숨김 수식행 포함 전체 갱신
+                if(cat._resUpdaters) cat._resUpdaters.forEach(function(fn){ fn(); });
             }; })(ri);
             tdV.appendChild(inpV); set.appendChild(tdV);
 
@@ -3327,11 +3384,14 @@ function openBudgetDetail(catIdx) {
             (function(i){ inpLe.oninput=function(){ cat.rows[i].label=this.value; saveAll(); }; })(ri);
 
             var kte=makeKindToggle(row, ri, (function(i){ return function(v){
-                if(v==='basic')    { cat.rows[i]={kind:'basic',label:'기본행',val:'',rowType:'basic'}; }
-                if(v==='formula')  { cat.rows[i]={kind:'formula',label:'수식행',a:'',op:'-',b:'',rowType:'formula'}; }
-                if(v==='exec_sum')    { cat.rows[i]={kind:'exec_sum',label:'집행금액합계',rowType:'exec_sum'}; }
-                if(v==='daily_sum')   { cat.rows[i]={kind:'daily_sum',label:'일상경비합계',rowType:'daily_sum'}; }
-                if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:'일반지출합계',rowType:'nondaily_sum'}; }
+                var _prev=cat.rows[i]||{}; var _lbl=_prev.label; var _bg=_prev.bgColor;
+                var _defLabels={basic:'기본행',formula:'수식행',exec_sum:'집행금액합계',daily_sum:'일상경비합계',nondaily_sum:'일반지출합계'};
+                var _pid=_prev._id||(Date.now()+Math.random());
+                if(v==='basic')    { cat.rows[i]={kind:'basic',label:_lbl||_defLabels.basic,val:'',rowType:'basic',bgColor:_bg,_id:_pid}; }
+                if(v==='formula')  { cat.rows[i]={kind:'formula',label:_lbl||_defLabels.formula,a:_prev.a||'',op:_prev.op||'-',b:_prev.b||'',rowType:'formula',bgColor:_bg,_id:_pid}; }
+                if(v==='exec_sum')    { cat.rows[i]={kind:'exec_sum',label:_lbl||_defLabels.exec_sum,rowType:'exec_sum',bgColor:_bg,_id:_pid}; }
+                if(v==='daily_sum')   { cat.rows[i]={kind:'daily_sum',label:_lbl||_defLabels.daily_sum,rowType:'daily_sum',bgColor:_bg,_id:_pid}; }
+                if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:_lbl||_defLabels.nondaily_sum,rowType:'nondaily_sum',bgColor:_bg,_id:_pid}; }
                 saveAll(); renderRows();
             }; })(ri));
             var colorBtnE=(function(i,lbl){ return makeColorPickerBtn(row.bgColor, function(c){ cat.rows[i].bgColor=c; lbl.style.background=c; saveAll(); }); })(ri,tdLe);
@@ -3369,11 +3429,14 @@ function openBudgetDetail(catIdx) {
             var colorBtnF=(function(i,lbl){ return makeColorPickerBtn(row.bgColor, function(c){ cat.rows[i].bgColor=c; lbl.style.background=c; saveAll(); }); })(ri,tdL2);
 
             var ktf=makeKindToggle(row, ri, (function(i){ return function(v){
-                if(v==='basic')    { cat.rows[i]={kind:'basic',label:'기본행',val:'',rowType:'basic'}; }
-                if(v==='formula')  { cat.rows[i]={kind:'formula',label:'수식행',a:'',op:'-',b:'',rowType:'formula'}; }
-                if(v==='exec_sum')    { cat.rows[i]={kind:'exec_sum',label:'집행금액합계',rowType:'exec_sum'}; }
-                if(v==='daily_sum')   { cat.rows[i]={kind:'daily_sum',label:'일상경비합계',rowType:'daily_sum'}; }
-                if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:'일반지출합계',rowType:'nondaily_sum'}; }
+                var _prev=cat.rows[i]||{}; var _lbl=_prev.label; var _bg=_prev.bgColor;
+                var _defLabels={basic:'기본행',formula:'수식행',exec_sum:'집행금액합계',daily_sum:'일상경비합계',nondaily_sum:'일반지출합계'};
+                var _pid=_prev._id||(Date.now()+Math.random());
+                if(v==='basic')    { cat.rows[i]={kind:'basic',label:_lbl||_defLabels.basic,val:'',rowType:'basic',bgColor:_bg,_id:_pid}; }
+                if(v==='formula')  { cat.rows[i]={kind:'formula',label:_lbl||_defLabels.formula,a:_prev.a||'',op:_prev.op||'-',b:_prev.b||'',rowType:'formula',bgColor:_bg,_id:_pid}; }
+                if(v==='exec_sum')    { cat.rows[i]={kind:'exec_sum',label:_lbl||_defLabels.exec_sum,rowType:'exec_sum',bgColor:_bg,_id:_pid}; }
+                if(v==='daily_sum')   { cat.rows[i]={kind:'daily_sum',label:_lbl||_defLabels.daily_sum,rowType:'daily_sum',bgColor:_bg,_id:_pid}; }
+                if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:_lbl||_defLabels.nondaily_sum,rowType:'nondaily_sum',bgColor:_bg,_id:_pid}; }
                 saveAll(); renderRows();
             }; })(ri));
             tdL2Wrap.appendChild(lblInp); tdL2Wrap.appendChild(colorBtnF); tdL2Wrap.appendChild(ktf.sel); tdL2Wrap.appendChild(ktf.btn);
@@ -3482,7 +3545,12 @@ function openBudgetDetail(catIdx) {
             delWrap2.appendChild(confBtn); delWrap2.appendChild(hideBtnF); delWrap2.appendChild(delBtn2); tdDel2.appendChild(delWrap2);
 
             function calcF(){
-                var v=calcRow(cat.rows[ri]);
+                // _id로 항상 최신 행을 찾아 계산 (인덱스 변경에 안전)
+                var _rowId=row._id;
+                var _r=null;
+                if(_rowId){ for(var _k=0;_k<cat.rows.length;_k++){ if(cat.rows[_k]._id===_rowId){ _r=cat.rows[_k]; break; } } }
+                if(!_r) _r=cat.rows[ri]; // fallback
+                var v=calcRow(_r);
                 if(v===null){resEl.textContent='';resVal.textContent='';resEl.className='bd-res-val';resVal.className='bd-res-val';return;}
                 var txt=numberFmt(Math.round(v))+'원',cls='bd-res-val'+(v<0?' neg':'');
                 resEl.textContent=txt;resEl.className=cls;resVal.textContent=txt;resVal.className=cls;
@@ -3595,10 +3663,12 @@ function openBudgetDetail(catIdx) {
             if(row.hidden) set.classList.add('hidden-row');
             tbl.appendChild(set);
         });
+        // 숨김행 포함 전체 수식 갱신용으로 cat에 저장
+        cat._resUpdaters = resUpdaters.slice();
     }
 
     addRowTopBtn.onclick=function(){
-        cat.rows.push({kind:'basic',label:'기본행',val:'',rowType:'basic'});
+        cat.rows.push({kind:'basic',label:'기본행',val:'',rowType:'basic',_id:Date.now()+Math.random()});
         saveAll(); renderRows();
     };
     renderRows();
@@ -3687,6 +3757,7 @@ function openBudgetDetail(catIdx) {
                             cat.entries[i].exec=parseInt(raw)||0;
                             (cat._allSumUpdaters||[]).forEach(function(fn){fn();});
                             refreshResults();
+                            if(cat._resUpdaters) cat._resUpdaters.forEach(function(fn){ fn(); });
                             var pos=this.selectionStart, ol=this.value.length;
                             this.value=raw?numberFmt(parseInt(raw)):'';
                             this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
@@ -3727,6 +3798,8 @@ function openBudgetDetail(catIdx) {
                 cat.entries[i].daily=!cat.entries[i].daily;
                 setToggle(btn, cat.entries[i].daily);
                 saveAll();
+                (cat._allSumUpdaters||[]).forEach(function(fn){fn();});
+                if(cat._resUpdaters) cat._resUpdaters.forEach(function(fn){fn();});
             }; })(ei, togBtn);
             tdDaily.appendChild(togBtn); tr.appendChild(tdDaily);
             // 삭제
@@ -5225,6 +5298,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
+                titleFormat: function(date) {
+                    var d = date.date.marker;
+                    return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월';
+                },
                 headerToolbar:{ left:'title', center:'', right:'today prev,next' },
                 dayCellDidMount: function(arg) {
                     var topEl=arg.el.querySelector('.fc-daygrid-day-top');
@@ -5288,7 +5365,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             calendar.render();
             window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
-        }
+        } // end if(!calendar)
         ['routine','expense','report'].forEach(function(key) {
             document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
             document.getElementById('fcancel-'+key).onclick = function(){ closeForm(key); };
