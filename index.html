@@ -97,6 +97,44 @@
         #routine-panel { display: flex; flex-direction: column; flex: 1; gap: 10px; min-height: 0; }
         #routine-panel.hidden { display: none; }
         .wp-section { flex: 1; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-radius: 10px; padding: 11px 12px 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; overflow: auto; }
+        /* ── 업무가이드 ── */
+        /* 업무가이드 카드 */
+        .guide-cat-card { border-radius:6px; border:none; display:inline-flex; align-items:center; gap:5px; cursor:pointer; transition:opacity 0.15s,box-shadow 0.15s; padding:7px 10px; position:relative; background:#6366f1; }
+        .guide-cat-card:hover { opacity:0.88; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+        .guide-cat-card-name { font-size:12px; font-weight:bold; color:#fff; white-space:pre-wrap; text-align:center; }
+        .guide-cat-card-del { background:none; border:none; color:rgba(255,255,255,0.7); font-size:12px; cursor:pointer; line-height:1; padding:0; flex-shrink:0; }
+        .guide-cat-card-del:hover { color:#fff; }
+        /* 업무가이드 뷰 */
+        .guide-block { margin-bottom:12px; }
+        .guide-block { border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; overflow:hidden; }
+        .guide-block-text { font-size:13px; color:#1e293b; line-height:1.8; white-space:pre-wrap; padding:10px 12px; min-height:60px; }
+        .guide-block-imgs { display:flex; flex-wrap:wrap; gap:6px; padding:8px 12px; border-top:1px solid #e2e8f0; background:#f1f5f9; }
+        .guide-block-img-thumb { width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0; cursor:zoom-in; transition:opacity 0.15s; }
+        .guide-block-img-thumb:hover { opacity:0.85; }
+        .guide-block-img { max-width:100%; border-radius:8px; border:1px solid #e2e8f0; cursor:zoom-in; }
+        /* 편집 블록 내 이미지 첨부 영역 */
+        .guide-edit-block { position:relative; border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc; display:flex; flex-direction:column; gap:6px; }
+        .guide-edit-block textarea { width:100%; min-height:80px; border:1px solid #dde3ed; border-radius:6px; padding:8px; font-size:13px; font-family:'Malgun Gothic',sans-serif; line-height:1.8; resize:vertical; outline:none; box-sizing:border-box; color:#1e293b; background:white; }
+        .guide-edit-block textarea:focus { border-color:#6366f1; }
+        .guide-edit-block-imgs { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .guide-edit-img-wrap { position:relative; display:inline-flex; }
+        .guide-edit-img-thumb { width:56px; height:56px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0; cursor:zoom-in; display:block; }
+        .guide-edit-img-del { position:absolute; top:-5px; right:-5px; width:16px; height:16px; background:white; border:1px solid #e2e8f0; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; opacity:0; transition:opacity 0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+        .guide-edit-img-del::after { content:'✕'; font-size:8px; color:#94a3b8; font-weight:bold; line-height:1; }
+        .guide-edit-img-del:hover { background:#fef2f2; border-color:#fca5a5; }
+        .guide-edit-img-del:hover::after { color:#ef4444; }
+        .guide-edit-img-wrap:hover .guide-edit-img-del { opacity:1; }
+        .guide-edit-add-img-btn { width:56px; height:56px; border:1px dashed #94a3b8; border-radius:6px; background:none; cursor:pointer; font-size:18px; color:#94a3b8; display:flex; align-items:center; justify-content:center; }
+        .guide-edit-add-img-btn:hover { border-color:#6366f1; color:#6366f1; background:#f5f3ff; }
+        #guide-empty-msg { color:#94a3b8; font-size:13px; text-align:center; padding:40px 0; }
+        /* 업무가이드 편집 */
+        #guide-edit-area { display:flex; flex-direction:column; gap:8px; }
+        .guide-block-del { position:absolute; top:7px; right:8px; background:none; border:none; color:#94a3b8; cursor:pointer; padding:3px; line-height:1; border-radius:4px; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.15s, color 0.15s; }
+        .guide-edit-block:hover .guide-block-del { opacity:1; }
+        .guide-block-del:hover { color:#ef4444; }
+        .guide-add-btns { display:flex; gap:8px; margin-top:4px; }
+        .guide-add-btn { flex:1; padding:7px; background:none; border:1px dashed #94a3b8; border-radius:7px; font-size:12px; color:#64748b; cursor:pointer; font-family:'Malgun Gothic',sans-serif; }
+        .guide-add-btn:hover { background:#f1f5f9; border-color:#6366f1; color:#6366f1; }
         #sec-routine { border-top: 3px solid #6366f1; } #sec-expense { border-top: 3px solid #10b981; } #sec-report { border-top: 3px solid #f59e0b; } #sec-meeting { border-top: 3px solid #eab308; }
         #sec-meeting .wp-section-label::before { content: '📅'; }
         #sec-meeting .wp-plus-btn { background: #eab308; } #sec-meeting .wp-plus-btn:hover { background: #ca8a04; }
@@ -1066,6 +1104,43 @@
     </div>
 </div>
 
+<!-- 업무가이드 목록 팝업 (예산관리와 동일한 구조) -->
+<div id="guide-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:8800;align-items:center;justify-content:center;"></div>
+<div id="guide-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;width:480px;max-width:96vw;max-height:85vh;flex-direction:column;box-shadow:0 16px 60px rgba(0,0,0,0.25);z-index:8801;overflow:hidden;">
+    <div id="guide-header" style="padding:14px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <h3 style="margin:0;font-size:15px;color:#1e293b;">📖 업무가이드</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <div style="position:relative;">
+                <input type="text" id="guide-cat-search" placeholder="검색" oninput="filterGuideCatGrid(this.value)" style="padding:5px 10px 5px 28px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;outline:none;font-family:'Malgun Gothic',sans-serif;width:120px;">
+                <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;pointer-events:none;">🔍</span>
+            </div>
+            <button type="button" id="guide-add-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">+ 가이드 추가</button>
+            <button type="button" id="guide-close-btn" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;">&#x2715;</button>
+        </div>
+    </div>
+    <div id="guide-body" style="flex:1;overflow-y:auto;padding:16px 20px;">
+        <div id="guide-cat-grid" class="budget-cat-grid"></div>
+        <div id="guide-cat-empty" style="text-align:center;color:#94a3b8;font-size:13px;padding:40px 0;display:none;">가이드가 없습니다.<br><small>+ 가이드 추가를 눌러 시작하세요.</small></div>
+    </div>
+</div>
+
+<!-- 업무가이드 상세 팝업 -->
+<div id="guide-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:8900;align-items:center;justify-content:center;"></div>
+<div id="guide-detail-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;width:700px;max-width:96vw;height:82vh;flex-direction:column;box-shadow:0 16px 60px rgba(0,0,0,0.25);z-index:8901;overflow:hidden;">
+    <div style="padding:14px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <button type="button" id="guide-detail-back" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0 4px;">&#x2190;</button>
+            <h3 id="guide-detail-title" style="margin:0;font-size:15px;color:#1e293b;"></h3>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="guide-edit-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">✏ 편집</button>
+            <button type="button" id="guide-save-btn" style="display:none;padding:5px 14px;background:#10b981;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">저장</button>
+            <button type="button" id="guide-detail-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0 4px;">&#x2715;</button>
+        </div>
+    </div>
+    <div id="guide-detail-body" style="flex:1;overflow-y:auto;padding:20px 24px;"></div>
+</div>
+
 <!-- 앱 -->
 <div id="app">
     <div class="container">
@@ -1077,6 +1152,7 @@
                 <button type="button" id="idinfo-open-btn" class="quick-btn">🔐 업무ID</button>
                 <button type="button" id="contact-open-btn" class="quick-btn">📞 업무연락처</button>
                 <button type="button" id="budget-open-btn" class="quick-btn">💰 예산관리</button>
+                <button type="button" id="guide-open-btn" class="quick-btn">📖 업무가이드</button>
             </div>
 
             <!-- 루틴 업무 -->
@@ -2413,6 +2489,309 @@ function doGotoDate() {
 ════════════════════════════════════ */
 var memoSaveTimer = null;
 
+/* ── 업무가이드 ── */
+var _currentGuideIdx = null;
+
+function openGuidePopup() {
+    if (!wpData.guideItems) wpData.guideItems = [];
+    renderGuideCatGrid();
+    document.getElementById('guide-overlay').style.display = 'flex';
+    document.getElementById('guide-popup').style.display = 'flex';
+}
+function closeGuidePopup() {
+    document.getElementById('guide-overlay').style.display = 'none';
+    document.getElementById('guide-popup').style.display = 'none';
+}
+function openGuideDetail(idx) {
+    _currentGuideIdx = idx;
+    var item = (wpData.guideItems || [])[idx];
+    if (!item) return;
+    document.getElementById('guide-detail-title').textContent = item.name || '가이드';
+    document.getElementById('guide-edit-btn').style.display = 'inline-block';
+    document.getElementById('guide-save-btn').style.display = 'none';
+    renderGuideDetailView(idx);
+    document.getElementById('guide-detail-overlay').style.display = 'flex';
+    document.getElementById('guide-detail-popup').style.display = 'flex';
+}
+function closeGuideDetail() {
+    var body2 = document.getElementById('guide-detail-body');
+    if (body2 && body2._removePaste) { body2._removePaste(); body2._removePaste = null; }
+    document.getElementById('guide-detail-overlay').style.display = 'none';
+    document.getElementById('guide-detail-popup').style.display = 'none';
+}
+function renderGuideCatGrid() {
+    var grid = document.getElementById('guide-cat-grid');
+    var empty = document.getElementById('guide-cat-empty');
+    grid.innerHTML = '';
+    var items = wpData.guideItems || [];
+    empty.style.display = items.length ? 'none' : 'block';
+    items.forEach(function(item, ci) {
+        var color = item.color || '#6366f1';
+        var card = document.createElement('div');
+        card.className = 'budget-cat-card'; // 예산관리와 동일한 클래스
+        card.style.background = color;
+
+        var nameEl = document.createElement('div');
+        nameEl.className = 'budget-cat-card-name';
+        nameEl.textContent = item.name || '가이드';
+        nameEl.style.paddingRight = '6px';
+        card.appendChild(nameEl);
+
+        // 수정 버튼
+        var editBtn = document.createElement('button');
+        editBtn.type='button'; editBtn.title='수정';
+        editBtn.className='budget-cat-card-edit-btn'; editBtn.textContent='✏';
+
+        // 확인 버튼
+        var confirmBtn = document.createElement('button');
+        confirmBtn.type='button'; confirmBtn.title='확인';
+        confirmBtn.className='budget-cat-card-edit-btn';
+        confirmBtn.textContent='✔'; confirmBtn.style.display='none';
+
+        // 색상 버튼
+        var colorBtn = document.createElement('button');
+        colorBtn.type='button'; colorBtn.className='budget-cat-card-color-btn';
+        colorBtn.style.cssText='width:auto;height:auto;padding:0 2px;background:transparent;border:none;font-size:14px;line-height:1;display:none;align-items:center;justify-content:center;';
+        colorBtn.title='색상 변경';
+        colorBtn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.37 2.63L14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 0 0-3-3z"/><path d="M9 8c-2 3-4 3.5-7 4l8 8c1-.5 3.5-2 4-7"/><path d="M14.5 17.5L4.5 15"/></svg>';
+
+        // 삭제 버튼
+        var delBtn = document.createElement('button');
+        delBtn.type='button'; delBtn.className='budget-cat-card-del';
+        delBtn.textContent='✕'; delBtn.title='삭제'; delBtn.style.display='none';
+
+        (function(idx, ne, eb, cb2, colb, db) {
+            var inp = null;
+
+            function enterEditMode(e) {
+                e.stopPropagation();
+                if (inp) return;
+                inp = document.createElement('textarea');
+                inp.value = wpData.guideItems[idx].name;
+                inp.style.cssText = 'flex:1;border:none;border-bottom:1px solid rgba(255,255,255,0.8);outline:none;font-size:12px;font-weight:bold;font-family:\'Malgun Gothic\',sans-serif;color:#fff;background:transparent;width:80px;min-width:40px;resize:none;overflow:hidden;line-height:1.4;padding:0;';
+                inp.rows = 1;
+                inp.onkeydown = function(e2) { if (e2.key==='Escape') { inp=null; renderGuideCatGrid(); } };
+                inp.oninput = function() { this.style.height='auto'; this.style.height=this.scrollHeight+'px'; };
+                ne.textContent = ''; ne.appendChild(inp);
+                inp.focus(); inp.select();
+                setTimeout(function(){ inp.style.height='auto'; inp.style.height=inp.scrollHeight+'px'; }, 0);
+                eb.style.display='none';
+                cb2.style.display='inline-block';
+                colb.style.display='inline-flex';
+                db.style.display='inline-block';
+            }
+
+            function saveEdit() {
+                if (inp) { var v=inp.value.trim(); if (v) wpData.guideItems[idx].name=v; inp=null; }
+                saveAll(); renderGuideCatGrid();
+            }
+
+            eb.onclick = enterEditMode;
+            cb2.onclick = function(e) { e.stopPropagation(); saveEdit(); };
+            colb.onclick = function(e) {
+                e.stopPropagation();
+                openColorPicker(colb, idx, function(col) {
+                    wpData.guideItems[idx].color = col;
+                    card.style.background = col;
+                    saveAll();
+                });
+            };
+            db.onclick = function(e) {
+                e.stopPropagation();
+                if (!confirm('['+items[idx].name+'] 가이드를 삭제하시겠습니까?')) return;
+                wpData.guideItems.splice(idx,1); saveAll(); renderGuideCatGrid();
+            };
+            card.onclick = function(e) {
+                var t = e.target;
+                if (eb.contains(t)||cb2.contains(t)||colb.contains(t)||db.contains(t)) return;
+                if (inp && card.contains(inp)) { saveEdit(); return; }
+                inp=null;
+                eb.style.display='inline-block';
+                cb2.style.display='none'; colb.style.display='none'; db.style.display='none';
+                openGuideDetail(idx);
+            };
+            ne.onclick = function(e) {
+                if (inp) return;
+                e.stopPropagation();
+                openGuideDetail(idx);
+            };
+        })(ci, nameEl, editBtn, confirmBtn, colorBtn, delBtn);
+
+        card.appendChild(editBtn);
+        card.appendChild(confirmBtn);
+        card.appendChild(colorBtn);
+        card.appendChild(delBtn);
+        grid.appendChild(card);
+    });
+}
+function renderGuideDetailView(idx) {
+    var body = document.getElementById('guide-detail-body');
+    var item = (wpData.guideItems || [])[idx];
+    var blocks = (item && item.blocks) || [];
+    if (!blocks.length) {
+        body.innerHTML = '<div id="guide-empty-msg">내용이 없습니다.</div>';
+    } else {
+        body.innerHTML = '';
+        blocks.forEach(function(b) {
+            if (b.type !== 'text' && !(b.type === 'image' && b.value)) return;
+            var d = document.createElement('div'); d.className = 'guide-block'; d.style.marginBottom='10px';
+            if (b.type === 'text') {
+                var p = document.createElement('div'); p.className = 'guide-block-text';
+                p.textContent = b.value || '';
+                d.appendChild(p);
+                // 이미지 썸네일 행
+                var imgs = b.images || [];
+                if (imgs.length) {
+                    var imgRow = document.createElement('div'); imgRow.className = 'guide-block-imgs';
+                    imgs.forEach(function(src) {
+                        var thumb = document.createElement('img'); thumb.className = 'guide-block-img-thumb'; thumb.src = src;
+                        thumb.onclick = function(){ document.getElementById('img-preview-img').src=src; document.getElementById('img-preview-overlay').classList.add('visible'); };
+                        imgRow.appendChild(thumb);
+                    });
+                    d.appendChild(imgRow);
+                }
+            } else if (b.type === 'image' && b.value) {
+                // 구버전 단독 이미지 블록 호환
+                var img = document.createElement('img'); img.className = 'guide-block-img'; img.src = b.value;
+                img.onclick = function() { document.getElementById('img-preview-img').src = b.value; document.getElementById('img-preview-overlay').classList.add('visible'); };
+                d.appendChild(img);
+            }
+            body.appendChild(d);
+        });
+    }
+    document.getElementById('guide-edit-btn').style.display = 'inline-block';
+    document.getElementById('guide-save-btn').style.display = 'none';
+}
+function renderGuideDetailEdit(idx) {
+    var body = document.getElementById('guide-detail-body');
+    var item = (wpData.guideItems || [])[idx];
+    var blocks = (item && item.blocks) ? JSON.parse(JSON.stringify(item.blocks)) : [{type:'text',value:''}];
+    document.getElementById('guide-edit-btn').style.display = 'none';
+    document.getElementById('guide-save-btn').style.display = 'inline-block';
+
+    function processImageFile(file) {
+        var reader = new FileReader();
+        reader.onload = function(ev){
+            var img2 = new Image();
+            img2.onload = function(){
+                var canvas=document.createElement('canvas'),ms=1200,w=img2.width,h=img2.height;
+                if(w>ms||h>ms){if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;}}
+                canvas.width=w;canvas.height=h;
+                canvas.getContext('2d').drawImage(img2,0,0,w,h);
+                blocks.push({type:'image',value:canvas.toDataURL('image/jpeg',0.85)});
+                rebuild();
+            };
+            img2.src=ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    function guidePasteHandler(e) {
+        var items2 = e.clipboardData && e.clipboardData.items;
+        if (!items2) return;
+        for (var j=0;j<items2.length;j++) {
+            if (items2[j].type.indexOf('image')!==-1) { e.preventDefault(); processImageFile(items2[j].getAsFile()); break; }
+        }
+    }
+    document.addEventListener('paste', guidePasteHandler);
+    body._removePaste = function(){ document.removeEventListener('paste', guidePasteHandler); };
+
+    // 붙여넣기는 포커스된 텍스트블록의 images에 추가
+    var _focusedBlockIdx = null;
+    function guidePasteHandler2(e) {
+        var items2 = e.clipboardData && e.clipboardData.items;
+        if (!items2) return;
+        for (var j=0;j<items2.length;j++) {
+            if (items2[j].type.indexOf('image')!==-1) {
+                e.preventDefault();
+                var fi = (_focusedBlockIdx !== null) ? _focusedBlockIdx : blocks.length-1;
+                if (fi < 0) fi = 0;
+                if (!blocks[fi]) blocks[fi] = {type:'text',value:'',images:[]};
+                if (!blocks[fi].images) blocks[fi].images = [];
+                processImageIntoBlock(items2[j].getAsFile(), fi);
+                break;
+            }
+        }
+    }
+    document.removeEventListener('paste', guidePasteHandler);
+    document.addEventListener('paste', guidePasteHandler2);
+    body._removePaste = function(){ document.removeEventListener('paste', guidePasteHandler2); };
+
+    function processImageIntoBlock(file, blockIdx) {
+        var reader = new FileReader();
+        reader.onload = function(ev){
+            var img2 = new Image();
+            img2.onload = function(){
+                var canvas=document.createElement('canvas'),ms=1200,w=img2.width,h=img2.height;
+                if(w>ms||h>ms){if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;}}
+                canvas.width=w;canvas.height=h;
+                canvas.getContext('2d').drawImage(img2,0,0,w,h);
+                if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
+                blocks[blockIdx].images.push(canvas.toDataURL('image/jpeg',0.85));
+                rebuild();
+            };
+            img2.src=ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function rebuild() {
+        body.innerHTML = '';
+        var area = document.createElement('div'); area.id = 'guide-edit-area';
+        blocks.forEach(function(b, bi) {
+            if (b.type !== 'text') return; // image 단독 블록은 스킵(이제 text에 통합)
+            var blk = document.createElement('div'); blk.className = 'guide-edit-block';
+
+            // 삭제 버튼
+            var delBtn2 = document.createElement('button'); delBtn2.className = 'guide-block-del'; delBtn2.type = 'button'; delBtn2.title='블록 삭제';
+            delBtn2.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
+            (function(i){ delBtn2.onclick = function(){ blocks.splice(i,1); if(!blocks.length) blocks.push({type:'text',value:'',images:[]}); rebuild(); }; })(bi);
+            blk.appendChild(delBtn2);
+
+            // 텍스트영역
+            var ta = document.createElement('textarea'); ta.placeholder = '텍스트를 입력하세요...'; ta.value = b.value || '';
+            (function(i){ 
+                ta.onfocus = function(){ _focusedBlockIdx = i; };
+                ta.oninput = function(){ blocks[i].value = this.value; };
+            })(bi);
+            blk.appendChild(ta);
+
+            // 이미지 썸네일 영역
+            var imgRow = document.createElement('div'); imgRow.className = 'guide-edit-block-imgs';
+            var imgs = b.images || [];
+            imgs.forEach(function(src, ii) {
+                var wrap = document.createElement('div'); wrap.className = 'guide-edit-img-wrap';
+                var thumb = document.createElement('img'); thumb.className = 'guide-edit-img-thumb'; thumb.src = src;
+                thumb.onclick = function(){ document.getElementById('img-preview-img').src=src; document.getElementById('img-preview-overlay').classList.add('visible'); };
+                var idel = document.createElement('button'); idel.className = 'guide-edit-img-del'; idel.type='button';
+                (function(bIdx,iIdx){ idel.onclick = function(e){ e.stopPropagation(); blocks[bIdx].images.splice(iIdx,1); rebuild(); }; })(bi,ii);
+                wrap.appendChild(thumb); wrap.appendChild(idel); imgRow.appendChild(wrap);
+            });
+            // + 사진 추가 버튼
+            var addImgBtn = document.createElement('button'); addImgBtn.className = 'guide-edit-add-img-btn'; addImgBtn.type='button'; addImgBtn.title='사진 추가 (또는 Ctrl+V)';
+            addImgBtn.innerHTML = '📷';
+            (function(bIdx){ addImgBtn.onclick = function(){
+                _focusedBlockIdx = bIdx;
+                var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+                inp.onchange=function(){ if(this.files.length) processImageIntoBlock(this.files[0], bIdx); };
+                inp.click();
+            }; })(bi);
+            imgRow.appendChild(addImgBtn);
+            blk.appendChild(imgRow);
+            area.appendChild(blk);
+        });
+
+        // 텍스트 블록 추가 버튼
+        var addWrap = document.createElement('div'); addWrap.className = 'guide-add-btns';
+        var addText = document.createElement('button'); addText.className = 'guide-add-btn'; addText.textContent = '+ 블록 추가'; addText.type = 'button';
+        addText.onclick = function(){ blocks.push({type:'text',value:'',images:[]}); rebuild(); };
+        addWrap.appendChild(addText);
+        area.appendChild(addWrap);
+        body.appendChild(area);
+        body._removePaste = function(){ document.removeEventListener('paste', guidePasteHandler2); };
+    }
+    rebuild();
+}
+
 function openMemoPopup() {
     var memo = (wpData.memo) || '';
     document.getElementById('memo-textarea').value = memo;
@@ -3010,6 +3389,16 @@ function renderBudgetCatGrid() {
         card.appendChild(delBtn);
 
         grid.appendChild(card);
+    });
+}
+
+function filterGuideCatGrid(q){
+    var keyword=(q||'').trim();
+    var cards=document.querySelectorAll('#guide-cat-grid .budget-cat-card');
+    cards.forEach(function(card){
+        var name=card.querySelector('.budget-cat-card-name');
+        var text=name?name.textContent:'';
+        card.style.display=(!keyword||text.indexOf(keyword)>=0)?'':'none';
     });
 }
 
@@ -5278,6 +5667,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* MEMO 이벤트 */
     document.getElementById('memo-open-btn').onclick  = openMemoPopup;
+    document.getElementById('guide-open-btn').onclick = openGuidePopup;
+    document.getElementById('guide-close-btn').onclick = closeGuidePopup;
+    document.getElementById('guide-overlay').onclick = function(e){ if(e.target===this) closeGuidePopup(); };
+    document.getElementById('guide-detail-overlay').onclick = function(e){ if(e.target===this) closeGuideDetail(); };
+    document.getElementById('guide-detail-back').onclick = function(){ closeGuideDetail(); };
+    document.getElementById('guide-detail-close').onclick = closeGuideDetail;
+    document.getElementById('guide-add-btn').onclick = function(){
+        var name = prompt('가이드 이름을 입력하세요:');
+        if (!name || !name.trim()) return;
+        if (!wpData.guideItems) wpData.guideItems = [];
+        var colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#ec4899','#8b5cf6','#14b8a6'];
+        wpData.guideItems.push({name:name.trim(), blocks:[], color:colors[wpData.guideItems.length%colors.length]});
+        saveAll(); renderGuideCatGrid();
+    };
+    document.getElementById('guide-edit-btn').onclick = function(){ if(_currentGuideIdx!==null) renderGuideDetailEdit(_currentGuideIdx); };
+    document.getElementById('guide-save-btn').onclick = function(){
+        if (_currentGuideIdx === null) return;
+        var body2 = document.getElementById('guide-detail-body');
+        if (body2 && body2._removePaste) { body2._removePaste(); body2._removePaste=null; }
+        var blocks = [];
+        var area = document.getElementById('guide-edit-area');
+        if (area) {
+            var blockIdx2 = 0;
+            area.querySelectorAll('.guide-edit-block').forEach(function(blk){
+                var ta = blk.querySelector('textarea');
+                if (ta) {
+                    var imgs = [];
+                    blk.querySelectorAll('.guide-edit-img-thumb').forEach(function(th){ imgs.push(th.src); });
+                    blocks.push({type:'text', value:ta.value, images:imgs});
+                }
+                blockIdx2++;
+            });
+        }
+        if (!wpData.guideItems[_currentGuideIdx]) return;
+        wpData.guideItems[_currentGuideIdx].blocks = blocks;
+        saveAll();
+        renderGuideDetailView(_currentGuideIdx);
+    };
     document.getElementById('memo-close-btn').onclick = closeMemoPopup;
     document.getElementById('memo-overlay').onclick   = closeMemoPopup;
     document.getElementById('memo-save-btn').onclick  = saveMemo;
