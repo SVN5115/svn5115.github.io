@@ -740,6 +740,7 @@
         <div class="auth-field"><label>아이디</label><input type="text" id="signup-id" placeholder="사용할 아이디 입력" autocomplete="off"></div>
         <div class="auth-field"><label>이름</label><input type="text" id="signup-name" placeholder="이름 입력"></div>
         <div class="auth-field"><label>생년월일</label><input type="text" id="signup-birth" placeholder="YYMMDD (예: 901231)" maxlength="6"></div>
+        <div class="auth-field"><label>이메일</label><input type="email" id="signup-email" placeholder="이메일 입력"></div>
         <div class="auth-field">
             <label>비밀번호</label>
             <input type="password" id="signup-pw" placeholder="비밀번호 입력">
@@ -1309,6 +1310,44 @@ function setSyncStatus(cls, text) {
 /* ════════════════════════════════════
    Supabase REST
 ════════════════════════════════════ */
+/* ── Supabase Auth 헬퍼 ── */
+function sbAuthSignUp(email, password, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/auth/v1/signup', true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300 && res.id) callback(null, res);
+            else callback(new Error((res.msg || res.error_description || res.message || '가입 실패')));
+        } catch(e) { callback(e); }
+    };
+    xhr.send(JSON.stringify({ email: email, password: password }));
+}
+
+function sbAuthSignIn(email, password, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/auth/v1/token?grant_type=password', true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (xhr.status === 200 && res.access_token) callback(null, res);
+            else callback(new Error((res.error_description || res.msg || res.message || '로그인 실패')));
+        } catch(e) { callback(e); }
+    };
+    xhr.send(JSON.stringify({ email: email, password: password }));
+}
+
+function sbAuthSignUpAdmin(email, password, callback) {
+    // service_role 없이 anon으로 가입 처리 (이미 RLS 전체허용)
+    sbAuthSignUp(email, password, callback);
+}
+
 function sbGet(table, key, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', SUPABASE_URL + '/rest/v1/' + table + '?key=eq.' + encodeURIComponent(key) + '&select=*', true);
@@ -1377,9 +1416,8 @@ function getPendingRequests(callback) {
     sbGetAll('account_requests', 'status=eq.pending&order=created_at.asc', callback);
 }
 
-function submitRequest(id, pw, name, birth, callback) {
-    // pw 컬럼에 JSON으로 인코딩하여 name/birth/pwPlain 함께 저장
-    var packed = JSON.stringify({ hash: simpleHash(pw), plain: pw, name: name, birth: birth });
+function submitRequest(id, pw, name, birth, email, callback) {
+    var packed = JSON.stringify({ hash: simpleHash(pw), plain: pw, name: name, birth: birth, email: email });
     sbUpsert('account_requests', {
         key: id, pw: packed, status: 'pending', created_at: new Date().toISOString()
     }, callback);
@@ -1387,11 +1425,16 @@ function submitRequest(id, pw, name, birth, callback) {
 
 function approveRequest(id, pw, name, birth, pwPlain, callback) {
     var pwHash = pw;
-    try { var p = JSON.parse(pw); if(p.hash) pwHash = p.hash; } catch(e) {}
-    saveAccount(id, { id: id, pw: pwHash, pwPlain: pwPlain||'', name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
-        if (err) { callback(err); return; }
-        // 요청 삭제
-        sbDelete('account_requests', id, callback);
+    var email = '';
+    try { var p = JSON.parse(pw); if(p.hash) pwHash = p.hash; if(p.email) email = p.email; if(p.name) name = p.name||name; if(p.birth) birth = p.birth||birth; } catch(e) {}
+    // Supabase Auth에 계정 생성
+    var authEmail = email || (id + '@plannerapp.kr');
+    sbAuthSignUp(authEmail, pwPlain||'1234', function(authErr) {
+        // Auth 계정 생성 실패해도 planner_data 저장은 진행 (이미 존재할 수도 있음)
+        saveAccount(id, { id: id, pw: pwHash, pwPlain: pwPlain||'', email: authEmail, name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
+            if (err) { callback(err); return; }
+            sbDelete('account_requests', id, callback);
+        });
     });
 }
 
@@ -5446,16 +5489,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 err.textContent='아이디 또는 비밀번호가 틀렸습니다.';
                 btn.disabled=false; btn.textContent='로그인'; return;
             }
-            if (acc.pw !== simpleHash(pw)) {
-                err.textContent='아이디 또는 비밀번호가 틀렸습니다.';
-                btn.disabled=false; btn.textContent='로그인'; return;
+            function loginSuccess() {
+                currentUser = acc;
+                sessionStorage.setItem('planner_user', JSON.stringify(acc));
+                localStorage.setItem('planner_user', JSON.stringify(acc));
+                localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 1000);
+                hideAllScreens(); enterApp();
             }
-            currentUser = acc;
-            sessionStorage.setItem('planner_user', JSON.stringify(acc));
-            localStorage.setItem('planner_user', JSON.stringify(acc));
-            localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 1000);
-            hideAllScreens();
-            enterApp();
+            function loginFail() {
+                err.textContent='아이디 또는 비밀번호가 틀렸습니다.';
+                btn.disabled=false; btn.textContent='로그인';
+            }
+            if (acc.email) {
+                // Supabase Auth 로그인
+                sbAuthSignIn(acc.email, pw, function(authErr) {
+                    if (authErr) {
+                        // Auth 실패 시 해시 방식으로 fallback
+                        if (acc.pw !== simpleHash(pw)) { loginFail(); return; }
+                    }
+                    loginSuccess();
+                });
+            } else {
+                // 이메일 없는 기존 계정 - 해시 방식
+                if (acc.pw !== simpleHash(pw)) { loginFail(); return; }
+                loginSuccess();
+            }
         });
     }
     document.getElementById('login-btn').onclick = doLogin;
@@ -5478,17 +5536,19 @@ document.addEventListener('DOMContentLoaded', function() {
         var pw=document.getElementById('signup-pw').value;
         var pw2=document.getElementById('signup-pw2').value;
         var err=document.getElementById('signup-error');
+        var email=document.getElementById('signup-email').value.trim();
         if (!id||id.length<2) { err.textContent='아이디는 2자 이상이어야 합니다.'; return; }
         if (id===ADMIN_ID) { err.textContent='사용할 수 없는 아이디입니다.'; return; }
         if (!name) { err.textContent='이름을 입력하세요.'; return; }
         if (!/^\d{6}$/.test(birth)) { err.textContent='생년월일을 YYMMDD 6자리로 입력하세요.'; return; }
+        if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) { err.textContent='올바른 이메일을 입력하세요.'; return; }
         if (!pw||pw.length<4) { err.textContent='비밀번호는 4자 이상이어야 합니다.'; return; }
         if (pw!==pw2) { err.textContent='비밀번호가 일치하지 않습니다.'; return; }
         var btn=document.getElementById('signup-btn');
         btn.disabled=true; btn.textContent='전송 중...'; err.textContent='';
         getAccount(id, function(accErr, acc) {
             if (acc) { err.textContent='이미 존재하는 아이디입니다.'; btn.disabled=false; btn.textContent='요청 보내기'; return; }
-            submitRequest(id, pw, name, birth, function(e) {
+            submitRequest(id, pw, name, birth, email, function(e) {
                 if (e) { err.textContent='전송 실패: '+e.message; btn.disabled=false; btn.textContent='요청 보내기'; return; }
                 document.getElementById('signup-success').style.display='block';
                 btn.style.display='none';
@@ -5504,6 +5564,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('signup-id').value='';
         document.getElementById('signup-name').value='';
         document.getElementById('signup-birth').value='';
+        document.getElementById('signup-email').value='';
         document.getElementById('signup-pw').value='';
         document.getElementById('signup-pw2').value='';
         document.getElementById('signup-error').textContent='';
@@ -5558,15 +5619,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (pw!==pw2) { err.textContent='비밀번호가 일치하지 않습니다.'; return; }
         var btn=document.getElementById('setup-btn');
         btn.disabled=true; btn.textContent='생성 중...';
-        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), pwPlain:pw, name:'유종수', birth:'950415', role:'admin', createdAt:new Date().toISOString() }, function(e) {
+        var adminEmail = ADMIN_ID + '@plannerapp.kr';
+        sbAuthSignUp(adminEmail, pw, function() {
+        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), pwPlain:pw, email:adminEmail, name:'유종수', birth:'950415', role:'admin', createdAt:new Date().toISOString() }, function(e) {
             if (e) { err.textContent='저장 실패: '+e.message; btn.disabled=false; btn.textContent='관리자 계정 생성'; return; }
-            currentUser = { id:ADMIN_ID, role:'admin' };
+            currentUser = { id:ADMIN_ID, role:'admin', email:adminEmail };
             sessionStorage.setItem('planner_user', JSON.stringify(currentUser));
             localStorage.setItem('planner_user', JSON.stringify(currentUser));
             localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 1000);
             hideAllScreens();
             enterApp();
         });
+        }); // sbAuthSignUp
     };
 
     /* ── 로그아웃 ── */
