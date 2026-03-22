@@ -1290,6 +1290,29 @@ var SUPABASE_URL = 'https://ummlnvrqyotuguqhzfvw.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtbWxudnJxeW90dWd1cWh6ZnZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxMjEsImV4cCI6MjA4OTQ1NTEyMX0.AmgcLv1MZYHkjbSVbfVHRFqvZ-KUJkzFmyLqKsr04GM';
 var ADMIN_ID    = 'admin'; // 고정 관리자 아이디
 var PLANNER_KEY = 'planner_'; // 사용자별 데이터 키 prefix
+var _ENC_KEY = 'fw9kQz2mXpLsRv8n'; // 16자 고정 키
+
+async function encryptPw(plain) {
+    var enc = new TextEncoder();
+    var keyMat = await crypto.subtle.importKey('raw', enc.encode(_ENC_KEY), 'AES-GCM', false, ['encrypt']);
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var cipher = await crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, keyMat, enc.encode(plain));
+    var combined = new Uint8Array(iv.byteLength + cipher.byteLength);
+    combined.set(iv, 0); combined.set(new Uint8Array(cipher), iv.byteLength);
+    return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptPw(encoded) {
+    try {
+        var combined = Uint8Array.from(atob(encoded), function(c){ return c.charCodeAt(0); });
+        var iv = combined.slice(0, 12);
+        var cipher = combined.slice(12);
+        var enc = new TextEncoder();
+        var keyMat = await crypto.subtle.importKey('raw', enc.encode(_ENC_KEY), 'AES-GCM', false, ['decrypt']);
+        var plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:iv}, keyMat, cipher);
+        return new TextDecoder().decode(plain);
+    } catch(e) { return null; }
+}
 
 var currentUser = null;
 var saveTimer   = null;
@@ -1417,21 +1440,23 @@ function getPendingRequests(callback) {
 }
 
 function submitRequest(id, pw, name, birth, email, callback) {
-    var packed = JSON.stringify({ hash: simpleHash(pw), plain: pw, name: name, birth: birth, email: email });
-    sbUpsert('account_requests', {
-        key: id, pw: packed, status: 'pending', created_at: new Date().toISOString()
-    }, callback);
+    encryptPw(pw).then(function(encPw) {
+        var packed = JSON.stringify({ hash: simpleHash(pw), enc: encPw, name: name, birth: birth, email: email });
+        sbUpsert('account_requests', {
+            key: id, pw: packed, status: 'pending', created_at: new Date().toISOString()
+        }, callback);
+    });
 }
 
 function approveRequest(id, pw, name, birth, pwPlain, callback) {
     var pwHash = pw;
-    var email = '';
-    try { var p = JSON.parse(pw); if(p.hash) pwHash = p.hash; if(p.email) email = p.email; if(p.name) name = p.name||name; if(p.birth) birth = p.birth||birth; } catch(e) {}
+    var email = ''; var encPw = '';
+    try { var p = JSON.parse(pw); if(p.hash) pwHash = p.hash; if(p.email) email = p.email; if(p.name) name = p.name||name; if(p.birth) birth = p.birth||birth; if(p.enc) encPw = p.enc; } catch(e) {}
     // Supabase Auth에 계정 생성
     var authEmail = email || (id + '@plannerapp.kr');
     sbAuthSignUp(authEmail, pwPlain||'1234', function(authErr) {
         // Auth 계정 생성 실패해도 planner_data 저장은 진행 (이미 존재할 수도 있음)
-        saveAccount(id, { id: id, pw: pwHash, pwPlain: pwPlain||'', email: authEmail, name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
+        saveAccount(id, { id: id, pw: pwHash, pwEnc: encPw||'', email: authEmail, name: name||'', birth: birth||'', role: 'user', createdAt: new Date().toISOString() }, function(err) {
             if (err) { callback(err); return; }
             sbDelete('account_requests', id, callback);
         });
@@ -1575,11 +1600,13 @@ function renderAccountList() {
                 getAccount(id, function(e, acc) {
                     if (e || !acc) { alert('계정 정보를 불러오지 못했습니다.'); return; }
                     acc.pw = simpleHash(newPw);
-                    acc.pwPlain = newPw;
+                    encryptPw(newPw).then(function(encPw2) {
+                    acc.pwEnc = encPw2;
                     saveAccount(id, acc, function(err) {
                         if (err) { alert('변경 실패: ' + err.message); return; }
                         alert('✅ [' + id + '] 비밀번호가 변경되었습니다.');
                     });
+                    }); // encryptPw
                 });
             };
         });
@@ -5477,11 +5504,20 @@ window.removeItem = function(date,i){
 document.addEventListener('DOMContentLoaded', function() {
 
     /* ── 로그인 화면 ── */
+    var _loginAttempts = {};
     function doLogin() {
         var id  = document.getElementById('login-id').value.trim();
         var pw  = document.getElementById('login-pw').value;
         var err = document.getElementById('login-error');
         if (!id || !pw) { err.textContent='아이디와 비밀번호를 입력하세요.'; return; }
+        // 브루트포스 방지
+        var now = Date.now();
+        if (!_loginAttempts[id]) _loginAttempts[id] = {count:0, lockedUntil:0};
+        var atk = _loginAttempts[id];
+        if (atk.lockedUntil > now) {
+            var remain = Math.ceil((atk.lockedUntil - now) / 1000);
+            err.textContent = '로그인 시도 횟수 초과. ' + remain + '초 후 다시 시도하세요.'; return;
+        }
         var btn = document.getElementById('login-btn');
         btn.disabled=true; btn.textContent='확인 중...'; err.textContent='';
         getAccount(id, function(accErr, acc) {
@@ -5490,14 +5526,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.disabled=false; btn.textContent='로그인'; return;
             }
             function loginSuccess() {
+                if (_loginAttempts[id]) _loginAttempts[id] = {count:0, lockedUntil:0};
                 currentUser = acc;
                 sessionStorage.setItem('planner_user', JSON.stringify(acc));
                 localStorage.setItem('planner_user', JSON.stringify(acc));
-                localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 1000);
+                localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 60 * 1000);
                 hideAllScreens(); enterApp();
             }
             function loginFail() {
-                err.textContent='아이디 또는 비밀번호가 틀렸습니다.';
+                if (!_loginAttempts[id]) _loginAttempts[id] = {count:0, lockedUntil:0};
+                _loginAttempts[id].count++;
+                if (_loginAttempts[id].count >= 5) {
+                    _loginAttempts[id].lockedUntil = Date.now() + 60 * 1000;
+                    _loginAttempts[id].count = 0;
+                    err.textContent='비밀번호 5회 오류. 1분간 잠금됩니다.';
+                } else {
+                    var left = 5 - _loginAttempts[id].count;
+                    err.textContent='아이디 또는 비밀번호가 틀렸습니다. (남은 시도: ' + left + '회)';
+                }
                 btn.disabled=false; btn.textContent='로그인';
             }
             if (acc.email) {
@@ -5593,9 +5639,18 @@ document.addEventListener('DOMContentLoaded', function() {
             var accName  = acc.name  || (id===ADMIN_ID ? '유종수'  : '');
             var accBirth = acc.birth || (id===ADMIN_ID ? '950415' : '');
             if (accName!==name || accBirth!==birth) { err.textContent='이름 또는 생년월일이 일치하지 않습니다.'; return; }
-            var pwToShow = acc.pwPlain || (id===ADMIN_ID ? '1234' : '');
-            if (pwToShow) {
-                result.textContent='비밀번호: ' + pwToShow;
+            if (acc.pwEnc) {
+                decryptPw(acc.pwEnc).then(function(plain) {
+                    if (plain) {
+                        result.textContent='비밀번호: ' + plain;
+                        result.style.display='block';
+                    } else {
+                        err.textContent='비밀번호를 확인할 수 없습니다. 관리자에게 문의하세요.';
+                    }
+                });
+            } else if (acc.pwPlain) {
+                // 구버전 평문 호환
+                result.textContent='비밀번호: ' + acc.pwPlain;
                 result.style.display='block';
             } else {
                 err.textContent='비밀번호를 확인할 수 없습니다. 관리자에게 문의하세요.';
@@ -5620,17 +5675,19 @@ document.addEventListener('DOMContentLoaded', function() {
         var btn=document.getElementById('setup-btn');
         btn.disabled=true; btn.textContent='생성 중...';
         var adminEmail = ADMIN_ID + '@plannerapp.kr';
+        encryptPw(pw).then(function(encPw3) {
         sbAuthSignUp(adminEmail, pw, function() {
-        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), pwPlain:pw, email:adminEmail, name:'유종수', birth:'950415', role:'admin', createdAt:new Date().toISOString() }, function(e) {
+        saveAccount(ADMIN_ID, { id:ADMIN_ID, pw:simpleHash(pw), pwEnc:encPw3, email:adminEmail, name:'유종수', birth:'950415', role:'admin', createdAt:new Date().toISOString() }, function(e) {
             if (e) { err.textContent='저장 실패: '+e.message; btn.disabled=false; btn.textContent='관리자 계정 생성'; return; }
             currentUser = { id:ADMIN_ID, role:'admin', email:adminEmail };
             sessionStorage.setItem('planner_user', JSON.stringify(currentUser));
             localStorage.setItem('planner_user', JSON.stringify(currentUser));
-            localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 1000);
+            localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 60 * 1000);
             hideAllScreens();
             enterApp();
         });
         }); // sbAuthSignUp
+        }); // encryptPw
     };
 
     /* ── 로그아웃 ── */
