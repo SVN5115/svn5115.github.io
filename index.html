@@ -304,21 +304,30 @@
         .bd-set:active { cursor:grabbing; }
         .bd-set.dragging { opacity:0.4; }
         .bd-set.drag-over { outline:2px solid #6366f1; }
-        .bd-set-label { background:#f1f5f9; font-weight:bold; color:#475569; padding:6px 8px; font-size:12px; white-space:nowrap; flex-shrink:0; border-right:1px solid #cbd5e1; display:flex; align-items:center; gap:4px; width:32%; box-sizing:border-box; }
-        .bd-set-label input { font-weight:bold; flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:12px; font-family:'Malgun Gothic',sans-serif; }
+        .bd-set-label { background:#f1f5f9; font-weight:bold; color:#475569; padding:4px 6px; font-size:12px; white-space:nowrap; flex-shrink:0; border-right:1px solid #cbd5e1; display:flex; align-items:center; gap:2px; width:155px; min-width:155px; max-width:155px; box-sizing:border-box; overflow:hidden; }
+        .bd-set-label input { font-weight:bold; flex:1; min-width:0; max-width:100%; border:none; outline:none; background:transparent; font-size:11px; font-family:'Malgun Gothic',sans-serif; overflow:hidden; text-overflow:ellipsis; }
+        .bd-color-btn { background:none; border:none; cursor:pointer; font-size:12px; padding:0 2px; opacity:0.5; line-height:1; flex-shrink:0; }
+        .bd-color-btn:hover { opacity:1; }
+        .bd-color-input { position:fixed; top:-100px; left:-100px; width:0; height:0; opacity:0; }
         .bd-set-val { flex:1; padding:4px 8px; font-size:12px; border-right:1px solid #cbd5e1; }
         .bd-set-val input { width:100%; border:none; outline:none; background:transparent; font-size:12px; font-family:'Malgun Gothic',sans-serif; }
-        .bd-set-del { width:52px; text-align:center; flex-shrink:0; }
+        .bd-set-del { width:40px; min-width:40px; text-align:center; flex-shrink:0; }
         .bd-drag-handle { width:14px; flex-shrink:0; cursor:grab; color:#cbd5e1; font-size:14px; display:flex; align-items:center; justify-content:center; padding:0 3px; user-select:none; }
         .bd-drag-handle:hover { color:#94a3b8; }
         .bd-drag-handle:active { cursor:grabbing; }
+        .bd-palette-wrap { display:inline-flex; align-items:center; }
+        .bd-palette-btn { background:none; border:none; cursor:pointer; padding:0 2px; opacity:0.5; line-height:1; flex-shrink:0; display:flex; align-items:center; }
+        .bd-palette-btn:hover { opacity:1; }
+        #bd-palette-popup-global { position:fixed; z-index:999999; background:white; border:1px solid #e2e8f0; border-radius:8px; padding:6px; box-shadow:0 4px 16px rgba(0,0,0,0.2); display:grid; grid-template-columns:repeat(6,22px); gap:4px; }
+        .bd-palette-swatch { width:22px; height:22px; border-radius:4px; border:2px solid rgba(0,0,0,0.08); cursor:pointer; box-sizing:border-box; }
+        .bd-palette-swatch:hover { border-color:#6366f1; transform:scale(1.15); }
         .bd-form-table td input { width:100%; border:none; outline:none; font-size:12px; font-family:'Malgun Gothic',sans-serif; background:transparent; text-align:center; }
         .bd-form-table td.data-cell input { text-align:left; }
         .bd-entry-row td input[type="number"] { text-align:right; }
         .bd-add-row-btn { width:100%; padding:6px; background:none; border:1px dashed #6366f1; border-radius:6px; font-size:12px; color:#6366f1; cursor:pointer; font-family:'Malgun Gothic',sans-serif; margin-top:6px; }
         .bd-add-row-btn:hover { background:#f5f3ff; }
-        .bd-del-row { background:none; border:none; color:#fca5a5; cursor:pointer; font-size:13px; }
-        .bd-del-row:hover { color:#ef4444; }
+        .bd-del-row { background:none; border:none; color:#f87171; cursor:pointer; font-size:11px; font-weight:bold; font-family:Malgun Gothic,sans-serif; padding:1px 4px; border-radius:3px; }
+        .bd-del-row:hover { background:#fee2e2; color:#b91c1c; }
         .bd-title-box { text-align:center; padding:12px; font-size:16px; font-weight:bold; border:2px solid #334155; border-radius:4px; margin-bottom:14px; font-family:'Malgun Gothic',sans-serif; width:100%; box-sizing:border-box; resize:none; overflow:hidden; line-height:1.5; display:block; }
         /* 수식 빌더 */
         .bd-formula-bar { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; margin-bottom:10px; flex-wrap:wrap; }
@@ -349,6 +358,11 @@
         .bd-btn-bar { display:flex; gap:8px; margin-bottom:8px; }
         .bd-add-row-top-btn { background:none; border:1px dashed #6366f1; border-radius:4px; font-size:11px; color:#4338ca; cursor:pointer; padding:4px 14px; font-family:'Malgun Gothic',sans-serif; }
         .bd-add-row-top-btn:hover { background:#f5f3ff; }
+        .bd-hide-btn { background:none; border:none; cursor:pointer; font-size:10px; color:#94a3b8; padding:0 2px; line-height:1; flex-shrink:0; }
+        .bd-hide-btn:hover { color:#6366f1; }
+        .bd-show-hidden-btn { background:none; border:1px dashed #94a3b8; border-radius:4px; font-size:11px; color:#64748b; cursor:pointer; padding:4px 10px; font-family:'Malgun Gothic',sans-serif; position:relative; }
+        .bd-show-hidden-btn:hover { background:#f8fafc; }
+        .bd-set.hidden-row { display:none; }
         .bd-kind-select { padding:3px 6px; border:1px solid #e2e8f0; border-radius:5px; font-size:11px; font-family:'Malgun Gothic',sans-serif; outline:none; background:white; cursor:pointer; color:#334155; }
         .bd-kind-select:focus { border-color:#6366f1; }
         .bd-kind-toggle { background:none; border:1px solid #e2e8f0; border-radius:4px; font-size:10px; color:#94a3b8; cursor:pointer; padding:2px 4px; line-height:1; flex-shrink:0; }
@@ -3030,7 +3044,60 @@ function openBudgetDetail(catIdx) {
 
     var btnBar=document.createElement('div'); btnBar.className='bd-btn-bar';
     var addRowTopBtn=document.createElement('button'); addRowTopBtn.type='button'; addRowTopBtn.className='bd-add-row-top-btn'; addRowTopBtn.textContent='+ 행 추가';
-    btnBar.appendChild(addRowTopBtn);
+    var showHiddenBtn=document.createElement('button'); showHiddenBtn.type='button'; showHiddenBtn.className='bd-show-hidden-btn'; showHiddenBtn.textContent='숨김행 보기 ▾';
+    btnBar.appendChild(addRowTopBtn); btnBar.appendChild(showHiddenBtn);
+
+    // 숨김행 드롭다운
+    showHiddenBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var existing=document.getElementById('bd-hidden-rows-dd');
+        if(existing){ existing.remove(); return; }
+        var hidden=cat.rows.map(function(r,i){ return {r:r,i:i}; }).filter(function(x){ return !!x.r.hidden; });
+        var dd=document.createElement('div'); dd.id='bd-hidden-rows-dd';
+        dd.style.cssText='position:fixed;z-index:999999;background:white;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:200px;display:flex;flex-direction:column;max-height:260px;';
+        var si=document.createElement('input'); si.type='text'; si.placeholder='🔍 검색...';
+        si.style.cssText='margin:7px 8px 5px;padding:5px 9px;border:1px solid #c7d2fe;border-radius:6px;font-size:12px;font-family:Malgun Gothic,sans-serif;outline:none;flex-shrink:0;';
+        dd.appendChild(si);
+        var listBox=document.createElement('div'); listBox.style.cssText='overflow-y:auto;flex:1;';
+        function fillHidden(kw){
+            listBox.innerHTML='';
+            kw=(kw||'').toLowerCase();
+            if(!hidden.length){
+                var em=document.createElement('div'); em.textContent='숨겨진 행이 없습니다.';
+                em.style.cssText='padding:10px 12px;font-size:12px;color:#94a3b8;font-family:Malgun Gothic,sans-serif;';
+                listBox.appendChild(em); return;
+            }
+            hidden.forEach(function(x){
+                var lbl=x.r.label||'행'+(x.i+1);
+                if(kw && lbl.toLowerCase().indexOf(kw)===-1) return;
+                var item=document.createElement('div');
+                item.style.cssText='padding:7px 12px;font-size:12px;cursor:pointer;font-family:Malgun Gothic,sans-serif;color:#334155;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+                var lspan=document.createElement('span'); lspan.textContent=lbl;
+                var restoreBtn=document.createElement('button'); restoreBtn.type='button'; restoreBtn.textContent='복원';
+                restoreBtn.style.cssText='background:#e0e7ff;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#4338ca;font-family:Malgun Gothic,sans-serif;flex-shrink:0;';
+                restoreBtn.addEventListener('mousedown',function(ev){
+                    ev.preventDefault(); ev.stopPropagation();
+                    cat.rows[x.i].hidden=false; saveAll(); renderRows();
+                    dd.remove();
+                });
+                item.onmouseenter=function(){this.style.background='#f1f5f9';};
+                item.onmouseleave=function(){this.style.background='';};
+                item.appendChild(lspan); item.appendChild(restoreBtn);
+                listBox.appendChild(item);
+            });
+        }
+        fillHidden('');
+        si.addEventListener('input',function(){ fillHidden(this.value); });
+        dd.appendChild(listBox);
+        var rect=showHiddenBtn.getBoundingClientRect();
+        dd.style.left=rect.left+'px'; dd.style.top=(rect.bottom+4)+'px';
+        document.body.appendChild(dd);
+        setTimeout(function(){
+            si.focus();
+            function closeDD(ev){ if(!dd.contains(ev.target)&&ev.target!==showHiddenBtn){ dd.remove(); document.removeEventListener('mousedown',closeDD); } }
+            document.addEventListener('mousedown',closeDD);
+        },0);
+    });
     body.appendChild(btnBar);
 
     var tbl=document.createElement('div'); tbl.className='bd-rows-grid'; tbl.style.marginBottom='14px';
@@ -3038,6 +3105,62 @@ function openBudgetDetail(catIdx) {
 
     var dragSrcIdx=null;
     var resUpdaters=[];
+
+    // 색상 피커 공통 함수 - 버튼을 label로 감싸서 input 직접 연동
+    var _PALETTE = ['#f1f5f9','#fef9c3','#fce7f3','#ffe4e6','#d1fae5','#dbeafe',
+                     '#e0e7ff','#fef3c7','#f3e8ff','#fff7ed','#ecfdf5','#f0f9ff'];
+    var _activePalette = null;
+    function makeColorPickerBtn(currentColor, onPick) {
+        var wrap = document.createElement('div');
+        wrap.className = 'bd-palette-wrap';
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'bd-palette-btn';
+        btn.title = '배경색 변경';
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // 기존 팝업 제거
+            var existing = document.getElementById('bd-palette-popup-global');
+            if (existing) { existing.remove(); return; }
+
+            var popup = document.createElement('div');
+            popup.id = 'bd-palette-popup-global';
+
+            _PALETTE.forEach(function(c) {
+                var sw = document.createElement('div');
+                sw.className = 'bd-palette-swatch';
+                sw.style.background = c;
+                sw.title = c;
+                sw.addEventListener('mousedown', function(ev) {
+                    ev.preventDefault(); ev.stopPropagation();
+                    onPick(c);
+                    popup.remove();
+                });
+                popup.appendChild(sw);
+            });
+
+            // 버튼 위치 기준으로 팝업 위치
+            var rect = btn.getBoundingClientRect();
+            popup.style.left = rect.left + 'px';
+            popup.style.top  = (rect.bottom + 4) + 'px';
+            document.body.appendChild(popup);
+
+            // 외부 클릭 시 닫기
+            setTimeout(function() {
+                function closePalette(ev) {
+                    if (!popup.contains(ev.target) && ev.target !== btn) {
+                        popup.remove();
+                        document.removeEventListener('mousedown', closePalette);
+                    }
+                }
+                document.addEventListener('mousedown', closePalette);
+            }, 0);
+        });
+
+        wrap.appendChild(btn);
+        return wrap;
+    }
     function refreshResults(){ resUpdaters.forEach(function(fn){ fn(); }); }
 
     function calcRow(row){
@@ -3064,7 +3187,11 @@ function openBudgetDetail(catIdx) {
         if(key.indexOf('r_')===0){
             var ri=parseInt(key.slice(2)), r=cat.rows[ri];
             if(!r) return 0;
-            return r.kind==='basic'?(parseFloat(String(r.val||'').replace(/,/g,''))||0):(calcRow(r)||0);
+            if(r.kind==='basic') return parseFloat(String(r.val||'').replace(/,/g,''))||0;
+            if(r.kind==='exec_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(parseInt(e.exec)||0); },0);
+            if(r.kind==='daily_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(e.daily?(parseInt(e.exec)||0):0); },0);
+            if(r.kind==='nondaily_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(!e.daily?(parseInt(e.exec)||0):0); },0);
+            return calcRow(r)||0;
         }
         return 0;
     }
@@ -3079,13 +3206,11 @@ function openBudgetDetail(catIdx) {
             .filter(function(o){
                 // 기본행이면서 혼용값(숫자 아님)이면 수식 대상에서 제외
                 if(o._kind==='basic' && !isNumericVal(o._val)) return false;
+                // sum 행은 항상 포함
+                if(o._kind==='exec_sum'||o._kind==='daily_sum'||o._kind==='nondaily_sum') return true;
                 return true;
             })
             .map(function(o){ return {key:o.key,label:o.label}; });
-        var kinds = cat.rows.map(function(r){ return r.kind||r.rowType; });
-        if(kinds.indexOf('exec_sum')<0)    opts.push({key:'exec_sum',    label:'집행금액합계'});
-        if(kinds.indexOf('daily_sum')<0)   opts.push({key:'daily_sum',   label:'일상경비합계'});
-        if(kinds.indexOf('nondaily_sum')<0)opts.push({key:'nondaily_sum',label:'일반지출합계'});
         // 중복 label 제거 (첫번째만 유지)
         var seen={};
         opts = opts.filter(function(o){ if(seen[o.label]) return false; seen[o.label]=true; return true; });
@@ -3148,9 +3273,12 @@ function openBudgetDetail(catIdx) {
 
         if(row.kind==='basic'){
             var tdL=document.createElement('div'); tdL.className='bd-set-label';
-            var tdLWrap=document.createElement('div'); tdLWrap.style.cssText='display:flex;align-items:center;gap:3px;';
+            if(row.bgColor) tdL.style.background=row.bgColor;
+            var tdLWrap=document.createElement('div'); tdLWrap.style.cssText='display:flex;align-items:center;gap:3px;width:100%;';
             var inpL=document.createElement('input'); inpL.value=row.label||'기본행'; inpL.style.cssText='font-weight:bold;flex:1;min-width:0;';
             (function(i){ inpL.oninput=function(){ cat.rows[i].label=this.value; saveAll(); }; })(ri);
+            // 색상 버튼
+            var colorBtnB=(function(i,lbl){ return makeColorPickerBtn(row.bgColor, function(c){ cat.rows[i].bgColor=c; lbl.style.background=c; saveAll(); }); })(ri,tdL);
             var kt1=makeKindToggle(row, ri, (function(i){ return function(v){
                 if(v==='basic')    { cat.rows[i]={kind:'basic',label:'기본행',val:'',rowType:'basic'}; }
                 if(v==='formula')  { cat.rows[i]={kind:'formula',label:'수식행',a:'',op:'-',b:'',rowType:'formula'}; }
@@ -3159,7 +3287,7 @@ function openBudgetDetail(catIdx) {
                 if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:'일반지출합계',rowType:'nondaily_sum'}; }
                 saveAll(); renderRows();
             }; })(ri));
-            tdLWrap.appendChild(inpL); tdLWrap.appendChild(kt1.sel); tdLWrap.appendChild(kt1.btn);
+            tdLWrap.appendChild(inpL); tdLWrap.appendChild(colorBtnB); tdLWrap.appendChild(kt1.sel); tdLWrap.appendChild(kt1.btn);
             tdL.appendChild(tdLWrap); set.appendChild(tdL);
 
             var tdV=document.createElement('div'); tdV.className='bd-set-val';
@@ -3182,17 +3310,20 @@ function openBudgetDetail(catIdx) {
 
             var tdDel=document.createElement('div'); tdDel.className='bd-set-del';
             var delWrap=document.createElement('div'); delWrap.className='bd-btn-wrap';
-            var delBtn=document.createElement('button'); delBtn.type='button'; delBtn.className='bd-del-row'; delBtn.textContent='✕';
-            (function(i){ delBtn.onclick=function(){ cat.rows.splice(i,1); saveAll(); renderRows(); }; })(ri);
-            delWrap.appendChild(delBtn); tdDel.appendChild(delWrap); set.appendChild(tdDel);
+            var hideBtn=document.createElement('button'); hideBtn.type='button'; hideBtn.className='bd-hide-btn'; hideBtn.textContent='숨김'; hideBtn.title='행 숨기기';
+            var delBtn=document.createElement('button'); delBtn.type='button'; delBtn.className='bd-del-row'; delBtn.textContent='삭제';
+            (function(i){ hideBtn.onclick=function(){ cat.rows[i].hidden=true; saveAll(); renderRows(); }; delBtn.onclick=function(){ cat.rows.splice(i,1); saveAll(); renderRows(); }; })(ri);
+            delWrap.appendChild(hideBtn); delWrap.appendChild(delBtn); tdDel.appendChild(delWrap); set.appendChild(tdDel);
 
         } else if(row.kind==='exec_sum'||row.kind==='daily_sum'||row.kind==='nondaily_sum'){
             // 집행금액 합계 행
             var tdLe=document.createElement('div'); tdLe.className='bd-set-label';
-            var tdLeWrap=document.createElement('div'); tdLeWrap.style.cssText='display:flex;align-items:center;gap:3px;';
-            var _autoLabel = {exec_sum:'집행금액합계', daily_sum:'일상경비합계', nondaily_sum:'일반지출합계'}[row.kind]||'집행금액합계';
+            if(row.bgColor) tdLe.style.background=row.bgColor;
+            var tdLeWrap=document.createElement('div'); tdLeWrap.style.cssText='display:flex;align-items:center;gap:3px;width:100%;';
+            var _defaultLabel = {exec_sum:'집행금액합계', daily_sum:'일상경비합계', nondaily_sum:'일반지출합계'}[row.kind]||'집행금액합계';
+            var _autoLabel = row.label || _defaultLabel;
             var inpLe=document.createElement('input'); inpLe.value=_autoLabel; inpLe.style.cssText='font-weight:bold;flex:1;min-width:0;';
-            cat.rows[ri].label=_autoLabel;
+            if(!row.label) cat.rows[ri].label=_autoLabel;
             (function(i){ inpLe.oninput=function(){ cat.rows[i].label=this.value; saveAll(); }; })(ri);
 
             var kte=makeKindToggle(row, ri, (function(i){ return function(v){
@@ -3203,7 +3334,8 @@ function openBudgetDetail(catIdx) {
                 if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:'일반지출합계',rowType:'nondaily_sum'}; }
                 saveAll(); renderRows();
             }; })(ri));
-            tdLeWrap.appendChild(inpLe); tdLeWrap.appendChild(kte.sel); tdLeWrap.appendChild(kte.btn);
+            var colorBtnE=(function(i,lbl){ return makeColorPickerBtn(row.bgColor, function(c){ cat.rows[i].bgColor=c; lbl.style.background=c; saveAll(); }); })(ri,tdLe);
+            tdLeWrap.appendChild(inpLe); tdLeWrap.appendChild(colorBtnE); tdLeWrap.appendChild(kte.sel); tdLeWrap.appendChild(kte.btn);
             tdLe.appendChild(tdLeWrap); set.appendChild(tdLe);
             // 값 셀 - data-cell (colSpan 없이 동일 구조)
             var tdVe=document.createElement('div'); tdVe.className='bd-set-val';
@@ -3224,14 +3356,17 @@ function openBudgetDetail(catIdx) {
             // 삭제 td (동일 구조)
             var tdDelE=document.createElement('div'); tdDelE.className='bd-set-del';
             var delWrapE=document.createElement('div'); delWrapE.className='bd-btn-wrap';
-            var delBtnE=document.createElement('button'); delBtnE.type='button'; delBtnE.className='bd-del-row'; delBtnE.textContent='✕';
-            (function(i){ delBtnE.onclick=function(){ cat.rows.splice(i,1); saveAll(); renderRows(); }; })(ri);
-            delWrapE.appendChild(delBtnE); tdDelE.appendChild(delWrapE); set.appendChild(tdDelE);
+            var hideBtnE=document.createElement('button'); hideBtnE.type='button'; hideBtnE.className='bd-hide-btn'; hideBtnE.textContent='숨김'; hideBtnE.title='행 숨기기';
+            var delBtnE=document.createElement('button'); delBtnE.type='button'; delBtnE.className='bd-del-row'; delBtnE.textContent='삭제';
+            (function(i){ hideBtnE.onclick=function(){ cat.rows[i].hidden=true; saveAll(); renderRows(); }; delBtnE.onclick=function(){ cat.rows.splice(i,1); saveAll(); renderRows(); }; })(ri);
+            delWrapE.appendChild(hideBtnE); delWrapE.appendChild(delBtnE); tdDelE.appendChild(delWrapE); set.appendChild(tdDelE);
         } else {
             var tdL2=document.createElement('div'); tdL2.className='bd-set-label';
-            var tdL2Wrap=document.createElement('div'); tdL2Wrap.style.cssText='display:flex;align-items:center;gap:3px;';
+            if(row.bgColor) tdL2.style.background=row.bgColor;
+            var tdL2Wrap=document.createElement('div'); tdL2Wrap.style.cssText='display:flex;align-items:center;gap:3px;width:100%;';
             var lblInp=document.createElement('input'); lblInp.value=row.label||''; lblInp.placeholder='결과명'; lblInp.style.cssText='font-weight:bold;flex:1;min-width:0;';
             (function(i){ lblInp.oninput=function(){ cat.rows[i].label=this.value; saveAll(); }; })(ri);
+            var colorBtnF=(function(i,lbl){ return makeColorPickerBtn(row.bgColor, function(c){ cat.rows[i].bgColor=c; lbl.style.background=c; saveAll(); }); })(ri,tdL2);
 
             var ktf=makeKindToggle(row, ri, (function(i){ return function(v){
                 if(v==='basic')    { cat.rows[i]={kind:'basic',label:'기본행',val:'',rowType:'basic'}; }
@@ -3241,7 +3376,7 @@ function openBudgetDetail(catIdx) {
                 if(v==='nondaily_sum'){ cat.rows[i]={kind:'nondaily_sum',label:'일반지출합계',rowType:'nondaily_sum'}; }
                 saveAll(); renderRows();
             }; })(ri));
-            tdL2Wrap.appendChild(lblInp); tdL2Wrap.appendChild(ktf.sel); tdL2Wrap.appendChild(ktf.btn);
+            tdL2Wrap.appendChild(lblInp); tdL2Wrap.appendChild(colorBtnF); tdL2Wrap.appendChild(ktf.sel); tdL2Wrap.appendChild(ktf.btn);
             tdL2.appendChild(tdL2Wrap); set.appendChild(tdL2);
 
             var tdF=document.createElement('div'); tdF.className='bd-set-val';
@@ -3272,37 +3407,50 @@ function openBudgetDetail(catIdx) {
                     if(old2) old2.remove();
                     var rect=btn.getBoundingClientRect();
                     var dd=document.createElement('div'); dd.id='bd-formula-custom-dropdown';
-                    dd.style.cssText='position:fixed;z-index:99999;background:white;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:120px;left:'+rect.left+'px;top:'+rect.bottom+'px;max-height:200px;overflow-y:auto;';
-                    // 현재 선택 맨위 v표시
-                    if(wrap._value){
-                        var curIt=document.createElement('div');
-                        curIt.textContent='✔ '+(labelFn(wrap._value)||wrap._value);
-                        curIt.style.cssText='padding:7px 12px;font-size:12px;cursor:pointer;font-family:\'Malgun Gothic\',sans-serif;color:#6366f1;font-weight:bold;border-bottom:1px solid #f1f5f9;';
-                        curIt.onmouseenter=function(){this.style.background='#f5f3ff';};
-                        curIt.onmouseleave=function(){this.style.background='';};
-                        curIt.onmousedown=function(ev){ ev.preventDefault(); dd.remove(); };
-                        dd.appendChild(curIt);
+                    dd.style.cssText='position:fixed;z-index:99999;background:white;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:180px;left:'+rect.left+'px;top:'+rect.bottom+'px;display:flex;flex-direction:column;max-height:260px;';
+
+                    // 검색창 (항상 상단 고정)
+                    var si=document.createElement('input'); si.type='text'; si.placeholder='🔍 검색...';
+                    si.style.cssText='margin:7px 8px 5px;padding:5px 9px;border:1px solid #c7d2fe;border-radius:6px;font-size:12px;font-family:\'Malgun Gothic\',sans-serif;outline:none;flex-shrink:0;';
+                    dd.appendChild(si);
+
+                    // 목록 (스크롤)
+                    var listBox=document.createElement('div'); listBox.style.cssText='overflow-y:auto;flex:1;';
+
+                    function fillList(kw){
+                        listBox.innerHTML=''; kw=(kw||'').toLowerCase();
+                        if(wrap._value && !kw){
+                            var ci2=document.createElement('div');
+                            ci2.textContent='✔ '+(labelFn(wrap._value)||wrap._value);
+                            ci2.style.cssText='padding:7px 12px;font-size:12px;cursor:pointer;font-family:\'Malgun Gothic\',sans-serif;color:#6366f1;font-weight:bold;border-bottom:1px solid #f1f5f9;';
+                            ci2.onmousedown=function(ev){ ev.preventDefault(); dd.remove(); };
+                            listBox.appendChild(ci2);
+                        }
+                        optList.forEach(function(o){
+                            var v=typeof o==='object'?o.key:o;
+                            var t=labelFn(v)||v;
+                            if(kw && t.toLowerCase().indexOf(kw)===-1) return;
+                            var item=document.createElement('div');
+                            item.textContent=t;
+                            item.style.cssText='padding:7px 12px;font-size:12px;cursor:pointer;font-family:\'Malgun Gothic\',sans-serif;color:#334155;';
+                            item.onmouseenter=function(){this.style.background='#f1f5f9';};
+                            item.onmouseleave=function(){this.style.background='';};
+                            item.onmousedown=function(ev){
+                                ev.preventDefault(); dd.remove();
+                                wrap._value=v;
+                                btn.childNodes[0].textContent=t;
+                                btn.title=t;
+                                onChange(v);
+                            };
+                            listBox.appendChild(item);
+                        });
                     }
-                    optList.forEach(function(o){
-                        var v=typeof o==='object'?o.key:o;
-                        var t=labelFn(v)||v;
-                        var item=document.createElement('div');
-                        item.textContent=t;
-                        item.style.cssText='padding:7px 12px;font-size:12px;cursor:pointer;font-family:\'Malgun Gothic\',sans-serif;color:#334155;';
-                        item.onmouseenter=function(){this.style.background='#f1f5f9';};
-                        item.onmouseleave=function(){this.style.background='';};
-                        item.onmousedown=function(ev){
-                            ev.preventDefault(); dd.remove();
-                            wrap._value=v;
-                            // 텍스트 갱신
-                            btn.childNodes[0].textContent=t;
-                            btn.title=t;
-                            onChange(v);
-                        };
-                        dd.appendChild(item);
-                    });
+                    fillList('');
+                    si.addEventListener('input', function(){ fillList(this.value); });
+                    dd.appendChild(listBox);
                     document.body.appendChild(dd);
                     setTimeout(function(){
+                        si.focus();
                         function closeDD(ev){ if(!dd.contains(ev.target)){ dd.remove(); document.removeEventListener('mousedown',closeDD); } }
                         document.addEventListener('mousedown',closeDD);
                     },0);
@@ -3328,8 +3476,10 @@ function openBudgetDetail(catIdx) {
             var tdDel2=document.createElement('div'); tdDel2.className='bd-set-del';
             var delWrap2=document.createElement('div'); delWrap2.className='bd-btn-wrap';
             var confBtn=document.createElement('button'); confBtn.type='button'; confBtn.className='bd-confirm-formula-btn'; confBtn.textContent='✓'; confBtn.title='확인';
-            var delBtn2=document.createElement('button'); delBtn2.type='button'; delBtn2.className='bd-del-row'; delBtn2.textContent='✕'; delBtn2.title='삭제';
-            delWrap2.appendChild(confBtn); delWrap2.appendChild(delBtn2); tdDel2.appendChild(delWrap2);
+            var hideBtnF=document.createElement('button'); hideBtnF.type='button'; hideBtnF.className='bd-hide-btn'; hideBtnF.textContent='숨김'; hideBtnF.title='행 숨기기';
+            var delBtn2=document.createElement('button'); delBtn2.type='button'; delBtn2.className='bd-del-row'; delBtn2.textContent='삭제'; delBtn2.title='삭제';
+            (function(i){ hideBtnF.onclick=function(){ cat.rows[i].hidden=true; saveAll(); renderRows(); }; })(ri);
+            delWrap2.appendChild(confBtn); delWrap2.appendChild(hideBtnF); delWrap2.appendChild(delBtn2); tdDel2.appendChild(delWrap2);
 
             function calcF(){
                 var v=calcRow(cat.rows[ri]);
@@ -3442,6 +3592,7 @@ function openBudgetDetail(catIdx) {
         tbl.innerHTML='';
         cat.rows.forEach(function(row, ri){
             var set=buildSet(row, ri);
+            if(row.hidden) set.classList.add('hidden-row');
             tbl.appendChild(set);
         });
     }
