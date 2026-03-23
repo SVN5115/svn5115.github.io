@@ -5024,43 +5024,74 @@ function doAutoReset() {
     var mm2 = ('0'+(today2.getMonth()+1)).slice(-2);
     var dd2 = ('0'+today2.getDate()).slice(-2);
     var todayStr = yyyy2+'-'+mm2+'-'+dd2;
+
+    // 오늘 이미 초기화 했으면 스킵 (localStorage로 재접속/새로고침 간 유지)
+    var _storedReset = localStorage.getItem('planner_reset_date_' + (currentUser ? currentUser.id : ''));
+    if (_storedReset === todayStr) return;
+    localStorage.setItem('planner_reset_date_' + (currentUser ? currentUser.id : ''), todayStr);
+    _lastResetDate = todayStr;
     var curMonth = yyyy2+'-'+mm2;
+    var day2 = today2.getDate();
+    var mmdd2 = mm2+'-'+dd2;
     var dow2 = today2.getDay();
     var dowNames2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
     var dowShort2 = ['일','월','화','수','목','금','토'];
 
-    // 루틴 - 일일업무: 매일 자정 초기화 / 요일: 해당 요일 아닌 날 초기화
+    // 루틴 초기화
     (wpData.routine||[]).forEach(function(g) {
         var t = (g.title||'').trim();
         var isDaily = (t==='일일업무'||t==='매일');
-        var isDow = (t===dowNames2[dow2]||t===dowShort2[dow2]||t===dowShort2[dow2]+'요일');
-        if (isDaily || !isDow) {
-            if (g.checked) {
-                // 오늘 날짜 키 삭제
+        var isTodayDow = (t===dowNames2[dow2]||t===dowShort2[dow2]||t===dowShort2[dow2]+'요일');
+        var isMonthlyR = !!(g.dates && g.dates.length);
+
+        if (isDaily) {
+            // 일일업무: 매일 자정 초기화 (비월별이므로 checked 직접 삭제)
+            if (g.checked) g.checked = {};
+        } else if (!isMonthlyR) {
+            // 요일 루틴: 오늘 해당 요일이 아니면 초기화
+            if (!isTodayDow && g.checked) g.checked = {};
+        } else {
+            // 날짜 기반 루틴: 오늘 해당 날짜가 아니면 해당 월 체크 삭제
+            var matchToday = g.dates && g.dates.some(function(d){
+                return d.repeat==='monthly' ? d.day===day2 : d.specificMMDD===mmdd2;
+            });
+            if (!matchToday && g.checked) {
                 Object.keys(g.checked).forEach(function(k){ delete g.checked[k]; });
             }
         }
     });
 
-    // 지출/보고: 월이 바뀌면 이전 달 체크 삭제
+    // 지출/보고: 오늘 해당 날짜가 아니면 이전 체크 삭제
     ['expense','report'].forEach(function(type) {
         (wpData[type]||[]).forEach(function(g) {
             if (!g.checked) return;
-            Object.keys(g.checked).forEach(function(k) {
-                if (k.length===7 && k!==curMonth) delete g.checked[k];
+            var matchToday = g.dates && g.dates.some(function(d){
+                return d.repeat==='monthly' ? d.day===day2 : d.specificMMDD===mmdd2;
             });
+            if (!matchToday) {
+                // 오늘 날짜에 해당하지 않으면 이전 달 포함 모든 체크 삭제
+                Object.keys(g.checked).forEach(function(k){ delete g.checked[k]; });
+            } else {
+                // 오늘 해당하지만 이전 달 체크는 삭제
+                Object.keys(g.checked).forEach(function(k){
+                    if (k.length===7 && k!==curMonth) delete g.checked[k];
+                });
+            }
         });
     });
 
-    // 회의: 월이 바뀌면 이전 달 체크 삭제
+    // 회의: 오늘 날짜가 아닌 회의 체크 삭제
     (wpData.meetings||[]).forEach(function(m) {
         if (!m.checked) return;
-        Object.keys(m.checked).forEach(function(k) {
-            if (k.length===7 && k!==curMonth) delete m.checked[k];
-        });
+        if (m.date !== todayStr) m.checked = {};
+        else {
+            Object.keys(m.checked).forEach(function(k){
+                if (k.length===7 && k!==curMonth) delete m.checked[k];
+            });
+        }
     });
 
-    // 일정: 당일 아닌 날짜 done 초기화 (전날치 초기화)
+    // 일정(todos): 전날 done 초기화
     var yesterday = new Date(today2); yesterday.setDate(yesterday.getDate()-1);
     var yStr = yesterday.getFullYear()+'-'+('0'+(yesterday.getMonth()+1)).slice(-2)+'-'+('0'+yesterday.getDate()).slice(-2);
     if (todos[yStr]) todos[yStr].forEach(function(t){ t.done = false; });
@@ -6040,6 +6071,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!wpData.contacts) wpData.contacts = [];
                 if (!wpData.budget) wpData.budget = [];
             }
+            doAutoReset(); // 데이터 로드 후 날짜 변경 시에만 초기화
             startApp();
         });
     }
