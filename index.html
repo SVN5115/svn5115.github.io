@@ -4281,6 +4281,9 @@ function openBudgetDetail(catIdx) {
         // 날짜 오름차순 정렬된 인덱스 배열 생성 (원본 배열은 변경 안 함)
         var sortedIndices = (cat.entries||[]).map(function(_,i){ return i; }).sort(function(a,b){
             var da=cat.entries[a].date||'', db=cat.entries[b].date||'';
+            if(!da && !db) return 0;
+            if(!da) return 1;  // 빈 날짜는 맨 아래
+            if(!db) return -1;
             return da < db ? -1 : da > db ? 1 : 0;
         });
         sortedIndices.forEach(function(ei){
