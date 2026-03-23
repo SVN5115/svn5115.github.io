@@ -301,12 +301,12 @@
         .budget-cat-card:hover { opacity:0.88; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
         .budget-cat-card-bar { display:none; }
         .budget-cat-card-name { font-size:12px; font-weight:bold; color:#fff; white-space:pre-wrap; text-align:center; }
-        .budget-cat-card-color-btn { background:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.5); border-radius:4px; width:16px; height:16px; cursor:pointer; flex-shrink:0; padding:0; }
-        .budget-cat-card-color-btn:hover { background:rgba(255,255,255,0.5); }
-        .budget-cat-card-edit-btn { background:none; border:none; cursor:pointer; font-size:11px; color:rgba(255,255,255,0.8); padding:0; flex-shrink:0; line-height:1; }
-        .budget-cat-card-edit-btn:hover { color:#fff; }
-        .budget-cat-card-del { background:none; border:none; color:rgba(255,255,255,0.7); font-size:12px; cursor:pointer; line-height:1; padding:0; flex-shrink:0; }
-        .budget-cat-card-del:hover { color:#fff; }
+        .budget-cat-card-color-btn { background:none; border:none; border-radius:4px; width:auto; height:auto; cursor:pointer; flex-shrink:0; padding:2px 5px; }
+        .budget-cat-card-color-btn:hover { background:rgba(255,255,255,0.2); }
+        .budget-cat-card-edit-btn { background:none; border:none; border-radius:4px; cursor:pointer; font-size:11px; color:rgba(255,255,255,0.9); padding:2px 5px; flex-shrink:0; line-height:1; }
+        .budget-cat-card-edit-btn:hover { background:rgba(255,255,255,0.2); color:#fff; }
+        .budget-cat-card-del { background:none; border:none; color:rgba(255,255,255,0.9); font-size:12px; cursor:pointer; line-height:1; padding:2px 5px; flex-shrink:0; border-radius:4px; }
+        .budget-cat-card-del:hover { background:rgba(255,255,255,0.2); color:#fff; }
         .budget-cat-color-picker { position:fixed; z-index:99999; background:white; border:1px solid #e2e8f0; border-radius:10px; padding:10px; box-shadow:0 4px 16px rgba(0,0,0,0.15); display:flex; flex-wrap:wrap; gap:6px; width:160px; }
         /* 카테고리 상세 팝업 */
         #budget-detail-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:8900; align-items:center; justify-content:center; }
@@ -2621,7 +2621,9 @@ function renderGuideCatGrid() {
         // 색상 버튼
         var colorBtn = document.createElement('button');
         colorBtn.type='button'; colorBtn.className='budget-cat-card-color-btn';
-        colorBtn.style.cssText='width:auto;height:auto;padding:0 2px;background:transparent;border:none;font-size:14px;line-height:1;display:none;align-items:center;justify-content:center;';
+        colorBtn.style.cssText='width:auto;height:auto;padding:2px 5px;border:none;border-radius:4px;font-size:14px;line-height:1;display:none;align-items:center;justify-content:center;background:none;transition:background 0.15s;';
+        colorBtn.onmouseenter=function(){this.style.background='rgba(255,255,255,0.2)';};
+        colorBtn.onmouseleave=function(){this.style.background='none';};
         colorBtn.title='색상 변경';
         colorBtn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.37 2.63L14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 0 0-3-3z"/><path d="M9 8c-2 3-4 3.5-7 4l8 8c1-.5 3.5-2 4-7"/><path d="M14.5 17.5L4.5 15"/></svg>';
 
@@ -2674,7 +2676,7 @@ function renderGuideCatGrid() {
             card.onclick = function(e) {
                 var t = e.target;
                 if (eb.contains(t)||cb2.contains(t)||colb.contains(t)||db.contains(t)) return;
-                if (inp && card.contains(inp)) { saveEdit(); return; }
+                if (inp && card.contains(inp)) { if(t===inp||inp.contains(t)) return; saveEdit(); return; }
                 inp=null;
                 eb.style.display='inline-block';
                 cb2.style.display='none'; colb.style.display='none'; db.style.display='none';
@@ -3371,9 +3373,11 @@ function renderBudgetCatGrid() {
 
         // 색상 버튼 (수정모드에서 표시)
         var colorBtn = document.createElement('button');
-        colorBtn.type = 'button'; colorBtn.className = 'budget-cat-card-color-btn'; colorBtn.style.width='auto'; colorBtn.style.height='auto'; colorBtn.style.padding='0 2px';
-        colorBtn.title = '색상 변경'; colorBtn.style.background = 'transparent';
-        colorBtn.style.border='none'; colorBtn.style.fontSize='14px'; colorBtn.style.lineHeight='1'; colorBtn.style.display='flex'; colorBtn.style.alignItems='center'; colorBtn.style.justifyContent='center';
+        colorBtn.type = 'button'; colorBtn.className = 'budget-cat-card-color-btn'; colorBtn.style.width='auto'; colorBtn.style.height='auto'; colorBtn.style.padding='2px 5px';
+        colorBtn.title = '색상 변경'; colorBtn.style.background = 'none';
+        colorBtn.style.border='none'; colorBtn.style.borderRadius='4px'; colorBtn.style.fontSize='14px'; colorBtn.style.lineHeight='1'; colorBtn.style.display='flex'; colorBtn.style.alignItems='center'; colorBtn.style.justifyContent='center';
+        colorBtn.onmouseenter=function(){this.style.background='rgba(255,255,255,0.2)';};
+        colorBtn.onmouseleave=function(){this.style.background='none';};
         colorBtn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.37 2.63L14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 0 0-3-3z"/><path d="M9 8c-2 3-4 3.5-7 4l8 8c1-.5 3.5-2 4-7"/><path d="M14.5 17.5L4.5 15"/></svg>';
         colorBtn.style.display='none';
 
@@ -3438,7 +3442,7 @@ function renderBudgetCatGrid() {
                 // 수정/확인/색상/삭제 버튼 클릭 시 무시
                 if(eb.contains(t)||cb2.contains(t)||colb.contains(t)||db.contains(t)) return;
                 // 편집 중이면 강제 저장
-                if(inp && card.contains(inp)){ saveEdit(); return; }
+                if(inp && card.contains(inp)){ if(t===inp||inp.contains(t)) return; saveEdit(); return; }
                 inp = null;
                 eb.style.display='inline-block';
                 cb2.style.display='none'; colb.style.display='none'; db.style.display='none';
@@ -4691,6 +4695,7 @@ function checkTodayHasSchedule() {
     var dateStr = yyyy + '-' + mm + '-' + dd;
     var day  = today.getDate();
     var mmdd = mm + '-' + dd;
+    var mk   = yyyy + '-' + mm;
 
     var hasAny = false;
     if ((todos[dateStr] || []).length) hasAny = true;
@@ -4712,8 +4717,53 @@ function checkTodayHasSchedule() {
     }
     if (!hasAny && (wpData.meetings||[]).some(function(m){ return m.date===dateStr; })) hasAny = true;
 
+    if (!hasAny) {
+        var bell = document.getElementById('today-summary-bell');
+        if (bell) bell.classList.remove('visible');
+        return;
+    }
+
+    // 일정이 있어도 모두 완료됐으면 종 끄기
+    var allDone = true;
+    // todos 체크
+    (todos[dateStr] || []).forEach(function(t){ if(!t.done) allDone = false; });
+    // routine 체크
+    var dowNamesC2 = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    var dowShortC2 = ['일','월','화','수','목','금','토'];
+    var todayDowC2 = today.getDay();
+    (wpData.routine || []).forEach(function(g) {
+        var t2 = (g.title||'').trim();
+        var isMonthlyR = !!(g.dates && g.dates.length);
+        var isDow = t2===dowNamesC2[todayDowC2]||t2===dowShortC2[todayDowC2]||t2===dowShortC2[todayDowC2]+'요일'||t2==='일일업무'||t2==='매일';
+        var isDate = g.dates && g.dates.some(function(d){ return d.repeat==='monthly'?d.day===day:d.specificMMDD===mmdd; });
+        if (!isDow && !isDate) return;
+        var items = g.items || (g.body?[g.body]:[]);
+        items.forEach(function(_, li){
+            var checked = isMonthlyR ? !!(g.checked && g.checked[mk] && g.checked[mk][li]) : !!(g.checked && g.checked[li]);
+            if (!checked) allDone = false;
+        });
+    });
+    // expense/report 체크
+    ['expense','report'].forEach(function(type){
+        (wpData[type]||[]).forEach(function(g){
+            if (!g.dates) return;
+            var match = g.dates.some(function(d){ return d.repeat==='monthly'?d.day===day:d.specificMMDD===mmdd; });
+            if (!match) return;
+            var items = g.items||(g.body?[g.body]:[]);
+            items.forEach(function(_,li){
+                var checked = !!(g.checked && g.checked[mk] && g.checked[mk][li]);
+                if (!checked) allDone = false;
+            });
+        });
+    });
+    // meetings 체크
+    (wpData.meetings||[]).forEach(function(m){
+        if (m.date!==dateStr) return;
+        if (!m.checked || !m.checked[mk]) allDone = false;
+    });
+
     var bell = document.getElementById('today-summary-bell');
-    if (bell) bell.classList.toggle('visible', hasAny);
+    if (bell) bell.classList.toggle('visible', !allDone);
 }
 
 function openTodaySummary() {
@@ -4821,7 +4871,8 @@ function openTodaySummary() {
         yyyy+'-'+mm
     ));
 
-    document.getElementById('today-summary-overlay').classList.add('visible');
+    var _ovl = document.getElementById('today-summary-overlay');
+    if (!_ovl.classList.contains('visible')) _ovl.classList.add('visible');
 }
 
 function makeTsSection(label, bgColor, dotColor, items, detailItems, wpRefs, mk) {
@@ -4845,6 +4896,7 @@ function makeTsSection(label, bgColor, dotColor, items, detailItems, wpRefs, mk)
                 cb.checked = initChecked;
                 if (initChecked) span.className='ts-item-text done';
             }
+            cb._tsRef = ref; cb._tsMk = mk;
             cb.onchange = (function(r, sp){ return function(){
                 sp.className='ts-item-text'+(this.checked?' done':'');
                 if(r) setTsChecked(r, mk, this.checked);
@@ -4884,10 +4936,11 @@ function makeTsSectionGroup(label, bgColor, dotColor, groups) {
                 var row = document.createElement('div'); row.className = 'ts-item';
                 var cb = document.createElement('input'); cb.type='checkbox'; cb.className='ts-item-cb';
                 var span = document.createElement('span'); span.className='ts-item-text'; span.textContent=txt;
-                var ref2 = g.wpRef ? {type:g.wpRef.type, idx:g.wpRef.idx, itemIdx:ii} : null;
+                var ref2 = g.wpRef ? {type:g.wpRef.type, idx:g.wpRef.idx, itemIdx:ii, isMonthly:g.wpRef.isMonthly} : null;
                 var mk2  = g.wpRef ? g.wpRef.mk : null;
                 var initC = ref2 ? getTsChecked(ref2, mk2) : false;
                 cb.checked = initC; if(initC) span.className='ts-item-text done';
+                cb._tsRef = ref2; cb._tsMk = mk2;
                 cb.onchange = (function(r2, mk3, sp2){ return function(){
                     sp2.className='ts-item-text'+(this.checked?' done':'');
                     if(r2) setTsChecked(r2, mk3, this.checked);
@@ -4949,6 +5002,7 @@ function setTsChecked(ref, mk, val) {
     }
     renderSection(ref.type);
     saveAll();
+    // 모아보기가 열려있으면 체크 상태 갱신 불필요 (모아보기→패널 방향이므로 루프 없음)
 }
 
 /* ── 자정 자동 초기화 ── */
@@ -5047,6 +5101,15 @@ function openTsDetail(title, bodyText) {
 }
 
 var _bdDragSrc = null; var _bdDragType = null;
+function syncTodaySummaryCheckboxes() {
+    var overlay = document.getElementById('today-summary-overlay');
+    if (!overlay || !overlay.classList.contains('visible')) return;
+    // 모아보기 팝업이 열려있으면 스크롤 위치 유지하며 내용 갱신
+    var body = document.getElementById('today-summary-body');
+    var scrollTop = body ? body.scrollTop : 0;
+    openTodaySummary();
+    if (body) body.scrollTop = scrollTop;
+}
 function saveAll() { saveData(); checkTodayHasSchedule(); }
 
 /* ════════════════════════════════════
@@ -5207,6 +5270,7 @@ function renderSection(key) {
                             wpData[k][idx].checked[capturedLi] = cb.checked;
                         }
                         saveAll(); renderSection(k);
+                        syncTodaySummaryCheckboxes();
                         var popup = document.getElementById('expense-report-popup');
                         if (popup && popup.classList.contains('visible')) { refreshERPopup(); }
                     };
