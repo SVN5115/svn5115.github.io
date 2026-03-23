@@ -3821,14 +3821,16 @@ function openBudgetDetail(catIdx) {
         var raw=String(v).replace(/,/g,'');
         return !isNaN(Number(raw));
     }
-    function getOptions(){
+    function getOptions(excludeIdx){
         var opts = cat.rows
-            .map(function(r,i){ return {key:r._id?'id_'+r._id:'r_'+i,label:(r.label||'행'+(i+1)),_kind:r.kind||r.rowType,_val:r.val}; })
+            .map(function(r,i){ return {key:r._id?'id_'+r._id:'r_'+i,label:(r.label||'행'+(i+1)),_kind:r.kind||r.rowType,_val:r.val,_idx:i}; })
             .filter(function(o){
+                // 수식행 자체는 드롭박스 옵션에서 제외
+                if(o._kind==='formula') return false;
+                // 자기 자신 제외
+                if(excludeIdx !== undefined && o._idx === excludeIdx) return false;
                 // 기본행이면서 혼용값(숫자 아님)이면 수식 대상에서 제외
                 if(o._kind==='basic' && !isNumericVal(o._val)) return false;
-                // sum 행은 항상 포함
-                if(o._kind==='exec_sum'||o._kind==='daily_sum'||o._kind==='nondaily_sum') return true;
                 return true;
             })
             .map(function(o){ return {key:o.key,label:o.label}; });
@@ -4034,7 +4036,7 @@ function openBudgetDetail(catIdx) {
             var eW=document.createElement('div'); eW.className='bd-formula-cell'; eW.style.display=isConf?'none':'flex';
             var rW=document.createElement('div'); rW.className='bd-result-view'; rW.style.display=isConf?'flex':'none';
 
-            var opts=getOptions();
+            var opts=getOptions(ri);
             var opOpts=['+','-','×','÷'];
 
             // 커스텀 드롭다운 생성 함수
