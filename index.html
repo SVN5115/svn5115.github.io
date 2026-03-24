@@ -6,6 +6,8 @@
     <title>강원소방본부 달력</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --main-bg: #f8f9fa; }
         body { font-family: 'Malgun Gothic', sans-serif; background: var(--main-bg); margin: 0; }
@@ -707,6 +709,24 @@
         .v-box.is-checked .day-v-checkmark-svg { display: block; }
         /* holiday-label 제거 */
         .fc-daygrid-day.selected-day { background-color: #f0f7ff !important; }
+
+    </style>
+    <style id="pdf-print-style" media="print">
+        @page { margin: 15mm 12mm; size: A4; }
+        body > *:not(#pdf-print-frame) { display: none !important; }
+        #pdf-print-frame { display: block !important; position: static !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+        #pdf-print-frame * { visibility: visible; }
+        .pdf-print-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 16px; color: #1e293b; white-space: pre-wrap; }
+        .pdf-print-section { margin-bottom: 12px; }
+        .pdf-print-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+        .pdf-print-label { font-weight: bold; color: #475569; min-width: 80px; }
+        .pdf-print-value { color: #1e293b; }
+        .pdf-print-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
+        .pdf-print-table th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; font-weight: bold; color: #475569; }
+        .pdf-print-table td { border: 1px solid #e2e8f0; padding: 5px 8px; color: #1e293b; }
+        .pdf-print-img { max-width: 100%; margin: 8px 0; display: block; }
+        .pdf-print-block { margin-bottom: 10px; }
+        .pdf-print-block-text { font-size: 12px; line-height: 1.8; white-space: pre-wrap; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; background: #f8fafc; }
     </style>
 </head>
 <body>
@@ -908,6 +928,7 @@
                 <h3 id="budget-detail-title" style="margin:0;"></h3>
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
+                <button type="button" id="budget-detail-pdf-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">📄 PDF저장</button>
                 <button type="button" id="budget-detail-excel-btn" style="padding:5px 14px;background:#10b981;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">📥 엑셀저장</button>
                 <button type="button" id="budget-detail-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0 4px;">&#x2715;</button>
             </div>
@@ -1134,6 +1155,7 @@
             <h3 id="guide-detail-title" style="margin:0;font-size:15px;color:#1e293b;"></h3>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" id="guide-pdf-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">📄 PDF저장</button>
             <button type="button" id="guide-edit-btn" style="padding:5px 14px;background:#6366f1;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">✏ 편집</button>
             <button type="button" id="guide-save-btn" style="display:none;padding:5px 14px;background:#10b981;color:white;border:none;border-radius:7px;font-size:12px;font-weight:bold;cursor:pointer;font-family:'Malgun Gothic',sans-serif;">저장</button>
             <button type="button" id="guide-detail-close" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0 4px;">&#x2715;</button>
@@ -5134,6 +5156,144 @@ function syncTodaySummaryCheckboxes() {
     openTodaySummary();
     if (body) body.scrollTop = scrollTop;
 }
+/* ── PDF 저장 ── */
+function printPdf(htmlContent, title) {
+    var frame = document.getElementById('pdf-print-frame');
+    if (!frame) {
+        frame = document.createElement('div');
+        frame.id = 'pdf-print-frame';
+        frame.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;z-index:-1;';
+        document.body.appendChild(frame);
+    }
+    frame.innerHTML = '<div class="pdf-print-title">' + (title||'') + '</div>' + htmlContent;
+    frame.style.display = 'block';
+    window.print();
+    frame.style.display = 'none';
+}
+
+function exportBudgetDetailPdf() {
+    var catIdx = window._currentBudgetCatIdx;
+    if (catIdx === undefined || !wpData.budget || !wpData.budget[catIdx]) return;
+    var cat = wpData.budget[catIdx];
+
+    // 행설정 값 계산
+    function evalRow(r) {
+        if (!r) return 0;
+        if (r.kind === 'basic') {
+            var raw = (r.val||'').toString().replace(/,/g,'');
+            var num = parseFloat(raw);
+            return isNaN(num) ? 0 : num;
+        }
+        if (r.kind === 'exec_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(parseInt(e.exec)||0); }, 0);
+        if (r.kind === 'daily_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(e.daily?(parseInt(e.exec)||0):0); }, 0);
+        if (r.kind === 'nondaily_sum') return (cat.entries||[]).reduce(function(s,e){ return s+(!e.daily?(parseInt(e.exec)||0):0); }, 0);
+        if (r.kind === 'formula') {
+            var findR = function(key){ return (cat.rows||[]).find(function(x){ return ('id_'+x._id)===key||('r_'+cat.rows.indexOf(x))===key; }); };
+            var aR=findR(r.a), bR=findR(r.b);
+            var aV=aR?evalRow(aR):0, bV=bR?evalRow(bR):0;
+            if(r.op==='+') return aV+bV;
+            if(r.op==='-') return aV-bV;
+            if(r.op==='×') return aV*bV;
+            if(r.op==='÷') return bV?Math.round(aV/bV):0;
+        }
+        return 0;
+    }
+    function fmtNum(n){ return (parseInt(n)||0).toLocaleString(); }
+
+    // 행설정 HTML (숨김 제외, 기본/수식/합계만)
+    var setRowsHTML = '';
+    var visibleRows = (cat.rows||[]).filter(function(r){ return !r.hidden; });
+    function displayVal(r) {
+        if (!r) return '';
+        if (r.kind === 'basic') {
+            var v = (r.val||'').toString();
+            var s = v.replace(/,/g,'');
+            // 순수 숫자만 콤마 포맷, 혼용/텍스트는 그대로
+            if (/^-?\d+(\.\d+)?$/.test(s.trim())) {
+                return parseFloat(s).toLocaleString();
+            }
+            return v; // 혼용(2026년, 텍스트 등) 그대로
+        }
+        return fmtNum(evalRow(r));
+    }
+    // 2열 배치
+    for (var i = 0; i < visibleRows.length; i += 2) {
+        var r1 = visibleRows[i], r2 = visibleRows[i+1];
+        var v1 = displayVal(r1);
+        var style1 = r1.bgColor ? 'background:'+r1.bgColor+';color:white;' : '';
+        var cell1 = '<td style="font-weight:bold;padding:6px 10px;'+style1+'">'+(r1.label||'')+'</td><td style="padding:6px 10px;text-align:right;">'+v1+'</td>';
+        var cell2 = '';
+        if (r2) {
+            var v2 = displayVal(r2);
+            var style2 = r2.bgColor ? 'background:'+r2.bgColor+';color:white;' : '';
+            cell2 = '<td style="font-weight:bold;padding:6px 10px;'+style2+'">'+(r2.label||'')+'</td><td style="padding:6px 10px;text-align:right;">'+v2+'</td>';
+        } else {
+            cell2 = '<td colspan="2"></td>';
+        }
+        setRowsHTML += '<tr>'+cell1+cell2+'</tr>';
+    }
+
+    // 집행내역 정렬
+    var entries = (cat.entries||[]).slice().sort(function(a,b){
+        var da=a.date||'', db=b.date||'';
+        if(!da && !db) return 0; if(!da) return 1; if(!db) return -1;
+        return da<db?-1:da>db?1:0;
+    });
+    var entryRowsHTML = entries.map(function(e){
+        var daily = e.daily ? '<span style="color:#10b981;font-weight:bold;">O</span>' : '<span style="color:#ef4444;font-weight:bold;">X</span>';
+        return '<tr><td style="padding:5px 8px;white-space:nowrap;">'+(e.date||'')+'</td><td style="padding:5px 8px;">'+(e.business||'')+'</td><td style="padding:5px 8px;text-align:right;">'+(e.exec?fmtNum(e.exec)+'원':'')+'</td><td style="padding:5px 8px;text-align:center;">'+daily+'</td></tr>';
+    }).join('');
+
+    var formTitle = cat.formTitle || '';
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + 'body{font-family:"Malgun Gothic",sans-serif;padding:20px;color:#1e293b;font-size:12px;}'
+        + '.title{font-size:16px;font-weight:bold;text-align:center;margin-bottom:16px;white-space:pre-wrap;border:1px solid #e2e8f0;padding:12px;border-radius:6px;}'
+        + 'table{width:100%;border-collapse:collapse;margin-bottom:16px;}'
+        + 'td,th{border:1px solid #e2e8f0;}'
+        + 'th{background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:bold;}'
+        + '</style></head><body>'
+        + (formTitle ? '<div class="title">'+formTitle.replace(/</g,'&lt;')+'</div>' : '')
+        + '<table><tbody>'+setRowsHTML+'</tbody></table>'
+        + '<table><thead><tr><th style="width:110px;">일자</th><th>사업명</th><th style="width:100px;text-align:right;">집행금액</th><th style="width:80px;text-align:center;">일상경비</th></tr></thead>'
+        + '<tbody>'+entryRowsHTML+'</tbody></table>'
+        + '<script>window.onload=function(){window.print();}<\/script>'
+        + '</body></html>';
+
+    var w = window.open('', '_blank', 'width=900,height=700');
+    w.document.write(html);
+    w.document.close();
+}
+
+function exportGuidePdf() {
+    var btn = document.getElementById('guide-pdf-btn');
+    var body = document.getElementById('guide-detail-body');
+    if (!body) return;
+    var idx = window._currentGuideIdx;
+    var item = (idx !== undefined && wpData.guideItems) ? wpData.guideItems[idx] : null;
+    var itemName = item ? item.name : '';
+    btn.disabled = true; btn.textContent = '변환 중...';
+    html2canvas(body, { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0, windowWidth: body.scrollWidth, windowHeight: body.scrollHeight }).then(function(canvas) {
+        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+        var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pdfW = pdf.internal.pageSize.getWidth();
+        var pdfH = pdf.internal.pageSize.getHeight();
+        var imgW = pdfW - 20;
+        var imgH = (canvas.height * imgW) / canvas.width;
+        var y = 10;
+        var pageH = pdfH - 20;
+        while (y < imgH) {
+            if (y > 10) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 10, 10 - (y - 10), imgW, imgH);
+            y += pageH;
+        }
+        pdf.save((itemName || '업무가이드') + '.pdf');
+        btn.disabled = false; btn.textContent = '📄 PDF저장';
+    }).catch(function(e) {
+        alert('PDF 변환 실패: ' + e.message);
+        btn.disabled = false; btn.textContent = '📄 PDF저장';
+    });
+}
+
 function saveAll() { saveData(); checkTodayHasSchedule(); }
 
 /* ════════════════════════════════════
@@ -5863,6 +6023,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('budget-detail-overlay').classList.remove('visible');
         closeBudgetPopup();
     };
+    document.getElementById('budget-detail-pdf-btn').onclick = function(){ exportBudgetDetailPdf(); };
     document.getElementById('budget-detail-excel-btn').onclick = function(){
         exportBudgetDetailExcel();
     };
@@ -5899,6 +6060,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wpData.guideItems.push({name:name.trim(), blocks:[], color:colors[wpData.guideItems.length%colors.length]});
         saveAll(); renderGuideCatGrid();
     };
+    document.getElementById('guide-pdf-btn').onclick = function(){ exportGuidePdf(); };
     document.getElementById('guide-edit-btn').onclick = function(){ if(_currentGuideIdx!==null) renderGuideDetailEdit(_currentGuideIdx); };
     document.getElementById('guide-save-btn').onclick = function(){
         if (_currentGuideIdx === null) return;
