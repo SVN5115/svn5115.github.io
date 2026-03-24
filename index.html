@@ -5061,29 +5061,20 @@ function doAutoReset() {
         }
     });
 
-    // 지출/보고: 오늘 해당 날짜가 아니면 이전 체크 삭제
+    // 지출/보고: 이전 달 체크만 삭제 (이번 달 체크는 유지)
     ['expense','report'].forEach(function(type) {
         (wpData[type]||[]).forEach(function(g) {
             if (!g.checked) return;
-            var matchToday = g.dates && g.dates.some(function(d){
-                return d.repeat==='monthly' ? d.day===day2 : d.specificMMDD===mmdd2;
+            Object.keys(g.checked).forEach(function(k) {
+                if (k.length===7 && k!==curMonth) delete g.checked[k];
             });
-            if (!matchToday) {
-                // 오늘 날짜에 해당하지 않으면 이전 달 포함 모든 체크 삭제
-                Object.keys(g.checked).forEach(function(k){ delete g.checked[k]; });
-            } else {
-                // 오늘 해당하지만 이전 달 체크는 삭제
-                Object.keys(g.checked).forEach(function(k){
-                    if (k.length===7 && k!==curMonth) delete g.checked[k];
-                });
-            }
         });
     });
 
-    // 회의: 오늘 날짜가 아닌 회의 체크 삭제
+    // 회의: 오늘 이전 날짜 회의 체크 삭제 (이번 달 이후 회의는 유지)
     (wpData.meetings||[]).forEach(function(m) {
         if (!m.checked) return;
-        if (m.date !== todayStr) m.checked = {};
+        if (m.date < todayStr) m.checked = {};
         else {
             Object.keys(m.checked).forEach(function(k){
                 if (k.length===7 && k!==curMonth) delete m.checked[k];
