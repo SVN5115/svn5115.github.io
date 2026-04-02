@@ -3332,6 +3332,8 @@ function openBudgetPopup() {
 }
 function closeBudgetPopup() {
     document.getElementById('budget-overlay').classList.remove('visible');
+    var s = document.getElementById('budget-cat-search');
+    if (s) { s.value = ''; filterBudgetCatGrid(''); }
     renderBudgetCatGrid(); // 카드 상태(inp) 완전 초기화
 }
 
@@ -3849,8 +3851,6 @@ function openBudgetDetail(catIdx) {
         var opts = cat.rows
             .map(function(r,i){ return {key:r._id?'id_'+r._id:'r_'+i,label:(r.label||'행'+(i+1)),_kind:r.kind||r.rowType,_val:r.val,_idx:i}; })
             .filter(function(o){
-                // 수식행 자체는 드롭박스 옵션에서 제외
-                if(o._kind==='formula') return false;
                 // 자기 자신 제외
                 if(excludeIdx !== undefined && o._idx === excludeIdx) return false;
                 // 기본행이면서 혼용값(숫자 아님)이면 수식 대상에서 제외
