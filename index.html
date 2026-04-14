@@ -6234,7 +6234,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function startApp() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
+                initialView:'dayGridMonth', initialDate:new Date().toISOString().slice(0,10), locale:'ko', height:'100%',
                 titleFormat: function(date) {
                     var d = date.date.marker;
                     return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월';
