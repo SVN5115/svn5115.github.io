@@ -755,7 +755,10 @@ function loadAdminData() {
             fileList.appendChild(fRow);
           });
         } else {
-          fileList.innerHTML = '<div style="padding:10px 42px;font-size:12px;color:var(--text2);">파일이 없습니다</div>';
+          var emptyRow = document.createElement('div');
+          emptyRow.style.cssText = 'padding:10px 42px;font-size:12px;color:var(--text2);';
+          emptyRow.textContent = '파일이 없습니다';
+          fileList.appendChild(emptyRow);
         }
 
         // 클릭 시 토글
