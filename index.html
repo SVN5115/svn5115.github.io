@@ -755,7 +755,7 @@ function loadAdminData() {
 
         // 클릭 시 토글
         row.addEventListener('click', function(e) {
-          if (e.target.tagName === 'BUTTON') return;
+          if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
           var arr = row.querySelector('div');
           var open = fileList.style.display !== 'none';
           fileList.style.display = open ? 'none' : 'block';
