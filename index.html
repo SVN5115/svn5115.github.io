@@ -6240,10 +6240,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             doAutoReset(); // 데이터 로드 후 날짜 변경 시에만 초기화
             startApp();
-            // 로그인 후 항상 오늘 날짜로 이동
-            if (calendar) {
-                calendar.gotoDate(new Date().toISOString().slice(0,10));
-            }
         });
     }
 
@@ -6317,7 +6313,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             calendar.render();
+            calendar.gotoDate(new Date().toISOString().slice(0,10));
             window.addEventListener('resize', function(){ setTimeout(function(){ calendar.updateSize(); setTimeout(applyCellSquare,100); },50); });
+        } else {
+            // 이미 생성된 경우에도 오늘 날짜로 이동
+            calendar.gotoDate(new Date().toISOString().slice(0,10));
         } // end if(!calendar)
         ['routine','expense','report'].forEach(function(key) {
             document.getElementById('plus-'+key).onclick    = function(){ openForm(key); };
