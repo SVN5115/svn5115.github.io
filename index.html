@@ -6240,13 +6240,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             doAutoReset(); // 데이터 로드 후 날짜 변경 시에만 초기화
             startApp();
+            // 로그인 후 항상 오늘 날짜로 이동
+            if (calendar) {
+                calendar.gotoDate(new Date().toISOString().slice(0,10));
+            }
         });
     }
 
     function startApp() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
+                initialView:'dayGridMonth', initialDate:new Date().toISOString().slice(0,10), locale:'ko', height:'100%',
                 titleFormat: function(date) {
                     var d = date.date.marker;
                     return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월';
