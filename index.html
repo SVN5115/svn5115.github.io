@@ -1760,30 +1760,42 @@ function loadData(callback) {
     });
 }
 
-function saveDataNow() {
-    clearTimeout(saveTimer);
+function _doSave(onDone, retryCount) {
+    retryCount = retryCount || 0;
+    var maxRetry = 5;
     sbUpsert('planner_data', {
         key: getUserDataKey(),
         value: { activeDate: activeDate, todos: todos, wpData: wpData },
         updated_at: new Date().toISOString()
     }, function(err) {
-        setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
+        if (!err) {
+            setSyncStatus('saved', '● 저장됨');
+            if (onDone) onDone();
+        } else if (retryCount < maxRetry) {
+            var delay = Math.min(1000 * Math.pow(2, retryCount), 16000);
+            setSyncStatus('saving', '● 재시도 중... (' + (retryCount+1) + '/' + maxRetry + ')');
+            setTimeout(function() { _doSave(onDone, retryCount + 1); }, delay);
+        } else {
+            setSyncStatus('error', '● 저장 실패');
+            if (onDone) onDone();
+        }
     });
+}
+
+function saveDataNow() {
+    clearTimeout(saveTimer);
+    setSyncStatus('saving', '● 저장 중...');
+    _doSave(null, 0);
 }
 
 function saveData() {
     clearTimeout(saveTimer);
     setSyncStatus('saving', '● 저장 중...');
     saveTimer = setTimeout(function() {
-        sbUpsert('planner_data', {
-            key: getUserDataKey(),
-            value: { activeDate: activeDate, todos: todos, wpData: wpData },
-            updated_at: new Date().toISOString()
-        }, function(err) {
-            setSyncStatus(err ? 'error' : 'saved', err ? '● 저장 실패' : '● 저장됨');
+        _doSave(function() {
             renderExpenseMarkers();
             renderMeetingMarkers();
-        });
+        }, 0);
     }, 600);
 }
 /* ════════════════════════════════════
@@ -5671,65 +5683,33 @@ function renderList(date) {
             };
             editBtn.onclick = function(e) {
                 e.stopPropagation();
-
-                // 기존 편집창 있으면 제거
-                var existing = li.querySelector('.todo-edit-popup');
-                if (existing) { existing.remove(); return; }
-
-                // 편집 팝업 생성
-                var ep = document.createElement('div'); ep.className='todo-edit-popup';
-                ep.style.cssText='background:#f8fafc;border:1px solid #c7d2fe;border-radius:8px;padding:10px 12px;margin:4px 0;display:flex;flex-direction:column;gap:6px;';
-
-                // 텍스트 수정
-                var textRow=document.createElement('div'); textRow.style.cssText='display:flex;align-items:center;gap:6px;';
-                var textLbl=document.createElement('span'); textLbl.textContent='제목'; textLbl.style.cssText='font-size:11px;color:#64748b;width:28px;flex-shrink:0;';
-                var textInp=document.createElement('input'); textInp.type='text'; textInp.value=todos[d][idx].text;
-                textInp.style.cssText='flex:1;padding:4px 8px;border:1px solid #c7d2fe;border-radius:5px;font-size:13px;font-family:Malgun Gothic,sans-serif;outline:none;';
-                textRow.appendChild(textLbl); textRow.appendChild(textInp);
-
-                // 날짜 수정
-                var dateRow=document.createElement('div'); dateRow.style.cssText='display:flex;align-items:center;gap:6px;';
-                var dateLbl=document.createElement('span'); dateLbl.textContent='날짜'; dateLbl.style.cssText='font-size:11px;color:#64748b;width:28px;flex-shrink:0;';
-                var dateInp=document.createElement('input'); dateInp.type='date'; dateInp.value=d;
-                dateInp.style.cssText='flex:1;padding:4px 8px;border:1px solid #c7d2fe;border-radius:5px;font-size:13px;font-family:Malgun Gothic,sans-serif;outline:none;';
-                dateRow.appendChild(dateLbl); dateRow.appendChild(dateInp);
-
-                // 버튼
-                var btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px;justify-content:flex-end;';
-                var cancelB=document.createElement('button'); cancelB.type='button'; cancelB.textContent='취소';
-                cancelB.style.cssText='padding:4px 12px;border:1px solid #e2e8f0;border-radius:5px;background:white;font-size:12px;cursor:pointer;font-family:Malgun Gothic,sans-serif;';
-                var saveB=document.createElement('button'); saveB.type='button'; saveB.textContent='저장';
-                saveB.style.cssText='padding:4px 12px;border:none;border-radius:5px;background:#6366f1;color:white;font-size:12px;cursor:pointer;font-family:Malgun Gothic,sans-serif;';
-                btnRow.appendChild(cancelB); btnRow.appendChild(saveB);
-
-                ep.appendChild(textRow); ep.appendChild(dateRow); ep.appendChild(btnRow);
-                li.appendChild(ep);
-                textInp.focus();
-
-                cancelB.onclick = function(ev){ ev.stopPropagation(); ep.remove(); };
-
-                saveB.onclick = function(ev){
-                    ev.stopPropagation();
-                    var newText = textInp.value.trim();
-                    var newDate = dateInp.value;
-                    if (!newText || !newDate) return;
-
-                    var item = todos[d][idx];
-
-                    // 날짜가 바뀐 경우 이동
-                    if (newDate !== d) {
-                        if (!todos[newDate]) todos[newDate] = [];
-                        item.text = newText;
-                        todos[newDate].push(item);
-                        todos[d].splice(idx, 1);
-                        if (!todos[d].length) delete todos[d];
-                    } else {
-                        item.text = newText;
+                // span을 input으로 전환
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.value = todos[d][idx].text;
+                input.style.cssText = 'flex:1;padding:2px 6px;border:1px solid #6366f1;border-radius:5px;font-size:14px;font-family:Malgun Gothic,sans-serif;outline:none;';
+                span.parentNode.insertBefore(input, span);
+                span.style.display = 'none';
+                editBtn.style.display = 'none';
+                input.focus(); input.select();
+                function applyEdit() {
+                    var newText = input.value.trim();
+                    if (newText && newText !== todos[d][idx].text) {
+                        todos[d][idx].text = newText;
+                        span.childNodes[0].textContent = newText;
+                        saveAll();
                     }
-                    saveAll();
-                    ep.remove();
-                    // 팝업 재렌더
-                    showTodo(); updateDisplay(newDate, null); renderCellTodos(d); renderCellTodos(newDate);
+                    input.parentNode.removeChild(input);
+                    span.style.display = '';
+                    editBtn.style.display = '';
+                }
+                input.onblur = applyEdit;
+                input.onkeydown = function(ev) {
+                    if (ev.key === 'Enter') { ev.preventDefault(); applyEdit(); }
+                    if (ev.key === 'Escape') {
+                        input.parentNode.removeChild(input);
+                        span.style.display = ''; editBtn.style.display = '';
+                    }
                 };
             };
             cancelBtn.onclick = function(e) {
@@ -5854,8 +5834,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     document.getElementById('login-btn').onclick = doLogin;
-    document.getElementById('login-pw').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-    document.getElementById('login-id').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('login-pw').focus(); });
+    var _lp=document.getElementById('login-pw'); if(_lp) _lp.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+    var _li=document.getElementById('login-id'); if(_li) _li.addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('login-pw').focus(); });
     document.getElementById('goto-signup-btn').onclick = function() { showScreen('signup-screen'); };
 
     /* ── 계정 생성 요청 화면 ── */
@@ -6129,8 +6109,8 @@ document.addEventListener('DOMContentLoaded', function() {
     /* 년/월 이동 팝업 이벤트 */
     document.getElementById('goto-close-btn').onclick = closeGotoPopup;
     document.getElementById('goto-go-btn').onclick    = doGotoDate;
-    document.getElementById('goto-month').addEventListener('keydown', function(e){ if(e.key==='Enter') doGotoDate(); });
-    document.getElementById('goto-year').addEventListener('keydown',  function(e){ if(e.key==='Enter') document.getElementById('goto-month').focus(); });
+    var _gm=document.getElementById('goto-month'); if(_gm) _gm.addEventListener('keydown', function(e){ if(e.key==='Enter') doGotoDate(); });
+    var _gy=document.getElementById('goto-year'); if(_gy) _gy.addEventListener('keydown',  function(e){ if(e.key==='Enter') document.getElementById('goto-month').focus(); });
     document.addEventListener('click', function(e) {
         var popup = document.getElementById('goto-date-popup');
         if (popup.classList.contains('visible') && !popup.contains(e.target)) {
@@ -6266,7 +6246,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function startApp() {
         if (!calendar) {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView:'dayGridMonth', initialDate:new Date().toISOString().slice(0,10), locale:'ko', height:'100%',
+                initialView:'dayGridMonth', initialDate:'2026-03-18', locale:'ko', height:'100%',
                 titleFormat: function(date) {
                     var d = date.date.marker;
                     return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월';
@@ -6378,7 +6358,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showRoutine(); refreshCalendar();
         };
         document.getElementById('add-btn').onclick = addTodo;
-        document.getElementById('todo-input').addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
+        var _ti=document.getElementById('todo-input'); if(_ti) _ti.addEventListener('keydown', function(e){ if(e.key==='Enter') addTodo(); });
         ['routine','expense','report','meeting'].forEach(function(k){ renderSection(k); });
         if (activeDate) { showTodo(); updateDisplay(activeDate); } else { showRoutine(); }
         refreshCalendar();
