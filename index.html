@@ -1801,12 +1801,10 @@ function saveDataNow() {
 
 function saveData() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(function() {
-        _doSave(function() {
-            renderExpenseMarkers();
-            renderMeetingMarkers();
-        }, 0);
-    }, 600);
+    _doSave(function() {
+        renderExpenseMarkers();
+        renderMeetingMarkers();
+    }, 0);
 }
 /* ════════════════════════════════════
    지출 날짜 UI
