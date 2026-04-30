@@ -1087,7 +1087,7 @@
         <span id="user-label"></span>
     </div>
     <div id="top-right">
-        <div id="sync-indicator" class="saved">● 저장됨</div>
+        <div id="sync-indicator" class="saved" style="display:none;">● 저장됨</div>
         <button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><button id="logout-btn">로그아웃</button>
     </div>
 </div>
@@ -2986,7 +2986,7 @@ function addAttachment(date, idx, file, afterRender) {
         if (!todos[date][idx].attachments) todos[date][idx].attachments = [];
         var isImage = file.type.startsWith('image/');
         todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: data });
-        saveAll();
+        saveDataNow(); // 이미지 첨부 후 즉시 저장
         if (afterRender) afterRender();
     });
 }
@@ -5829,9 +5829,18 @@ function renderList(date) {
                         e.preventDefault();
                         var file = items[j].getAsFile();
                         if (file) {
-                            addAttachment(d, idx, file, function() {
-                                renderAttachments(todos[d][idx].attachments, aArea, d, idx);
-                            });
+                            // paste 이미지는 name이 없으므로 기본값 설정
+                            if (!file.name || file.name === 'image.png') {
+                                var ext = file.type.split('/')[1] || 'png';
+                                Object.defineProperty(file, 'name', { value: '붙여넣기_' + Date.now() + '.' + ext });
+                            }
+                            (function(captureD, captureIdx, captureArea){
+                                addAttachment(captureD, captureIdx, file, function() {
+                                    if (todos[captureD] && todos[captureD][captureIdx]) {
+                                        renderAttachments(todos[captureD][captureIdx].attachments, captureArea, captureD, captureIdx);
+                                    }
+                                });
+                            })(d, idx, aArea);
                         }
                         break;
                     }
@@ -5878,8 +5887,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (_loginAttempts[id]) _loginAttempts[id] = {count:0, lockedUntil:0};
                 currentUser = acc;
                 sessionStorage.setItem('planner_user', JSON.stringify(acc));
-                localStorage.setItem('planner_user', JSON.stringify(acc));
-                localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 60 * 1000);
                 hideAllScreens(); enterApp();
             }
             function loginFail() {
@@ -6030,8 +6037,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e) { err.textContent='저장 실패: '+e.message; btn.disabled=false; btn.textContent='관리자 계정 생성'; return; }
             currentUser = { id:ADMIN_ID, role:'admin', email:adminEmail };
             sessionStorage.setItem('planner_user', JSON.stringify(currentUser));
-            localStorage.setItem('planner_user', JSON.stringify(currentUser));
-            localStorage.setItem('planner_user_exp', Date.now() + 5 * 60 * 60 * 1000);
             hideAllScreens();
             enterApp();
         });
@@ -6043,8 +6048,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('logout-btn').onclick = function() {
         if (confirm('로그아웃 하시겠습니까?')) {
             sessionStorage.removeItem('planner_user');
-            localStorage.removeItem('planner_user');
-            localStorage.removeItem('planner_user_exp');
             location.reload();
         }
     };
@@ -6267,8 +6270,6 @@ document.addEventListener('DOMContentLoaded', function() {
             savedUser = lsUser;
             sessionStorage.setItem('planner_user', lsUser);
         } else {
-            localStorage.removeItem('planner_user');
-            localStorage.removeItem('planner_user_exp');
         }
     }
     if (savedUser) {
