@@ -1762,14 +1762,24 @@ function loadData(callback) {
 
 function _doSave(onDone, retryCount) {
     retryCount = retryCount || 0;
+    // 빈 데이터 저장 차단 - todos와 wpData 모두 비어있으면 저장 안 함
+    var todosEmpty = !todos || Object.keys(todos).length === 0;
+    var wpEmpty = !wpData || (
+        (!wpData.routine || !wpData.routine.length) &&
+        (!wpData.expense || !wpData.expense.length) &&
+        (!wpData.report  || !wpData.report.length)  &&
+        (!wpData.meetings|| !wpData.meetings.length) &&
+        (!wpData.idinfo  || !wpData.idinfo.length)  &&
+        (!wpData.contacts|| !wpData.contacts.length) &&
+        (!wpData.budget  || !wpData.budget.length)
+    );
+    if (todosEmpty && wpEmpty && retryCount === 0) {
+        // 첫 저장 시도에서 완전히 비어있으면 차단
+        console.warn('빈 데이터 저장 차단됨');
+        if (onDone) onDone();
+        return;
+    }
     var saveData = { activeDate: activeDate, todos: todos, wpData: wpData };
-    // localStorage 동시 저장 (오프라인/긴급 복구용)
-    try {
-        localStorage.setItem('plannerBackup_' + getUserDataKey(), JSON.stringify({
-            data: saveData,
-            savedAt: new Date().toISOString()
-        }));
-    } catch(e) {}
     sbUpsert('planner_data', {
         key: getUserDataKey(),
         value: saveData,
@@ -6303,11 +6313,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!wpData.idinfo)   wpData.idinfo   = [];
                 if (!wpData.contacts) wpData.contacts = [];
                 if (!wpData.budget)   wpData.budget   = [];
-                if (!wpData.contacts) wpData.contacts = [];
-                if (!wpData.budget) wpData.budget = [];
+                doAutoReset();
+                startApp();
+            } else {
+                // 데이터 로드 실패 - 빈 데이터로 덮어쓰지 않고 재시도
+                setSyncStatus('saving', '● 데이터 로드 중...');
+                setTimeout(function() {
+                    loadData(function(saved2) {
+                        if (saved2) {
+                            activeDate = saved2.activeDate || '';
+                            todos      = saved2.todos      || {};
+                            wpData     = saved2.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[], contacts:[], budget:[] };
+                            if (!wpData.meetings) wpData.meetings = [];
+                            if (!wpData.idinfo)   wpData.idinfo   = [];
+                            if (!wpData.contacts) wpData.contacts = [];
+                            if (!wpData.budget)   wpData.budget   = [];
+                        }
+                        doAutoReset();
+                        startApp();
+                    });
+                }, 2000);
             }
-            doAutoReset(); // 데이터 로드 후 날짜 변경 시에만 초기화
-            startApp();
         });
     }
 
