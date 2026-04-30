@@ -5303,46 +5303,39 @@ function exportGuidePdf() {
 
 function saveAll() { saveData(); checkTodayHasSchedule(); }
 
-// 페이지 종료/숨김 시 즉시 저장 (fetch keepalive - 브라우저가 닫혀도 전송 보장)
-function saveBeacon() {
+// 6시간마다 자동 백업
+var _lastBackupTime = 0;
+var _BACKUP_INTERVAL = 6 * 60 * 60 * 1000; // 6시간
+
+function autoBackup() {
     if (!currentUser || !currentUser.id) return;
+    var now = Date.now();
+    if (now - _lastBackupTime < _BACKUP_INTERVAL) return;
+    _lastBackupTime = now;
     try {
-        var payload = JSON.stringify({
-            key: getUserDataKey(),
-            value: { activeDate: activeDate, todos: todos, wpData: wpData },
-            updated_at: new Date().toISOString()
-        });
-        fetch(SUPABASE_URL + '/rest/v1/planner_data?on_conflict=key', {
+        fetch(SUPABASE_URL + '/rest/v1/planner_backup', {
             method: 'POST',
-            keepalive: true, // 페이지 종료 후에도 요청 유지
             headers: {
                 'Content-Type': 'application/json',
                 'apikey': SUPABASE_KEY,
                 'Authorization': 'Bearer ' + SUPABASE_KEY,
-                'Prefer': 'resolution=merge-duplicates'
+                'Prefer': 'return=minimal'
             },
-            body: payload
+            body: JSON.stringify({
+                key: getUserDataKey(),
+                value: { activeDate: activeDate, todos: todos, wpData: wpData },
+                backed_up_at: new Date().toISOString()
+            })
         });
     } catch(e) {}
 }
 
-window.addEventListener('beforeunload', function() {
-    clearTimeout(saveTimer);
-    saveBeacon();
-});
+// 6시간마다 체크
+setInterval(function() {
+    autoBackup();
+}, 30 * 60 * 1000); // 30분마다 체크해서 6시간 지났으면 백업
 
-window.addEventListener('pagehide', function() {
-    clearTimeout(saveTimer);
-    saveBeacon();
-});
-
-// 탭이 백그라운드로 가거나 돌아올 때도 저장
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden') {
-        clearTimeout(saveTimer);
-        saveBeacon();
-    }
-});
+// saveBeacon 제거됨 - 빈 데이터 덮어쓰기 방지
 
 /* ════════════════════════════════════
    섹션 렌더
