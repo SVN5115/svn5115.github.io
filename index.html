@@ -45,6 +45,10 @@
         #sync-indicator.saving { color: #f59e0b; }
         #sync-indicator.saved  { color: #22c55e; }
         #sync-indicator.error  { color: #ef4444; }
+        #last-saved-time { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+        #force-save-btn { display:none; padding:3px 10px; background:#ef4444; color:white; border:none; border-radius:6px; font-size:11px; cursor:pointer; font-family:'Malgun Gothic',sans-serif; animation:blink 1.2s step-start infinite; }
+        #force-save-btn:hover { background:#dc2626; animation:none; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
         #user-label { font-size: 11px; color: #64748b; }
         #logout-btn { padding: 4px 12px; background: none; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
         #logout-btn:hover { background: #fef2f2; border-color: #fca5a5; color: #ef4444; }
@@ -1088,6 +1092,8 @@
     </div>
     <div id="top-right">
         <div id="sync-indicator" class="saved" style="display:none;">● 저장됨</div>
+        <span id="last-saved-time"></span>
+        <button id="force-save-btn" onclick="forceSave()" title="저장 실패 시 강제 저장">⚠ 강제저장</button>
         <button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><button id="logout-btn">로그아웃</button>
     </div>
 </div>
@@ -1340,6 +1346,7 @@ async function decryptPw(encoded) {
 
 var currentUser = null;
 var saveTimer   = null;
+var _supabaseReady = false; // Supabase 연결 확인 플래그
 
 /* ── 해시 ── */
 function simpleHash(str) {
@@ -1352,6 +1359,30 @@ function simpleHash(str) {
 function setSyncStatus(cls, text) {
     var el = document.getElementById('sync-indicator');
     el.className = cls; el.textContent = text;
+    var fbtn = document.getElementById('force-save-btn');
+    if (cls === 'saved') {
+        var now = new Date();
+        var mm = ('0'+(now.getMonth()+1)).slice(-2);
+        var dd = ('0'+now.getDate()).slice(-2);
+        var hh = ('0'+now.getHours()).slice(-2);
+        var mi = ('0'+now.getMinutes()).slice(-2);
+        var ss = ('0'+now.getSeconds()).slice(-2);
+        var el2 = document.getElementById('last-saved-time');
+        if (el2) el2.textContent = '최종저장 ' + mm+'/'+dd+' '+hh+':'+mi+':'+ss;
+        if (fbtn) fbtn.style.display = 'none';
+    } else if (cls === 'error') {
+        if (fbtn) fbtn.style.display = 'inline-block';
+    }
+}
+
+function forceSave() {
+    var fbtn = document.getElementById('force-save-btn');
+    if (fbtn) { fbtn.textContent = '저장 중...'; fbtn.disabled = true; }
+    setSyncStatus('saving', '● 저장 중...');
+    _doSave(function() {
+        setSyncStatus('saved', '● 저장됨');
+        if (fbtn) { fbtn.textContent = '⚠ 강제저장'; fbtn.disabled = false; }
+    }, 0);
 }
 
 /* ════════════════════════════════════
@@ -1762,6 +1793,12 @@ function loadData(callback) {
 
 function _doSave(onDone, retryCount) {
     retryCount = retryCount || 0;
+    // 로컬 파일 실행 또는 Supabase 미연결 상태면 저장 차단
+    if (!_supabaseReady) {
+        console.warn('Supabase 미연결 - 저장 차단');
+        if (onDone) onDone();
+        return;
+    }
     // 빈 데이터 저장 차단 - todos와 wpData 모두 비어있으면 저장 안 함
     var todosEmpty = !todos || Object.keys(todos).length === 0;
     var wpEmpty = !wpData || (
@@ -1788,8 +1825,15 @@ function _doSave(onDone, retryCount) {
         if (!err) {
             if (onDone) onDone();
         } else {
-            var delay = Math.min(1000 * Math.pow(2, Math.min(retryCount, 5)), 30000);
-            setTimeout(function() { _doSave(onDone, retryCount + 1); }, delay);
+            if (retryCount >= 4) {
+                // 5회 이상 실패 시 오류 상태 표시 + 강제저장 버튼 노출
+                setSyncStatus('error', '● 저장 실패');
+                if (onDone) onDone();
+            } else {
+                var delay = Math.min(1000 * Math.pow(2, Math.min(retryCount, 5)), 30000);
+                setSyncStatus('saving', '● 재시도 중(' + (retryCount+1) + ')...');
+                setTimeout(function() { _doSave(onDone, retryCount + 1); }, delay);
+            }
         }
     });
 }
@@ -6305,6 +6349,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         loadData(function(saved) {
             if (saved) {
+                _supabaseReady = true;
                 activeDate = saved.activeDate || '';
                 todos      = saved.todos      || {};
                 wpData     = saved.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[], contacts:[], budget:[] };
@@ -6320,6 +6365,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() {
                     loadData(function(saved2) {
                         if (saved2) {
+                            _supabaseReady = true;
                             activeDate = saved2.activeDate || '';
                             todos      = saved2.todos      || {};
                             wpData     = saved2.wpData     || { routine:[], expense:[], report:[], meetings:[], idinfo:[], contacts:[], budget:[] };
