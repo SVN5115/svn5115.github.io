@@ -1440,6 +1440,7 @@ function sbAuthSignUpAdmin(email, password, callback) {
 function sbGet(table, key, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', SUPABASE_URL + '/rest/v1/' + table + '?key=eq.' + encodeURIComponent(key) + '&select=*', true);
+    xhr.timeout = 30000;
     xhr.setRequestHeader('apikey', SUPABASE_KEY);
     xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
     xhr.onload = function() {
@@ -1449,6 +1450,7 @@ function sbGet(table, key, callback) {
         } else callback(new Error(xhr.responseText), null);
     };
     xhr.onerror = function() { callback(new Error('네트워크 오류'), null); };
+    xhr.ontimeout = function() { callback(new Error('요청 시간 초과'), null); };
     xhr.send();
 }
 
@@ -1469,12 +1471,14 @@ function sbGetAll(table, filter, callback) {
 function sbUpsert(table, data, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', SUPABASE_URL + '/rest/v1/' + table, true);
+    xhr.timeout = 30000; // 30초 타임아웃
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.setRequestHeader('apikey', SUPABASE_KEY);
     xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
     xhr.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=minimal');
     xhr.onload = function() { if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText)); };
     xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
+    xhr.ontimeout = function() { if (callback) callback(new Error('요청 시간 초과')); };
     xhr.send(JSON.stringify(Array.isArray(data) ? data : [data]));
 }
 
@@ -4458,7 +4462,7 @@ function openBudgetDetail(catIdx) {
                             var pos=this.selectionStart, ol=this.value.length;
                             this.value=raw?numberFmt(parseInt(raw)):'';
                             this.selectionStart=this.selectionEnd=pos+(this.value.length-ol);
-                            saveDataNow(); return;
+                            saveAll(); return;
                         }
                         saveAll();
                     }; })(ei,key);
@@ -4494,7 +4498,7 @@ function openBudgetDetail(catIdx) {
             (function(i,btn){ btn.onclick=function(){
                 cat.entries[i].daily=!cat.entries[i].daily;
                 setToggle(btn, cat.entries[i].daily);
-                saveAll();
+                saveAllNow();
                 (cat._allSumUpdaters||[]).forEach(function(fn){fn();});
                 if(cat._resUpdaters) cat._resUpdaters.forEach(function(fn){fn();});
             }; })(ei, togBtn);
@@ -4522,7 +4526,7 @@ function openBudgetDetail(catIdx) {
     }
     renderEntryRows(); body.appendChild(entryTbl);
     var addEntryBtn=document.createElement('button'); addEntryBtn.className='bd-add-row-btn'; addEntryBtn.textContent='+ 행 추가';
-    addEntryBtn.onclick=function(){ cat.entries.push({date:'',business:'',exec:0,daily:false}); saveAll(); renderEntryRows(); };
+    addEntryBtn.onclick=function(){ cat.entries.push({date:'',business:'',exec:0,daily:false}); saveAllNow(); renderEntryRows(); };
     body.appendChild(addEntryBtn);
     document.getElementById('budget-detail-overlay').classList.add('visible');
 }
@@ -5377,7 +5381,13 @@ function saveAll() {
     clearTimeout(_saveAllTimer);
     _saveAllTimer = setTimeout(function() { saveData(); }, 1500);
 }
-function saveAllNow() { clearTimeout(_saveAllTimer); saveData(); checkTodayHasSchedule(); }
+function saveAllNow() {
+    clearTimeout(_saveAllTimer);
+    clearTimeout(saveTimer);
+    setSyncStatus('saving', '● 저장 중...');
+    _doSave(function() { setSyncStatus('saved', '● 저장됨'); }, 0);
+    checkTodayHasSchedule();
+}
 
 function downloadBackup() {
     if (!currentUser || !currentUser.id) { alert('로그인 후 사용하세요.'); return; }
