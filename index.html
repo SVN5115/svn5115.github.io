@@ -704,9 +704,15 @@
         .fc .fc-daygrid-day-bg { display: none !important; }
         .fc .fc-daygrid-day-bottom { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
         .fc .fc-daygrid-event-harness { display: none !important; }
-        .cell-todos { padding: 0 2px; display: flex; flex-direction: column; }
-        .cell-todo-item:last-child { margin-bottom: 6px; }
-        .cell-todo-item { font-size: 9px; border-radius: 2px; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 13px; height: 13px; box-sizing: border-box; }
+        .cell-todos { padding: 0; position: relative; }
+        .cell-todo-item { font-size: 9px; border-radius: 2px; padding: 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 13px; height: 13px; box-sizing: border-box; margin: 0 2px 1px; }
+        .cell-todo-span { font-size: 9px; line-height: 13px; height: 13px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #c7d2fe; color: #3730a3; margin-bottom: 1px; padding: 0 3px; }
+        .cell-todo-span.span-start { border-radius: 4px 0 0 4px; margin-left: 2px; margin-right: 0; padding-left: 4px; }
+        .cell-todo-span.span-mid   { border-radius: 0; margin-left: 0; margin-right: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: #c7d2fe; }
+        .cell-todo-span.span-end   { border-radius: 0 4px 4px 0; margin-left: 0; margin-right: 2px; padding-right: 4px; }
+        .cell-todo-span.span-solo       { border-radius: 4px; margin: 0 2px 1px; }
+        .cell-todo-span.span-week-start { border-radius: 4px 0 0 4px; margin-left: 2px; margin-right: 0; padding-left: 4px; border-left: 3px solid #818cf8; }
+        .cell-todo-span.span-week-end   { border-radius: 0 4px 4px 0; margin-left: 0; margin-right: 2px; padding-right: 4px; }
         .cell-todo-c0 { background: #dbeafe; color: #1e40af; } .cell-todo-c1 { background: #e2e8f0; color: #374151; }
         .cell-todo-more { position: absolute; top: 3px; right: 3px; font-size: 8px; font-weight: bold; color: #fff; background: #999; border-radius: 2px; padding: 0 3px; line-height: 13px; pointer-events: none; z-index: 2; }
         .v-box { width: 16px; height: 16px; border: 1px solid #ccc; margin-right: 6px; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; flex-shrink: 0; }
@@ -1801,8 +1807,12 @@ function getUserDataKey() { return PLANNER_KEY + currentUser.id; }
 function loadData(callback) {
     setSyncStatus('saving', '● 불러오는 중...');
     sbGet('planner_data', getUserDataKey(), function(err, row) {
-        setSyncStatus('saved', '● 저장됨');
-        callback(row ? row.value : null);
+        if (err) {
+            setSyncStatus('error', '● 로드 실패');
+        } else {
+            setSyncStatus('saved', '● 저장됨');
+        }
+        callback(err ? null : (row ? row.value : null));
     });
 }
 
@@ -5190,7 +5200,7 @@ function doAutoReset() {
     var yStr = yesterday.getFullYear()+'-'+('0'+(yesterday.getMonth()+1)).slice(-2)+'-'+('0'+yesterday.getDate()).slice(-2);
     if (todos[yStr]) todos[yStr].forEach(function(t){ t.done = false; });
 
-    saveAllNow();
+    if (_supabaseReady) saveAllNow();
     renderSection('routine'); renderSection('expense'); renderSection('report');
     checkTodayHasSchedule();
 }
@@ -5431,7 +5441,7 @@ function autoBackup() {
                 backed_up_at: new Date().toISOString()
             })
         });
-    } catch(e) {}
+    } catch(e) { console.warn('자동백업 실패:', e); }
 }
 
 // 6시간마다 체크
@@ -5713,22 +5723,165 @@ function applyHolidayColors(){
         if(n) n.setAttribute('style','color:#ff0000!important;font-weight:bold;text-decoration:none;padding:0;');
     });
 }
-function renderCellTodos(dateStr){
-    var cell=document.querySelector('.fc-daygrid-day[data-date="'+dateStr+'"]'); if(!cell) return;
-    ['cell-todos','cell-todo-more'].forEach(function(cls){ var el=cell.querySelector('.'+cls); if(el) el.parentNode.removeChild(el); });
-    var items=todos[dateStr]||[]; if(!items.length) return;
-    var frame=cell.querySelector('.fc-daygrid-day-frame');
-    var wrap=document.createElement('div'); wrap.className='cell-todos';
-    wrap.style.gap=(MAX_VISIBLE<=5?'7px':'4px');
-    items.slice(0,MAX_VISIBLE).forEach(function(t,idx){
-        var tag=document.createElement('div'); tag.className='cell-todo-item cell-todo-c'+(idx%2);
-        tag.title=t.text; tag.textContent=t.text; wrap.appendChild(tag);
+function getTodosForDate(dateStr) {
+    // 해당 날짜에 속하는 일정 (단일+기간) 모두 반환
+    var result = [];
+    Object.keys(todos).forEach(function(startDate) {
+        (todos[startDate] || []).forEach(function(t) {
+            if (t.endDate && t.endDate >= startDate) {
+                // 기간 일정: startDate <= dateStr <= endDate
+                if (dateStr >= startDate && dateStr <= t.endDate) {
+                    result.push({ todo: t, startDate: startDate });
+                }
+            } else if (!t.endDate && startDate === dateStr) {
+                result.push({ todo: t, startDate: startDate });
+            }
+        });
     });
-    frame.appendChild(wrap);
-    var extra=items.length-MAX_VISIBLE;
-    if(extra>0){ var more=document.createElement('div'); more.className='cell-todo-more'; more.textContent='+'+extra; frame.appendChild(more); }
+    return result;
 }
-function renderAllCellTodos(){ Object.keys(todos).forEach(renderCellTodos); }
+
+/* ── 글로벌 슬롯 기반 기간 일정 렌더링 ──
+   달력에 표시된 전체 날짜를 순서대로 슬롯 배정 →
+   주 경계를 넘어도 슬롯 번호 유지 */
+function renderAllCellTodos() {
+    // 1. 현재 달력의 모든 날짜 셀 수집 (순서 보장)
+    var allCells = document.querySelectorAll('.fc-daygrid-day[data-date]');
+    if (!allCells.length) return;
+
+    var allDates = [];
+    allCells.forEach(function(c) { allDates.push(c.getAttribute('data-date')); });
+    allDates.sort();
+
+    // 2. 글로벌 슬롯 배정
+    //    slots[slotIdx] = { key, endDate } or null
+    var slots = [];
+    //    slotMap[dateStr][slotIdx] = { todo, startDate } or 'empty' or undefined
+    var slotMap = {};
+
+    function getKey(t, sd) { return sd + '§' + t.text; }
+
+    allDates.forEach(function(dateStr) {
+        if (!slotMap[dateStr]) slotMap[dateStr] = {};
+
+        // 이 날짜에 속하는 일정 목록
+        var items = getTodosForDate(dateStr);
+
+        // 이미 슬롯 점유 중인 기간 일정 먼저 처리
+        for (var s = 0; s < slots.length; s++) {
+            if (!slots[s]) continue;
+            // 이 슬롯의 일정이 이 날짜에 속하는지 확인
+            var found = false;
+            for (var k = 0; k < items.length; k++) {
+                if (getKey(items[k].todo, items[k].startDate) === slots[s].key) {
+                    found = true; break;
+                }
+            }
+            if (found) {
+                // 이미 배정된 슬롯 → 동일 슬롯 유지 (items에서 제거해서 중복 배정 방지)
+                slotMap[dateStr][s] = 'reserved';
+            } else if (slots[s].endDate < dateStr) {
+                // 슬롯 만료
+                slots[s] = null;
+            }
+        }
+
+        // 새 일정 슬롯 배정
+        items.forEach(function(obj) {
+            var t = obj.todo; var startDate = obj.startDate;
+            var key = getKey(t, startDate);
+            // 이미 슬롯 있는지 확인
+            var existSlot = -1;
+            for (var s = 0; s < slots.length; s++) {
+                if (slots[s] && slots[s].key === key) { existSlot = s; break; }
+            }
+            if (existSlot >= 0) {
+                slotMap[dateStr][existSlot] = { todo: t, startDate: startDate };
+                return;
+            }
+            // 새 슬롯: 가장 낮은 빈 슬롯 선택
+            var newSlot = -1;
+            for (var s = 0; s < slots.length; s++) {
+                if (!slots[s]) { newSlot = s; break; }
+            }
+            if (newSlot === -1) { newSlot = slots.length; }
+            var endDate = t.endDate || startDate;
+            slots[newSlot] = { key: key, endDate: endDate };
+            slotMap[dateStr][newSlot] = { todo: t, startDate: startDate };
+        });
+    });
+
+    // 3. 슬롯맵 기반으로 각 셀 렌더링
+    var maxSlots = 0;
+    allDates.forEach(function(d) {
+        var keys = Object.keys(slotMap[d] || {}).map(Number);
+        if (keys.length) maxSlots = Math.max(maxSlots, Math.max.apply(null, keys) + 1);
+    });
+
+    allCells.forEach(function(cell) {
+        var dateStr = cell.getAttribute('data-date');
+        ['cell-todos','cell-todo-more'].forEach(function(cls) {
+            var el = cell.querySelector('.'+cls); if (el) el.parentNode.removeChild(el);
+        });
+        var frame = cell.querySelector('.fc-daygrid-day-frame');
+        var wrap = document.createElement('div'); wrap.className = 'cell-todos';
+        var daySlots = slotMap[dateStr] || {};
+        var visibleCount = 0;
+        var highestUsedSlot = -1;
+        var slotKeys = Object.keys(daySlots).map(Number).filter(function(s){ return daySlots[s] && daySlots[s] !== 'reserved'; });
+        if (slotKeys.length) highestUsedSlot = Math.max.apply(null, slotKeys);
+
+        for (var s = 0; s <= highestUsedSlot && visibleCount < MAX_VISIBLE; s++) {
+            var entry = daySlots[s];
+            var tag = document.createElement('div');
+            if (!entry || entry === 'reserved') {
+                // 빈 슬롯 (위 아래 항목 위치 맞추기 위해 빈 줄 유지)
+                tag.style.cssText = 'height:13px;margin:0 2px 1px;';
+            } else {
+                var t = entry.todo; var startDate = entry.startDate;
+                var isSpan = !!(t.endDate && t.endDate !== startDate);
+                if (isSpan) {
+                    var isStart    = dateStr === startDate;
+                    var isEnd      = dateStr === t.endDate;
+                    // 주 경계: 한국 locale = 월요일 시작(dayOfWeek===1)
+                    var dayOfWeek  = new Date(dateStr).getDay(); // 0=일, 1=월
+                    var isWeekStart = dayOfWeek === 1 && !isStart; // 월요일이 주 첫날
+                    var cls;
+                    if      (isStart && isEnd)  cls = 'span-solo';
+                    else if (isStart)            cls = 'span-start';
+                    else if (isEnd)              cls = 'span-end';
+                    else if (isWeekStart)        cls = 'span-week-start';
+                    else                         cls = 'span-mid';
+                    tag.className = 'cell-todo-span ' + cls;
+                    if (isStart || isWeekStart) {
+                        tag.textContent = t.text;
+                    } else {
+                        // 중간 셀: 점선으로 연결 표시
+                        tag.innerHTML = '<span style="display:block;border-top:2px solid #6366f1;width:100%;opacity:0.5;"></span>';
+                    }
+                    tag.title = t.text + ' (' + startDate + ' ~ ' + t.endDate + ')';
+                } else {
+                    tag.className = 'cell-todo-item cell-todo-c'+(s%2);
+                    tag.title = t.text; tag.textContent = t.text;
+                }
+                visibleCount++;
+            }
+            wrap.appendChild(tag);
+        }
+        if (wrap.children.length) frame.appendChild(wrap);
+        // +N 표시
+        var totalItems = Object.keys(daySlots).filter(function(s){ return daySlots[s] && daySlots[s] !== 'reserved'; }).length;
+        var extra = totalItems - MAX_VISIBLE;
+        if (extra > 0) {
+            var more = document.createElement('div'); more.className='cell-todo-more';
+            more.textContent = '+'+extra; frame.appendChild(more);
+        }
+    });
+}
+
+function renderCellTodos(dateStr) {
+    renderAllCellTodos();
+}
 function refreshCalendar(){ setTimeout(function(){ calendar.updateSize(); setTimeout(function(){ applyCellSquare(); renderAllCellTodos(); },100); },50); }
 
 function updateDisplay(dateStr, el) {
@@ -5743,7 +5896,34 @@ function updateDisplay(dateStr, el) {
 }
 function renderList(date) {
     var listEl=document.getElementById('todo-list'); listEl.innerHTML='';
-    var clearBtn=document.getElementById('clear-all-btn'); if(clearBtn) clearBtn.style.display=(todos[date]&&todos[date].length>0)?'inline-block':'none';
+    // 기간 일정 포함: 이 날짜에 걸치는 기간 일정도 수집
+    var spanItems = []; // { todo, startDate, isSpan }
+    Object.keys(todos).forEach(function(sd) {
+        if (sd === date) return; // 직접 등록된 건 아래에서 처리
+        (todos[sd]||[]).forEach(function(t) {
+            if (t.endDate && date > sd && date <= t.endDate) {
+                spanItems.push({ todo: t, startDate: sd });
+            }
+        });
+    });
+    var hasOwn = !!(todos[date] && todos[date].length);
+    var clearBtn=document.getElementById('clear-all-btn');
+    if(clearBtn) clearBtn.style.display=(hasOwn)?'inline-block':'none';
+    // 기간 일정 먼저 표시 (읽기 전용)
+    spanItems.forEach(function(obj) {
+        var t = obj.todo;
+        var li = document.createElement('li'); li.className = 'todo-item';
+        li.style.cssText = 'opacity:0.75;';
+        var badge = document.createElement('span');
+        badge.textContent = '📅 ';
+        badge.style.cssText = 'font-size:10px;color:#6366f1;flex-shrink:0;';
+        var span = document.createElement('span');
+        span.className = 'todo-text';
+        span.textContent = t.text + '  (' + obj.startDate + ' ~ ' + t.endDate + ')';
+        span.style.cssText = 'color:#4338ca;font-size:11px;';
+        li.appendChild(badge); li.appendChild(span);
+        listEl.appendChild(li);
+    });
     (todos[date]||[]).forEach(function(t,i){
         var li = document.createElement('li'); li.className = 'todo-item';
         var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!t.done;
@@ -5829,33 +6009,49 @@ function renderList(date) {
                 var dateInp = document.createElement('input'); dateInp.type = 'date'; dateInp.value = d;
                 dateInp.style.cssText = 'flex:1;padding:4px 8px;border:1px solid #c7d2fe;border-radius:5px;font-size:13px;font-family:Malgun Gothic,sans-serif;outline:none;';
                 dateRow.appendChild(dateLbl); dateRow.appendChild(dateInp);
+                // 종료일 행
+                var endRow = document.createElement('div'); endRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                var endLbl = document.createElement('span'); endLbl.textContent = '종료일'; endLbl.style.cssText = 'font-size:11px;color:#64748b;width:28px;flex-shrink:0;';
+                var endInp = document.createElement('input'); endInp.type = 'date'; endInp.value = todos[d][idx].endDate || '';
+                endInp.style.cssText = 'flex:1;padding:4px 8px;border:1px solid #c7d2fe;border-radius:5px;font-size:13px;font-family:Malgun Gothic,sans-serif;outline:none;';
+                var endClear = document.createElement('button'); endClear.type='button'; endClear.textContent='✕';
+                endClear.title='기간 제거'; endClear.style.cssText='border:none;background:none;color:#94a3b8;cursor:pointer;font-size:12px;padding:0 2px;';
+                endClear.onclick = function(ev){ ev.stopPropagation(); endInp.value=''; };
+                var endHint = document.createElement('span'); endHint.textContent='(기간 설정 선택)'; endHint.style.cssText='font-size:10px;color:#94a3b8;';
+                endRow.appendChild(endLbl); endRow.appendChild(endInp); endRow.appendChild(endClear); endRow.appendChild(endHint);
                 var btnRow = document.createElement('div'); btnRow.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
                 var cancelB = document.createElement('button'); cancelB.type='button'; cancelB.textContent='취소';
                 cancelB.style.cssText = 'padding:4px 12px;border:1px solid #e2e8f0;border-radius:5px;background:white;font-size:12px;cursor:pointer;';
                 var saveB = document.createElement('button'); saveB.type='button'; saveB.textContent='저장';
                 saveB.style.cssText = 'padding:4px 12px;border:none;border-radius:5px;background:#6366f1;color:white;font-size:12px;cursor:pointer;';
                 btnRow.appendChild(cancelB); btnRow.appendChild(saveB);
-                ep.appendChild(textRow); ep.appendChild(dateRow); ep.appendChild(btnRow);
+                ep.appendChild(textRow); ep.appendChild(dateRow); ep.appendChild(endRow); ep.appendChild(btnRow);
                 li.appendChild(ep); textInp.focus(); textInp.select();
                 cancelB.onclick = function(ev) { ev.stopPropagation(); ep.remove(); };
                 saveB.onclick = function(ev) {
                     ev.stopPropagation();
                     var newText = textInp.value.trim();
                     var newDate = dateInp.value;
+                    var newEnd  = endInp.value || '';
+                    if (newEnd && newEnd < newDate) { alert('종료일은 시작일 이후여야 합니다.'); return; }
                     if (!newText || !newDate) return;
                     var item = todos[d][idx];
+                    // 기존 기간 날짜 범위 기록 (렌더링 갱신용)
+                    var oldEnd = item.endDate || '';
                     item.text = newText;
+                    item.endDate = newEnd || undefined;
                     if (newDate !== d) {
                         if (!todos[newDate]) todos[newDate] = [];
                         todos[newDate].push(item);
                         todos[d].splice(idx, 1);
                         if (todos[d].length === 0) delete todos[d];
                         saveAll(); ep.remove();
-                        renderCellTodos(d); renderCellTodos(newDate);
+                        renderAllCellTodos();
                         showTodo(); updateDisplay(newDate, null);
                     } else {
                         span.childNodes[0].textContent = newText;
                         saveAll(); ep.remove();
+                        renderAllCellTodos();
                     }
                 };
             };
@@ -5922,7 +6118,7 @@ function renderList(date) {
 }
 window.removeItem = function(date,i){
     todos[date].splice(i,1); if(!todos[date].length) delete todos[date];
-    saveAll(); renderList(date); renderCellTodos(date);
+    saveAll(); renderList(date); renderAllCellTodos();
 };
 
 /* ════════════════════════════════════
@@ -6400,6 +6596,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (!wpData.idinfo)   wpData.idinfo   = [];
                             if (!wpData.contacts) wpData.contacts = [];
                             if (!wpData.budget)   wpData.budget   = [];
+                        } else {
+                            // 2차 재시도도 실패 → 저장 차단 유지, 오류 표시
+                            _supabaseReady = false;
+                            setSyncStatus('error', '● 서버 연결 실패 - 저장 불가');
                         }
                         doAutoReset();
                         startApp();
@@ -6535,7 +6735,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var date=document.getElementById('selected-date-display').innerText;
             if(!input.value.trim()||date==='날짜를 선택하세요') return;
             if(!todos[date]) todos[date]=[];
-            todos[date].push({text:input.value});
+            todos[date].push({text:input.value.trim()});
             saveAll(); renderList(date); renderCellTodos(date); input.value='';
         }
     }
