@@ -1816,6 +1816,7 @@ function loadData(callback) {
     });
 }
 
+var _isSaving = false;
 function _doSave(onDone, retryCount) {
     retryCount = retryCount || 0;
     // 로컬 파일 실행 또는 Supabase 미연결 상태면 저장 차단
@@ -1824,6 +1825,14 @@ function _doSave(onDone, retryCount) {
         if (onDone) onDone();
         return;
     }
+    // 이미 저장 요청 진행 중이면 첫 시도만 차단 (재시도는 허용)
+    if (_isSaving && retryCount === 0) {
+        // 현재 저장 완료 후 한 번 더 실행되도록 예약
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function(){ _doSave(onDone, 0); }, 2000);
+        return;
+    }
+    if (retryCount === 0) _isSaving = true;
     // 빈 데이터 저장 차단 - todos와 wpData 모두 비어있으면 저장 안 함
     var todosEmpty = !todos || Object.keys(todos).length === 0;
     var wpEmpty = !wpData || (
@@ -1848,11 +1857,13 @@ function _doSave(onDone, retryCount) {
         updated_at: new Date().toISOString()
     }, function(err) {
         if (!err) {
+            _isSaving = false;
             if (onDone) onDone();
         } else {
             if (retryCount >= 4) {
                 // 5회 이상 실패 시 오류 상태 표시 + 강제저장 버튼 노출
                 setSyncStatus('error', '● 저장 실패');
+                _isSaving = false;
                 if (onDone) onDone();
             } else {
                 var delay = Math.min(1000 * Math.pow(2, Math.min(retryCount, 5)), 30000);
@@ -5433,7 +5444,7 @@ function autoBackup() {
                 'Content-Type': 'application/json',
                 'apikey': SUPABASE_KEY,
                 'Authorization': 'Bearer ' + SUPABASE_KEY,
-                'Prefer': 'return=minimal'
+                'Prefer': 'resolution=merge-duplicates,return=minimal'
             },
             body: JSON.stringify({
                 key: getUserDataKey(),
@@ -6567,7 +6578,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 관리자 주기적 알림 체크 (30초)
         if (currentUser.id === ADMIN_ID) {
             checkPendingRequests();
-            notifyTimer = setInterval(checkPendingRequests, 30000);
+            notifyTimer = setInterval(checkPendingRequests, 300000); // 5분마다
         }
 
         loadData(function(saved) {
