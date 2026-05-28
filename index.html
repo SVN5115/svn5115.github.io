@@ -5461,8 +5461,7 @@ function restoreBackup(input) {
                 checkTodayHasSchedule();
             }, 0);
         } catch(err) {
-            alert('파일을 읽는 중 오류가 발생했습니다.
-' + err.message);
+            alert('파일을 읽는 중 오류가 발생했습니다.\n' + err.message);
         }
     };
     reader.readAsText(file, 'utf-8');
