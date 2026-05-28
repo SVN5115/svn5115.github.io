@@ -6623,6 +6623,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* ── 앱 진입 ── */
     function enterApp() {
+        // 상태 플래그 초기화 (재로그인 시 이전 세션 잔류값 제거)
+        _isSaving = false;
+        _supabaseReady = false;
+        clearTimeout(saveTimer);
+        clearTimeout(_saveAllTimer);
+
         // 상단바 사용자 표시
         document.getElementById('user-label').textContent =
             (currentUser.role === 'admin' ? '👑 ' : '👤 ') + currentUser.id;
