@@ -1100,7 +1100,7 @@
         <div id="sync-indicator" class="saved" style="display:none;">● 저장됨</div>
         <span id="last-saved-time"></span>
         <button id="force-save-btn" onclick="forceSave()" title="저장 실패 시 강제 저장">⚠ 강제저장</button>
-        <button id="manual-save-btn" onclick="manualSave()" style="background:none;border:1px solid #6366f1;color:#6366f1;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="수동 저장">💾 저장</button><button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><button id="logout-btn">로그아웃</button>
+        <button id="manual-save-btn" onclick="manualSave()" style="background:none;border:1px solid #6366f1;color:#6366f1;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="수동 저장">💾 저장</button><button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="restoreBackup(this)"><button onclick="document.getElementById('restore-file-input').click()" style="background:none;border:1px solid #f59e0b;color:#f59e0b;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="백업 파일 불러오기">📂 불러오기</button><button id="logout-btn">로그아웃</button>
     </div>
 </div>
 
@@ -5408,6 +5408,67 @@ function saveAllNow() {
     setSyncStatus('saving', '● 저장 중...');
     _doSave(function() { setSyncStatus('saved', '● 저장됨'); }, 0);
     checkTodayHasSchedule();
+}
+
+function restoreBackup(input) {
+    var file = input.files[0];
+    if (!file) return;
+    input.value = ''; // 같은 파일 재선택 가능하게 초기화
+    if (!currentUser || !currentUser.id) { alert('로그인 후 사용하세요.'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var json = JSON.parse(e.target.result);
+            // 백업 파일 구조 검증
+            if (!json.data || typeof json.data !== 'object') {
+                alert('올바른 백업 파일이 아닙니다.'); return;
+            }
+            var restored = json.data;
+            if (!restored.todos && !restored.wpData) {
+                alert('올바른 백업 파일이 아닙니다.'); return;
+            }
+            var exportedAt = json.exportedAt ? json.exportedAt.slice(0,10) : '알 수 없음';
+            var backupUser = json.userId || '알 수 없음';
+            if (!confirm(
+                '백업 파일 정보
+' +
+                '  저장일: ' + exportedAt + '
+' +
+                '  사용자: ' + backupUser + '
+
+' +
+                '⚠️ 현재 데이터가 백업 파일로 덮어씌워집니다.
+' +
+                '계속하시겠습니까?'
+            )) return;
+
+            // 데이터 복원
+            todos   = restored.todos   || {};
+            wpData  = restored.wpData  || { routine:[], expense:[], report:[], meetings:[], idinfo:[], contacts:[], budget:[] };
+            if (!wpData.meetings) wpData.meetings = [];
+            if (!wpData.idinfo)   wpData.idinfo   = [];
+            if (!wpData.contacts) wpData.contacts = [];
+            if (!wpData.budget)   wpData.budget   = [];
+            activeDate = restored.activeDate || '';
+
+            // Supabase에 즉시 저장
+            setSyncStatus('saving', '● 복원 중...');
+            _doSave(function() {
+                setSyncStatus('saved', '● 저장됨');
+                alert('✅ 복원 완료! (' + exportedAt + ' 백업)');
+                // 화면 갱신
+                renderAllCellTodos();
+                renderExpenseMarkers();
+                renderMeetingMarkers();
+                ['routine','expense','report'].forEach(function(k){ renderSection(k); });
+                checkTodayHasSchedule();
+            }, 0);
+        } catch(err) {
+            alert('파일을 읽는 중 오류가 발생했습니다.
+' + err.message);
+        }
+    };
+    reader.readAsText(file, 'utf-8');
 }
 
 function downloadBackup() {
