@@ -1091,7 +1091,7 @@
 </div>
 
 <!-- 상단 바 -->
-<div id="top-bar">
+<div id="top-bar" style="display:none;">
     <div id="top-left">
         <button id="notify-btn" title="계정 승인 요청">🔔<span id="notify-badge"></span></button>
         <span id="user-label"></span>
@@ -1551,11 +1551,13 @@ function showScreen(name) {
         document.getElementById(s).classList.add('hidden');
     });
     document.getElementById(name).classList.remove('hidden');
+    document.getElementById('top-bar').style.display = 'none';
 }
 function hideAllScreens() {
     ['login-screen','signup-screen','setup-screen','findpw-screen'].forEach(function(s){
         document.getElementById(s).classList.add('hidden');
     });
+    document.getElementById('top-bar').style.display = '';
 }
 
 /* ════════════════════════════════════
