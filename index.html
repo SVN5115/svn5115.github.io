@@ -46,8 +46,7 @@
         #sync-indicator.saved  { color: #22c55e; }
         #sync-indicator.error  { color: #ef4444; }
         #last-saved-time { font-size: 11px; color: #94a3b8; white-space: nowrap; }
-        #force-save-btn { display:none; padding:3px 10px; background:#ef4444; color:white; border:none; border-radius:6px; font-size:11px; cursor:pointer; font-family:'Malgun Gothic',sans-serif; animation:blink 1.2s step-start infinite; }
-        #force-save-btn:hover { background:#dc2626; animation:none; }
+
         @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
         #user-label { font-size: 11px; color: #64748b; }
         #logout-btn { padding: 4px 12px; background: none; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
@@ -1099,7 +1098,7 @@
     <div id="top-right">
         <div id="sync-indicator" class="saved" style="display:none;">● 저장됨</div>
         <span id="last-saved-time"></span>
-        <button id="force-save-btn" onclick="forceSave()" title="저장 실패 시 강제 저장">⚠ 강제저장</button>
+
         <button id="manual-save-btn" onclick="manualSave()" style="background:none;border:1px solid #6366f1;color:#6366f1;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="수동 저장">💾 저장</button><button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><button onclick="document.getElementById('restore-file-input').click()" style="background:none;border:1px solid #f59e0b;color:#f59e0b;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="백업 파일 불러오기">📂 불러오기</button><button id="logout-btn">로그아웃</button>
     </div>
 </div>
@@ -1365,7 +1364,6 @@ function simpleHash(str) {
 function setSyncStatus(cls, text) {
     var el = document.getElementById('sync-indicator');
     el.className = cls; el.textContent = text;
-    var fbtn = document.getElementById('force-save-btn');
     if (cls === 'saved') {
         var now = new Date();
         var mm = ('0'+(now.getMonth()+1)).slice(-2);
@@ -1375,9 +1373,6 @@ function setSyncStatus(cls, text) {
         var ss = ('0'+now.getSeconds()).slice(-2);
         var el2 = document.getElementById('last-saved-time');
         if (el2) el2.textContent = '최종저장 ' + mm+'/'+dd+' '+hh+':'+mi+':'+ss;
-        if (fbtn) fbtn.style.display = 'none';
-    } else if (cls === 'error') {
-        if (fbtn) fbtn.style.display = 'inline-block';
     }
 }
 
@@ -1391,16 +1386,8 @@ function manualSave() {
         setSyncStatus('saved', '● 저장됨');
         btn.style.borderColor = '#6366f1'; btn.style.color = '#6366f1';
         btn.textContent = '💾 저장'; btn.disabled = false;
-    }, 0);
-}
-
-function forceSave() {
-    var fbtn = document.getElementById('force-save-btn');
-    if (fbtn) { fbtn.textContent = '저장 중...'; fbtn.disabled = true; }
-    setSyncStatus('saving', '● 저장 중...');
-    _doSave(function() {
-        setSyncStatus('saved', '● 저장됨');
-        if (fbtn) { fbtn.textContent = '⚠ 강제저장'; fbtn.disabled = false; }
+        renderExpenseMarkers();
+        renderMeetingMarkers();
     }, 0);
 }
 
@@ -1498,6 +1485,91 @@ function sbDelete(table, key, callback) {
     xhr.onload = function() { if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText)); };
     xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
     xhr.send();
+}
+
+/* ════════════════════════════════════
+   Supabase Storage (PLANNER-IMAGES)
+════════════════════════════════════ */
+var STORAGE_BUCKET = 'PLANNER-IMAGES';
+
+function sbStorageUpload(path, file, callback) {
+    // 이미지는 리사이즈 후 Blob으로 업로드, 파일은 그대로 업로드
+    var isImage = file.type.startsWith('image/');
+    if (isImage) {
+        _resizeImageForStorage(file, function(blob) {
+            _doStorageUpload(path, blob, file.type, callback);
+        });
+    } else {
+        _doStorageUpload(path, file, file.type, callback);
+    }
+}
+
+function _resizeImageForStorage(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+            var ms = 1400, w = img.width, h = img.height;
+            if (w > ms || h > ms) {
+                if (w > h) { h = Math.round(h * ms / w); w = ms; }
+                else       { w = Math.round(w * ms / h); h = ms; }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.85);
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function _doStorageUpload(path, blob, contentType, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + encodeURIComponent(path), true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + STORAGE_BUCKET + '/' + encodeURIComponent(path);
+            callback(null, publicUrl);
+        } else {
+            callback(new Error('업로드 실패: ' + xhr.responseText), null);
+        }
+    };
+    xhr.onerror = function() { callback(new Error('네트워크 오류'), null); };
+    xhr.send(blob);
+}
+
+function sbStorageDelete(path, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET, true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText));
+    };
+    xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
+    xhr.send(JSON.stringify({ prefixes: [path] }));
+}
+
+// Storage 경로 생성 헬퍼
+function _genStoragePath(prefix, ext) {
+    var uid = currentUser ? currentUser.id : 'anon';
+    var ts  = Date.now();
+    var rnd = Math.random().toString(36).slice(2, 7);
+    return uid + '/' + prefix + '_' + ts + '_' + rnd + (ext ? '.' + ext : '');
+}
+
+// URL에서 Storage path 추출 (삭제 시 사용)
+function _urlToStoragePath(url) {
+    var marker = '/object/public/' + STORAGE_BUCKET + '/';
+    var idx = url ? url.indexOf(marker) : -1;
+    if (idx === -1) return null;
+    return decodeURIComponent(url.slice(idx + marker.length));
 }
 
 /* ════════════════════════════════════
@@ -1839,12 +1911,10 @@ function _doSave(onDone, retryCount) {
         } else {
             if (retryCount >= 2) {
                 setSyncStatus('error', '● 저장 실패');
-                var fbtn = document.getElementById('force-save-btn');
-                if (fbtn) fbtn.style.display = 'inline-block';
                 if (onDone) onDone();
             } else {
                 setSyncStatus('saving', '● 재시도 중...');
-                setTimeout(function() { _doSave(onDone, retryCount + 1); }, 1500);
+                setTimeout(function() { _doSave(onDone, retryCount + 1); }, 0);
             }
         }
     });
@@ -1853,11 +1923,7 @@ function _doSave(onDone, retryCount) {
 function saveDataNow() { _markDirty(); }
 
 function saveData() {
-    clearTimeout(saveTimer);
-    _doSave(function() {
-        renderExpenseMarkers();
-        renderMeetingMarkers();
-    }, 0);
+    _markDirty();
 }
 /* ════════════════════════════════════
    지출 날짜 UI
@@ -2839,20 +2905,29 @@ function renderGuideDetailEdit(idx) {
     document.getElementById('guide-save-btn').style.display = 'inline-block';
 
     function processImageFile(file) {
-        var reader = new FileReader();
-        reader.onload = function(ev){
-            var img2 = new Image();
-            img2.onload = function(){
-                var canvas=document.createElement('canvas'),ms=1200,w=img2.width,h=img2.height;
-                if(w>ms||h>ms){if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;}}
-                canvas.width=w;canvas.height=h;
-                canvas.getContext('2d').drawImage(img2,0,0,w,h);
-                blocks.push({type:'image',value:canvas.toDataURL('image/jpeg',0.85)});
-                rebuild();
-            };
-            img2.src=ev.target.result;
-        };
-        reader.readAsDataURL(file);
+        var storagePath = _genStoragePath('guide', 'jpg');
+        sbStorageUpload(storagePath, file, function(err, url) {
+            if (err) {
+                // fallback: base64
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    var img2 = new Image();
+                    img2.onload = function() {
+                        var canvas = document.createElement('canvas'), ms = 1200, w = img2.width, h = img2.height;
+                        if (w > ms || h > ms) { if (w > h) { h = Math.round(h * ms / w); w = ms; } else { w = Math.round(w * ms / h); h = ms; } }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img2, 0, 0, w, h);
+                        blocks.push({ type: 'image', value: canvas.toDataURL('image/jpeg', 0.85) });
+                        rebuild();
+                    };
+                    img2.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+            blocks.push({ type: 'image', value: url, storagePath: storagePath });
+            rebuild();
+        });
     }
     function guidePasteHandler(e) {
         var items2 = e.clipboardData && e.clipboardData.items;
@@ -2886,21 +2961,35 @@ function renderGuideDetailEdit(idx) {
     body._removePaste = function(){ document.removeEventListener('paste', guidePasteHandler2); };
 
     function processImageIntoBlock(file, blockIdx) {
-        var reader = new FileReader();
-        reader.onload = function(ev){
-            var img2 = new Image();
-            img2.onload = function(){
-                var canvas=document.createElement('canvas'),ms=1200,w=img2.width,h=img2.height;
-                if(w>ms||h>ms){if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;}}
-                canvas.width=w;canvas.height=h;
-                canvas.getContext('2d').drawImage(img2,0,0,w,h);
-                if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
-                blocks[blockIdx].images.push(canvas.toDataURL('image/jpeg',0.85));
-                rebuild();
-            };
-            img2.src=ev.target.result;
-        };
-        reader.readAsDataURL(file);
+        var storagePath = _genStoragePath('guide', 'jpg');
+        sbStorageUpload(storagePath, file, function(err, url) {
+            if (err) {
+                // Storage 실패 시 base64 fallback
+                console.warn('가이드 이미지 Storage 업로드 실패, base64 fallback:', err);
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    var img2 = new Image();
+                    img2.onload = function() {
+                        var canvas = document.createElement('canvas'), ms = 1200, w = img2.width, h = img2.height;
+                        if (w > ms || h > ms) { if (w > h) { h = Math.round(h * ms / w); w = ms; } else { w = Math.round(w * ms / h); h = ms; } }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img2, 0, 0, w, h);
+                        if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
+                        blocks[blockIdx].images.push(canvas.toDataURL('image/jpeg', 0.85));
+                        rebuild();
+                    };
+                    img2.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+            if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
+            // URL과 storagePath를 함께 저장 (삭제 시 활용)
+            blocks[blockIdx].images.push(url);
+            if (!blocks[blockIdx].imagePaths) blocks[blockIdx].imagePaths = [];
+            blocks[blockIdx].imagePaths.push(storagePath);
+            rebuild();
+        });
     }
 
     function rebuild() {
@@ -2932,7 +3021,14 @@ function renderGuideDetailEdit(idx) {
                 var thumb = document.createElement('img'); thumb.className = 'guide-edit-img-thumb'; thumb.src = src;
                 thumb.onclick = function(){ document.getElementById('img-preview-img').src=src; document.getElementById('img-preview-overlay').classList.add('visible'); };
                 var idel = document.createElement('button'); idel.className = 'guide-edit-img-del'; idel.type='button';
-                (function(bIdx,iIdx){ idel.onclick = function(e){ e.stopPropagation(); blocks[bIdx].images.splice(iIdx,1); rebuild(); }; })(bi,ii);
+                (function(bIdx,iIdx){ idel.onclick = function(e){ e.stopPropagation(); 
+                    // Storage에서도 삭제
+                    var sp = blocks[bIdx].imagePaths && blocks[bIdx].imagePaths[iIdx];
+                    if (sp) { sbStorageDelete(sp, function() {}); }
+                    blocks[bIdx].images.splice(iIdx,1); 
+                    if (blocks[bIdx].imagePaths) blocks[bIdx].imagePaths.splice(iIdx,1);
+                    rebuild(); 
+                }; })(bi,ii);
                 wrap.appendChild(thumb); wrap.appendChild(idel); imgRow.appendChild(wrap);
             });
             // + 사진 추가 버튼
@@ -3005,6 +3101,11 @@ function renderAttachments(attachments, container, date, idx) {
             delBtn.onclick = function(e) {
                 e.stopPropagation();
                 if (!confirm('첨부파일을 삭제하시겠습니까?')) return;
+                var att = todos[date][idx].attachments[aidx];
+                // Storage URL인 경우 Storage에서도 삭제
+                if (att && att.storagePath) {
+                    sbStorageDelete(att.storagePath, function() {}); // 비동기, 실패해도 무시
+                }
                 todos[date][idx].attachments.splice(aidx, 1);
                 _markDirty();
                 renderAttachments(todos[date][idx].attachments, container, date, idx);
@@ -3033,11 +3134,31 @@ function renderAttachments(attachments, container, date, idx) {
 }
 
 function addAttachment(date, idx, file, afterRender) {
-    fileToBase64(file, function(data) {
+    if (file.size > MAX_ATTACH_SIZE) {
+        alert('파일 크기가 1MB를 초과합니다.\n(' + (file.size/1024/1024).toFixed(1) + 'MB)');
+        return;
+    }
+    var isImage = file.type.startsWith('image/');
+    var ext = (file.name || '').split('.').pop().toLowerCase() || (isImage ? 'jpg' : 'bin');
+    var storagePath = _genStoragePath(isImage ? 'img' : 'file', ext);
+
+    sbStorageUpload(storagePath, file, function(err, url) {
+        if (err) {
+            // Storage 실패 시 base64 fallback
+            console.warn('Storage 업로드 실패, base64 fallback:', err);
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                if (!todos[date][idx].attachments) todos[date][idx].attachments = [];
+                todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: e.target.result });
+                _markDirty();
+                if (afterRender) afterRender();
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
         if (!todos[date][idx].attachments) todos[date][idx].attachments = [];
-        var isImage = file.type.startsWith('image/');
-        todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: data });
-        _markDirty(); // 이미지 첨부 후 즉시 저장
+        todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: url, storagePath: storagePath });
+        _markDirty();
         if (afterRender) afterRender();
     });
 }
