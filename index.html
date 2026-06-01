@@ -1823,34 +1823,8 @@ function loadData(callback) {
 var _isSaving = false;
 function _doSave(onDone, retryCount) {
     retryCount = retryCount || 0;
-    // 로컬 파일 실행 또는 Supabase 미연결 상태면 저장 차단
     if (!_supabaseReady) {
         console.warn('Supabase 미연결 - 저장 차단');
-        if (onDone) onDone();
-        return;
-    }
-    // 이미 저장 요청 진행 중이면 첫 시도만 차단 (재시도는 허용)
-    if (_isSaving && retryCount === 0) {
-        // 현재 저장 완료 후 한 번 더 실행되도록 예약
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(function(){ _doSave(onDone, 0); }, 2000);
-        return;
-    }
-    if (retryCount === 0) _isSaving = true;
-    // 빈 데이터 저장 차단 - todos와 wpData 모두 비어있으면 저장 안 함
-    var todosEmpty = !todos || Object.keys(todos).length === 0;
-    var wpEmpty = !wpData || (
-        (!wpData.routine || !wpData.routine.length) &&
-        (!wpData.expense || !wpData.expense.length) &&
-        (!wpData.report  || !wpData.report.length)  &&
-        (!wpData.meetings|| !wpData.meetings.length) &&
-        (!wpData.idinfo  || !wpData.idinfo.length)  &&
-        (!wpData.contacts|| !wpData.contacts.length) &&
-        (!wpData.budget  || !wpData.budget.length)
-    );
-    if (todosEmpty && wpEmpty && retryCount === 0) {
-        // 첫 저장 시도에서 완전히 비어있으면 차단
-        console.warn('빈 데이터 저장 차단됨');
         if (onDone) onDone();
         return;
     }
@@ -1861,18 +1835,16 @@ function _doSave(onDone, retryCount) {
         updated_at: new Date().toISOString()
     }, function(err) {
         if (!err) {
-            _isSaving = false;
             if (onDone) onDone();
         } else {
-            if (retryCount >= 4) {
-                // 5회 이상 실패 시 오류 상태 표시 + 강제저장 버튼 노출
+            if (retryCount >= 2) {
                 setSyncStatus('error', '● 저장 실패');
-                _isSaving = false;
+                var fbtn = document.getElementById('force-save-btn');
+                if (fbtn) fbtn.style.display = 'inline-block';
                 if (onDone) onDone();
             } else {
-                var delay = Math.min(1000 * Math.pow(2, Math.min(retryCount, 5)), 30000);
-                setSyncStatus('saving', '● 재시도 중(' + (retryCount+1) + ')...');
-                setTimeout(function() { _doSave(onDone, retryCount + 1); }, delay);
+                setSyncStatus('saving', '● 재시도 중...');
+                setTimeout(function() { _doSave(onDone, retryCount + 1); }, 1500);
             }
         }
     });
