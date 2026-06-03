@@ -1098,7 +1098,6 @@
     <div id="top-right">
         <div id="sync-indicator" class="saved" style="display:none;">● 저장됨</div>
         <span id="last-saved-time"></span>
-
         <button id="manual-save-btn" onclick="manualSave()" style="background:none;border:1px solid #6366f1;color:#6366f1;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="수동 저장">💾 저장</button><button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><button onclick="document.getElementById('restore-file-input').click()" style="background:none;border:1px solid #f59e0b;color:#f59e0b;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="백업 파일 불러오기">📂 불러오기</button><button id="logout-btn">로그아웃</button>
     </div>
 </div>
@@ -1323,9 +1322,110 @@
 ════════════════════════════════════ */
 var SUPABASE_URL = 'https://ummlnvrqyotuguqhzfvw.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtbWxudnJxeW90dWd1cWh6ZnZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxMjEsImV4cCI6MjA4OTQ1NTEyMX0.AmgcLv1MZYHkjbSVbfVHRFqvZ-KUJkzFmyLqKsr04GM';
-var ADMIN_ID    = 'admin'; // 고정 관리자 아이디
-var PLANNER_KEY = 'planner_'; // 사용자별 데이터 키 prefix
-var _ENC_KEY = 'fw9kQz2mXpLsRv8n'; // 16자 고정 키
+var ADMIN_ID    = 'admin';
+var PLANNER_KEY = 'planner_';
+var _ENC_KEY = 'fw9kQz2mXpLsRv8n';
+var STORAGE_BUCKET = 'planner-images';
+
+/* ════════════════════════════════════
+   Storage 헬퍼 (이미지 업로드/삭제)
+════════════════════════════════════ */
+function _genUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8); return v.toString(16);
+    });
+}
+function _isBase64Img(str) {
+    return typeof str === 'string' && str.indexOf('data:image') === 0;
+}
+function _storagePathFromUrl(url) {
+    var marker = '/' + STORAGE_BUCKET + '/';
+    var idx = url ? url.indexOf(marker) : -1;
+    return idx >= 0 ? url.slice(idx + marker.length) : null;
+}
+function _canvasToBlob(canvas, quality, cb) {
+    canvas.toBlob(function(blob){ cb(blob); }, 'image/jpeg', quality);
+}
+function _dataURLtoBlob(dataURL) {
+    var arr = dataURL.split(','), mime = arr[0].match(/:(.*?);/)[1];
+    var bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
+    while (n--) u8[n] = bstr.charCodeAt(n);
+    return new Blob([u8], { type: mime });
+}
+function _storageUpload(blob, path, cb) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + path, true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.setRequestHeader('Content-Type', 'image/jpeg');
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            cb(null, SUPABASE_URL + '/storage/v1/object/public/' + STORAGE_BUCKET + '/' + path);
+        } else { cb(new Error('업로드 실패: ' + xhr.status)); }
+    };
+    xhr.onerror = function() { cb(new Error('네트워크 오류')); };
+    xhr.send(blob);
+}
+function _storageDelete(url, cb) {
+    if (!url || _isBase64Img(url)) { if (cb) cb(); return; }
+    var path = _storagePathFromUrl(url);
+    if (!path) { if (cb) cb(); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('DELETE', SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + encodeURIComponent(path), true);
+    xhr.setRequestHeader('apikey', SUPABASE_KEY);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    xhr.onload = function() { if (cb) cb(); };
+    xhr.onerror = function() { if (cb) cb(); };
+    xhr.send();
+}
+function uploadCanvasToStorage(canvas, quality, cb) {
+    var userId = currentUser ? currentUser.id : 'unknown';
+    var path = userId + '/' + _genUUID() + '.jpg';
+    _canvasToBlob(canvas, quality, function(blob) { _storageUpload(blob, path, cb); });
+}
+
+/* ── 기존 base64 이미지 → Storage 자동 마이그레이션 ── */
+function migrateBase64Images(onComplete) {
+    var tasks = [];
+    (wpData.guideItems || []).forEach(function(item, gi) {
+        (item.blocks || []).forEach(function(block, bi) {
+            if (block.type === 'image' && _isBase64Img(block.value))
+                tasks.push({ t:'guide-val', gi:gi, bi:bi });
+            (block.images || []).forEach(function(src, ii) {
+                if (_isBase64Img(src)) tasks.push({ t:'guide-img', gi:gi, bi:bi, ii:ii });
+            });
+        });
+    });
+    (wpData.idinfo || []).forEach(function(item, ri) {
+        if (_isBase64Img(item.memoImg)) tasks.push({ t:'id-main', ri:ri });
+        (item.subRows || []).forEach(function(sub, si) {
+            if (_isBase64Img(sub.memoImg)) tasks.push({ t:'id-sub', ri:ri, si:si });
+        });
+    });
+    if (!tasks.length) { onComplete(); return; }
+    setSyncStatus('saving', '● 이미지 변환 중...');
+    function next(i) {
+        if (i >= tasks.length) { _markDirty(); onComplete(); return; }
+        var t = tasks[i], b64;
+        if (t.t==='guide-val') b64 = wpData.guideItems[t.gi].blocks[t.bi].value;
+        else if (t.t==='guide-img') b64 = wpData.guideItems[t.gi].blocks[t.bi].images[t.ii];
+        else if (t.t==='id-main') b64 = wpData.idinfo[t.ri].memoImg;
+        else b64 = wpData.idinfo[t.ri].subRows[t.si].memoImg;
+        var blob = _dataURLtoBlob(b64);
+        var path = (currentUser ? currentUser.id : 'unknown') + '/' + _genUUID() + '.jpg';
+        _storageUpload(blob, path, function(err, url) {
+            if (!err) {
+                if (t.t==='guide-val') wpData.guideItems[t.gi].blocks[t.bi].value = url;
+                else if (t.t==='guide-img') wpData.guideItems[t.gi].blocks[t.bi].images[t.ii] = url;
+                else if (t.t==='id-main') wpData.idinfo[t.ri].memoImg = url;
+                else wpData.idinfo[t.ri].subRows[t.si].memoImg = url;
+            }
+            next(i + 1);
+        });
+    }
+    next(0);
+}
 
 async function encryptPw(plain) {
     var enc = new TextEncoder();
@@ -1485,91 +1585,6 @@ function sbDelete(table, key, callback) {
     xhr.onload = function() { if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText)); };
     xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
     xhr.send();
-}
-
-/* ════════════════════════════════════
-   Supabase Storage (PLANNER-IMAGES)
-════════════════════════════════════ */
-var STORAGE_BUCKET = 'PLANNER-IMAGES';
-
-function sbStorageUpload(path, file, callback) {
-    // 이미지는 리사이즈 후 Blob으로 업로드, 파일은 그대로 업로드
-    var isImage = file.type.startsWith('image/');
-    if (isImage) {
-        _resizeImageForStorage(file, function(blob) {
-            _doStorageUpload(path, blob, file.type, callback);
-        });
-    } else {
-        _doStorageUpload(path, file, file.type, callback);
-    }
-}
-
-function _resizeImageForStorage(file, callback) {
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-        var img = new Image();
-        img.onload = function() {
-            var ms = 1400, w = img.width, h = img.height;
-            if (w > ms || h > ms) {
-                if (w > h) { h = Math.round(h * ms / w); w = ms; }
-                else       { w = Math.round(w * ms / h); h = ms; }
-            }
-            var canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            canvas.toBlob(function(blob) { callback(blob); }, 'image/jpeg', 0.85);
-        };
-        img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-function _doStorageUpload(path, blob, contentType, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + encodeURIComponent(path), true);
-    xhr.setRequestHeader('apikey', SUPABASE_KEY);
-    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
-    xhr.setRequestHeader('x-upsert', 'true');
-    xhr.onload = function() {
-        if (xhr.status >= 200 && xhr.status < 300) {
-            var publicUrl = SUPABASE_URL + '/storage/v1/object/public/' + STORAGE_BUCKET + '/' + encodeURIComponent(path);
-            callback(null, publicUrl);
-        } else {
-            callback(new Error('업로드 실패: ' + xhr.responseText), null);
-        }
-    };
-    xhr.onerror = function() { callback(new Error('네트워크 오류'), null); };
-    xhr.send(blob);
-}
-
-function sbStorageDelete(path, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET, true);
-    xhr.setRequestHeader('apikey', SUPABASE_KEY);
-    xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() {
-        if (callback) callback(xhr.status < 300 ? null : new Error(xhr.responseText));
-    };
-    xhr.onerror = function() { if (callback) callback(new Error('네트워크 오류')); };
-    xhr.send(JSON.stringify({ prefixes: [path] }));
-}
-
-// Storage 경로 생성 헬퍼
-function _genStoragePath(prefix, ext) {
-    var uid = currentUser ? currentUser.id : 'anon';
-    var ts  = Date.now();
-    var rnd = Math.random().toString(36).slice(2, 7);
-    return uid + '/' + prefix + '_' + ts + '_' + rnd + (ext ? '.' + ext : '');
-}
-
-// URL에서 Storage path 추출 (삭제 시 사용)
-function _urlToStoragePath(url) {
-    var marker = '/object/public/' + STORAGE_BUCKET + '/';
-    var idx = url ? url.indexOf(marker) : -1;
-    if (idx === -1) return null;
-    return decodeURIComponent(url.slice(idx + marker.length));
 }
 
 /* ════════════════════════════════════
@@ -1922,9 +1937,7 @@ function _doSave(onDone, retryCount) {
 
 function saveDataNow() { _markDirty(); }
 
-function saveData() {
-    _markDirty();
-}
+function saveData() { _markDirty(); }
 /* ════════════════════════════════════
    지출 날짜 UI
 ════════════════════════════════════ */
@@ -2905,29 +2918,23 @@ function renderGuideDetailEdit(idx) {
     document.getElementById('guide-save-btn').style.display = 'inline-block';
 
     function processImageFile(file) {
-        var storagePath = _genStoragePath('guide', 'jpg');
-        sbStorageUpload(storagePath, file, function(err, url) {
-            if (err) {
-                // fallback: base64
-                var reader = new FileReader();
-                reader.onload = function(ev) {
-                    var img2 = new Image();
-                    img2.onload = function() {
-                        var canvas = document.createElement('canvas'), ms = 1200, w = img2.width, h = img2.height;
-                        if (w > ms || h > ms) { if (w > h) { h = Math.round(h * ms / w); w = ms; } else { w = Math.round(w * ms / h); h = ms; } }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img2, 0, 0, w, h);
-                        blocks.push({ type: 'image', value: canvas.toDataURL('image/jpeg', 0.85) });
-                        rebuild();
-                    };
-                    img2.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-                return;
-            }
-            blocks.push({ type: 'image', value: url, storagePath: storagePath });
-            rebuild();
-        });
+        var reader = new FileReader();
+        reader.onload = function(ev){
+            var img2 = new Image();
+            img2.onload = function(){
+                var canvas=document.createElement('canvas'),ms=1200,w=img2.width,h=img2.height;
+                if(w>ms||h>ms){if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;}}
+                canvas.width=w;canvas.height=h;
+                canvas.getContext('2d').drawImage(img2,0,0,w,h);
+                uploadCanvasToStorage(canvas, 0.85, function(err, url) {
+                    if (err) { alert('이미지 업로드 실패: ' + err.message); return; }
+                    blocks.push({type:'image', value: url});
+                    rebuild();
+                });
+            };
+            img2.src=ev.target.result;
+        };
+        reader.readAsDataURL(file);
     }
     function guidePasteHandler(e) {
         var items2 = e.clipboardData && e.clipboardData.items;
@@ -2961,35 +2968,24 @@ function renderGuideDetailEdit(idx) {
     body._removePaste = function(){ document.removeEventListener('paste', guidePasteHandler2); };
 
     function processImageIntoBlock(file, blockIdx) {
-        var storagePath = _genStoragePath('guide', 'jpg');
-        sbStorageUpload(storagePath, file, function(err, url) {
-            if (err) {
-                // Storage 실패 시 base64 fallback
-                console.warn('가이드 이미지 Storage 업로드 실패, base64 fallback:', err);
-                var reader = new FileReader();
-                reader.onload = function(ev) {
-                    var img2 = new Image();
-                    img2.onload = function() {
-                        var canvas = document.createElement('canvas'), ms = 1200, w = img2.width, h = img2.height;
-                        if (w > ms || h > ms) { if (w > h) { h = Math.round(h * ms / w); w = ms; } else { w = Math.round(w * ms / h); h = ms; } }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img2, 0, 0, w, h);
-                        if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
-                        blocks[blockIdx].images.push(canvas.toDataURL('image/jpeg', 0.85));
-                        rebuild();
-                    };
-                    img2.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-                return;
-            }
-            if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
-            // URL과 storagePath를 함께 저장 (삭제 시 활용)
-            blocks[blockIdx].images.push(url);
-            if (!blocks[blockIdx].imagePaths) blocks[blockIdx].imagePaths = [];
-            blocks[blockIdx].imagePaths.push(storagePath);
-            rebuild();
-        });
+        var reader = new FileReader();
+        reader.onload = function(ev){
+            var img2 = new Image();
+            img2.onload = function(){
+                var canvas=document.createElement('canvas'),ms=1200,w=img2.width,h=img2.height;
+                if(w>ms||h>ms){if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;}}
+                canvas.width=w;canvas.height=h;
+                canvas.getContext('2d').drawImage(img2,0,0,w,h);
+                uploadCanvasToStorage(canvas, 0.85, function(err, url) {
+                    if (err) { alert('이미지 업로드 실패: ' + err.message); return; }
+                    if (!blocks[blockIdx].images) blocks[blockIdx].images = [];
+                    blocks[blockIdx].images.push(url);
+                    rebuild();
+                });
+            };
+            img2.src=ev.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function rebuild() {
@@ -3021,14 +3017,7 @@ function renderGuideDetailEdit(idx) {
                 var thumb = document.createElement('img'); thumb.className = 'guide-edit-img-thumb'; thumb.src = src;
                 thumb.onclick = function(){ document.getElementById('img-preview-img').src=src; document.getElementById('img-preview-overlay').classList.add('visible'); };
                 var idel = document.createElement('button'); idel.className = 'guide-edit-img-del'; idel.type='button';
-                (function(bIdx,iIdx){ idel.onclick = function(e){ e.stopPropagation(); 
-                    // Storage에서도 삭제
-                    var sp = blocks[bIdx].imagePaths && blocks[bIdx].imagePaths[iIdx];
-                    if (sp) { sbStorageDelete(sp, function() {}); }
-                    blocks[bIdx].images.splice(iIdx,1); 
-                    if (blocks[bIdx].imagePaths) blocks[bIdx].imagePaths.splice(iIdx,1);
-                    rebuild(); 
-                }; })(bi,ii);
+                (function(bIdx,iIdx){ idel.onclick = function(e){ e.stopPropagation(); var oldUrl=blocks[bIdx].images[iIdx]; blocks[bIdx].images.splice(iIdx,1); rebuild(); _storageDelete(oldUrl); }; })(bi,ii);
                 wrap.appendChild(thumb); wrap.appendChild(idel); imgRow.appendChild(wrap);
             });
             // + 사진 추가 버튼
@@ -3101,11 +3090,6 @@ function renderAttachments(attachments, container, date, idx) {
             delBtn.onclick = function(e) {
                 e.stopPropagation();
                 if (!confirm('첨부파일을 삭제하시겠습니까?')) return;
-                var att = todos[date][idx].attachments[aidx];
-                // Storage URL인 경우 Storage에서도 삭제
-                if (att && att.storagePath) {
-                    sbStorageDelete(att.storagePath, function() {}); // 비동기, 실패해도 무시
-                }
                 todos[date][idx].attachments.splice(aidx, 1);
                 _markDirty();
                 renderAttachments(todos[date][idx].attachments, container, date, idx);
@@ -3134,31 +3118,11 @@ function renderAttachments(attachments, container, date, idx) {
 }
 
 function addAttachment(date, idx, file, afterRender) {
-    if (file.size > MAX_ATTACH_SIZE) {
-        alert('파일 크기가 1MB를 초과합니다.\n(' + (file.size/1024/1024).toFixed(1) + 'MB)');
-        return;
-    }
-    var isImage = file.type.startsWith('image/');
-    var ext = (file.name || '').split('.').pop().toLowerCase() || (isImage ? 'jpg' : 'bin');
-    var storagePath = _genStoragePath(isImage ? 'img' : 'file', ext);
-
-    sbStorageUpload(storagePath, file, function(err, url) {
-        if (err) {
-            // Storage 실패 시 base64 fallback
-            console.warn('Storage 업로드 실패, base64 fallback:', err);
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                if (!todos[date][idx].attachments) todos[date][idx].attachments = [];
-                todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: e.target.result });
-                _markDirty();
-                if (afterRender) afterRender();
-            };
-            reader.readAsDataURL(file);
-            return;
-        }
+    fileToBase64(file, function(data) {
         if (!todos[date][idx].attachments) todos[date][idx].attachments = [];
-        todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: url, storagePath: storagePath });
-        _markDirty();
+        var isImage = file.type.startsWith('image/');
+        todos[date][idx].attachments.push({ type: isImage ? 'image' : 'file', name: file.name, data: data });
+        _markDirty(); // 이미지 첨부 후 즉시 저장
         if (afterRender) afterRender();
     });
 }
@@ -4731,7 +4695,7 @@ function renderIdinfoTable() {
             var thumb = document.createElement('img'); thumb.className='ii-img-thumb'; thumb.src=item.memoImg;
             thumb.onclick=(function(img){ return function(){ document.getElementById('img-preview-img').src=img; document.getElementById('img-preview-overlay').classList.add('visible'); }; })(item.memoImg);
             var imgDel=document.createElement('button'); imgDel.type='button'; imgDel.className='ii-img-del'; imgDel.textContent='✕';
-            (function(i){ imgDel.onclick=function(){ wpData.idinfo[i].memoImg=''; _markDirty(); renderIdinfoTable(); }; })(idx);
+            (function(i){ imgDel.onclick=function(){ var old=wpData.idinfo[i].memoImg; wpData.idinfo[i].memoImg=''; _markDirty(); renderIdinfoTable(); _storageDelete(old); }; })(idx);
             memoCell.appendChild(thumb); memoCell.appendChild(imgDel);
         }
         memoTd.appendChild(memoCell);
@@ -4752,8 +4716,13 @@ function renderIdinfoTable() {
                         if(w>ms||h>ms){ if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;} }
                         canvas.width=w; canvas.height=h;
                         canvas.getContext('2d').drawImage(img,0,0,w,h);
-                        wpData.idinfo[i].memoImg=canvas.toDataURL('image/jpeg',0.8);
-                        _markDirty(); renderIdinfoTable();
+                        uploadCanvasToStorage(canvas, 0.8, function(err, url) {
+                            if (err) { alert('이미지 업로드 실패: ' + err.message); return; }
+                            var old = wpData.idinfo[i].memoImg;
+                            wpData.idinfo[i].memoImg = url;
+                            _markDirty(); renderIdinfoTable();
+                            _storageDelete(old);
+                        });
                     };
                     img.src=e.target.result;
                 };
@@ -4765,7 +4734,7 @@ function renderIdinfoTable() {
                     if(items[j].type.indexOf('image')!==-1) {
                         e.preventDefault();
                         var rd=new FileReader();
-                        rd.onload=function(ev){ var img2=new Image(); img2.onload=function(){ var c2=document.createElement('canvas'),ms=800,w2=img2.width,h2=img2.height; if(w2>ms||h2>ms){if(w2>h2){h2=Math.round(h2*ms/w2);w2=ms;}else{w2=Math.round(w2*ms/h2);h2=ms;}} c2.width=w2;c2.height=h2; c2.getContext('2d').drawImage(img2,0,0,w2,h2); wpData.idinfo[i].memoImg=c2.toDataURL('image/jpeg',0.8); _markDirty();renderIdinfoTable(); }; img2.src=ev.target.result; };
+                        rd.onload=function(ev){ var img2=new Image(); img2.onload=function(){ var c2=document.createElement('canvas'),ms=800,w2=img2.width,h2=img2.height; if(w2>ms||h2>ms){if(w2>h2){h2=Math.round(h2*ms/w2);w2=ms;}else{w2=Math.round(w2*ms/h2);h2=ms;}} c2.width=w2;c2.height=h2; c2.getContext('2d').drawImage(img2,0,0,w2,h2); uploadCanvasToStorage(c2, 0.8, function(err,url){ if(err){alert('이미지 업로드 실패');return;} var old=wpData.idinfo[i].memoImg; wpData.idinfo[i].memoImg=url; _markDirty();renderIdinfoTable(); _storageDelete(old); }); }; img2.src=ev.target.result; };
                         rd.readAsDataURL(items[j].getAsFile()); break;
                     }
                 }
@@ -4837,7 +4806,7 @@ function renderIdinfoTable() {
                 var subThumb = document.createElement('img'); subThumb.className='ii-img-thumb'; subThumb.src=sub.memoImg;
                 subThumb.onclick=(function(img){ return function(){ document.getElementById('img-preview-img').src=img; document.getElementById('img-preview-overlay').classList.add('visible'); }; })(sub.memoImg);
                 var subImgDel=document.createElement('button'); subImgDel.type='button'; subImgDel.className='ii-img-del'; subImgDel.textContent='✕';
-                (function(pi,si2){ subImgDel.onclick=function(){ wpData.idinfo[pi].subRows[si2].memoImg=''; _markDirty(); renderIdinfoTable(); }; })(idx,si);
+                (function(pi,si2){ subImgDel.onclick=function(){ var old=wpData.idinfo[pi].subRows[si2].memoImg; wpData.idinfo[pi].subRows[si2].memoImg=''; _markDirty(); renderIdinfoTable(); _storageDelete(old); }; })(idx,si);
                 subMemoCell.appendChild(subThumb); subMemoCell.appendChild(subImgDel);
             }
             subMemoTd.appendChild(subMemoCell);
@@ -4855,9 +4824,14 @@ function renderIdinfoTable() {
                             if(w>ms||h>ms){ if(w>h){h=Math.round(h*ms/w);w=ms;}else{w=Math.round(w*ms/h);h=ms;} }
                             canvas.width=w; canvas.height=h;
                             canvas.getContext('2d').drawImage(img,0,0,w,h);
-                            if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={};
-                            wpData.idinfo[pi].subRows[si2].memoImg=canvas.toDataURL('image/jpeg',0.8);
-                            _markDirty(); renderIdinfoTable();
+                            uploadCanvasToStorage(canvas, 0.8, function(err, url) {
+                                if (err) { alert('이미지 업로드 실패: ' + err.message); return; }
+                                if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={};
+                                var old = wpData.idinfo[pi].subRows[si2].memoImg;
+                                wpData.idinfo[pi].subRows[si2].memoImg = url;
+                                _markDirty(); renderIdinfoTable();
+                                _storageDelete(old);
+                            });
                         };
                         img.src=e.target.result;
                     };
@@ -4869,7 +4843,7 @@ function renderIdinfoTable() {
                         if(items[j].type.indexOf('image')!==-1) {
                             e.preventDefault();
                             var rd=new FileReader();
-                            rd.onload=function(ev){ var img2=new Image(); img2.onload=function(){ var c2=document.createElement('canvas'),ms=800,w2=img2.width,h2=img2.height; if(w2>ms||h2>ms){if(w2>h2){h2=Math.round(h2*ms/w2);w2=ms;}else{w2=Math.round(w2*ms/h2);h2=ms;}} c2.width=w2;c2.height=h2; c2.getContext('2d').drawImage(img2,0,0,w2,h2); if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={}; wpData.idinfo[pi].subRows[si2].memoImg=c2.toDataURL('image/jpeg',0.8); _markDirty();renderIdinfoTable(); }; img2.src=ev.target.result; };
+                            rd.onload=function(ev){ var img2=new Image(); img2.onload=function(){ var c2=document.createElement('canvas'),ms=800,w2=img2.width,h2=img2.height; if(w2>ms||h2>ms){if(w2>h2){h2=Math.round(h2*ms/w2);w2=ms;}else{w2=Math.round(w2*ms/h2);h2=ms;}} c2.width=w2;c2.height=h2; c2.getContext('2d').drawImage(img2,0,0,w2,h2); uploadCanvasToStorage(c2, 0.8, function(err,url){ if(err){alert('이미지 업로드 실패');return;} if(!wpData.idinfo[pi].subRows[si2]) wpData.idinfo[pi].subRows[si2]={}; var old=wpData.idinfo[pi].subRows[si2].memoImg; wpData.idinfo[pi].subRows[si2].memoImg=url; _markDirty();renderIdinfoTable(); _storageDelete(old); }); }; img2.src=ev.target.result; };
                             rd.readAsDataURL(items[j].getAsFile()); break;
                         }
                     }
@@ -6748,7 +6722,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!wpData.contacts) wpData.contacts = [];
                 if (!wpData.budget)   wpData.budget   = [];
                 doAutoReset();
-                startApp();
+                migrateBase64Images(function() { startApp(); });
             } else {
                 // 데이터 로드 실패 - 빈 데이터로 덮어쓰지 않고 재시도
                 setSyncStatus('saving', '● 데이터 로드 중...');
@@ -6764,12 +6738,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (!wpData.contacts) wpData.contacts = [];
                             if (!wpData.budget)   wpData.budget   = [];
                         } else {
-                            // 2차 재시도도 실패 → 저장 차단 유지, 오류 표시
                             _supabaseReady = false;
                             setSyncStatus('error', '● 서버 연결 실패 - 저장 불가');
                         }
                         doAutoReset();
-                        startApp();
+                        migrateBase64Images(function() { startApp(); });
                     });
                 }, 2000);
             }
