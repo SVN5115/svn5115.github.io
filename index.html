@@ -1822,13 +1822,6 @@ function _doSave(onDone, retryCount) {
         return;
     }
     var saveData = { activeDate: activeDate, todos: todos, wpData: wpData };
-    // 데이터 크기 체크 (Supabase 행 한도 ~800KB 경고)
-    var dataStr = JSON.stringify(saveData);
-    if (dataStr.length > 800000) {
-        setSyncStatus('error', '● 데이터 초과(' + Math.round(dataStr.length/1024) + 'KB) - 이미지 줄이세요');
-        if (onDone) onDone(new Error('data_too_large'));
-        return;
-    }
     sbUpsert('planner_data', {
         key: getUserDataKey(),
         value: saveData,
