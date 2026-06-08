@@ -46,8 +46,6 @@
         #sync-indicator.saved  { color: #22c55e; }
         #sync-indicator.error  { color: #ef4444; }
         #last-saved-time { font-size: 11px; color: #94a3b8; white-space: nowrap; }
-        #force-save-btn { display:none; padding:3px 10px; background:#ef4444; color:white; border:none; border-radius:6px; font-size:11px; cursor:pointer; font-family:'Malgun Gothic',sans-serif; animation:blink 1.2s step-start infinite; }
-        #force-save-btn:hover { background:#dc2626; animation:none; }
         @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.45;} }
         #user-label { font-size: 11px; color: #64748b; }
         #logout-btn { padding: 4px 12px; background: none; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; cursor: pointer; color: #64748b; font-family: 'Malgun Gothic', sans-serif; }
@@ -1099,7 +1097,7 @@
     <div id="top-right">
         <div id="sync-indicator" class="saved" style="display:none;">● 저장됨</div>
         <span id="last-saved-time"></span>
-        <button id="force-save-btn" onclick="forceSave()" title="저장 실패 시 강제 저장">⚠ 강제저장</button>
+        
         <button id="manual-save-btn" onclick="manualSave()" style="background:none;border:1px solid #6366f1;color:#6366f1;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="수동 저장">💾 저장</button><button onclick="downloadBackup()" style="background:none;border:1px solid #10b981;color:#10b981;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="데이터 백업 다운로드">💾 백업</button><button onclick="document.getElementById('restore-file-input').click()" style="background:none;border:1px solid #f59e0b;color:#f59e0b;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Malgun Gothic,sans-serif;margin-right:6px;" title="백업 파일 불러오기">📂 불러오기</button><button id="logout-btn">로그아웃</button>
     </div>
 </div>
@@ -1365,7 +1363,6 @@ function simpleHash(str) {
 function setSyncStatus(cls, text) {
     var el = document.getElementById('sync-indicator');
     el.className = cls; el.textContent = text;
-    var fbtn = document.getElementById('force-save-btn');
     if (cls === 'saved') {
         var now = new Date();
         var mm = ('0'+(now.getMonth()+1)).slice(-2);
@@ -1375,38 +1372,30 @@ function setSyncStatus(cls, text) {
         var ss = ('0'+now.getSeconds()).slice(-2);
         var el2 = document.getElementById('last-saved-time');
         if (el2) el2.textContent = '최종저장 ' + mm+'/'+dd+' '+hh+':'+mi+':'+ss;
-        if (fbtn) fbtn.style.display = 'none';
-    } else if (cls === 'error') {
-        if (fbtn) fbtn.style.display = 'inline-block';
     }
 }
 
 function manualSave() {
     if (!_supabaseReady) { alert('서버에 연결되지 않아 저장할 수 없습니다.'); return; }
     var btn = document.getElementById('manual-save-btn');
-    // 낙관적 저장: 요청 즉시 저장됨 표시
-    _isDirty = false;
-    btn.style.borderColor = '#6366f1'; btn.style.color = '#6366f1';
-    btn.textContent = '💾 저장'; btn.disabled = false;
-    setSyncStatus('saved', '● 저장됨');
-    // 백그라운드에서 실제 저장
+    btn.textContent = '저장 중...'; btn.disabled = true;
+    setSyncStatus('saving', '● 저장 중...');
     _doSave(function(err) {
-        if (err) {
-            // 실패 시 미저장 상태로 복원
+        btn.disabled = false;
+        if (!err) {
+            _isDirty = false;
+            btn.style.borderColor = '#6366f1'; btn.style.color = '#6366f1';
+            btn.textContent = '💾 저장';
+            setSyncStatus('saved', '● 저장됨');
+        } else {
+            // 실패 시 저장* 상태 유지, 다시 누르면 재시도
             _markDirty();
+            alert('저장에 실패했습니다. 다시 저장 버튼을 눌러주세요.');
         }
     }, 0);
 }
 
-function forceSave() {
-    var fbtn = document.getElementById('force-save-btn');
-    if (fbtn) { fbtn.textContent = '저장 중...'; fbtn.disabled = true; }
-    setSyncStatus('saving', '● 저장 중...');
-    _doSave(function() {
-        setSyncStatus('saved', '● 저장됨');
-        if (fbtn) { fbtn.textContent = '⚠ 강제저장'; fbtn.disabled = false; }
-    }, 0);
-}
+
 
 /* ════════════════════════════════════
    Supabase REST
@@ -1850,10 +1839,9 @@ function _doSave(onDone, retryCount) {
         } else {
             if (retryCount >= 2) {
                 setSyncStatus('error', '● 저장 실패');
-                var fbtn = document.getElementById('force-save-btn');
-                if (fbtn) fbtn.style.display = 'inline-block';
                 if (onDone) onDone(err);
             } else {
+                setSyncStatus('saving', '● 재시도 중...');
                 setTimeout(function() { _doSave(onDone, retryCount + 1); }, 1500);
             }
         }
@@ -5387,7 +5375,8 @@ function _markDirty() {
     checkTodayHasSchedule();
     var btn = document.getElementById('manual-save-btn');
     if (btn) { btn.style.borderColor='#ef4444'; btn.style.color='#ef4444'; btn.textContent='💾 저장*'; }
-    setSyncStatus('error', '● 미저장');
+    var el = document.getElementById('sync-indicator');
+    if (el) { el.className = 'error'; el.textContent = '● 미저장'; }
 }
 
 function saveAll() { _markDirty(); }
