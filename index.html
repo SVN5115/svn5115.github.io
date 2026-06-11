@@ -713,6 +713,10 @@
         .cell-todo-span.span-week-end   { border-radius: 0 4px 4px 0; margin-left: 0; margin-right: 2px; padding-right: 4px; }
         .cell-todo-c0 { background: #dbeafe; color: #1e40af; } .cell-todo-c1 { background: #e2e8f0; color: #374151; }
         .cell-todo-more { position: absolute; top: 3px; right: 3px; font-size: 8px; font-weight: bold; color: #fff; background: #999; border-radius: 2px; padding: 0 3px; line-height: 13px; pointer-events: none; z-index: 2; }
+        .boss-check-wrap { display:flex; align-items:center; gap:4px; font-size:11px; color:#f97316; flex-shrink:0; }
+        .boss-check-wrap input[type="checkbox"] { accent-color:#f97316; width:13px; height:13px; cursor:pointer; }
+        .cell-boss-item { font-size:9px; border-radius:2px; padding:0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:13px; height:13px; box-sizing:border-box; margin:0 2px 1px; background:#fed7aa; color:#c2410c; }
+        .cell-boss-wrap { padding:0; }
         .v-box { width: 16px; height: 16px; border: 1px solid #ccc; margin-right: 6px; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; flex-shrink: 0; }
         .v-box.is-checked { border-color: #000; background: #eee; }
         .day-v-checkmark-svg { display: none; width: 11px; height: 11px; fill: #000; }
@@ -5754,13 +5758,14 @@ function applyHolidayColors(){
         if(n) n.setAttribute('style','color:#ff0000!important;font-weight:bold;text-decoration:none;padding:0;');
     });
 }
-function getTodosForDate(dateStr) {
+function getTodosForDate(dateStr, includeBoss) {
     // 해당 날짜에 속하는 일정 (단일+기간) 모두 반환
+    // includeBoss=true 이면 boss 항목 포함, 기본은 제외 (슬롯용)
     var result = [];
     Object.keys(todos).forEach(function(startDate) {
         (todos[startDate] || []).forEach(function(t) {
+            if (!includeBoss && t.boss) return; // 본부장 항목은 슬롯에서 제외
             if (t.endDate && t.endDate >= startDate) {
-                // 기간 일정: startDate <= dateStr <= endDate
                 if (dateStr >= startDate && dateStr <= t.endDate) {
                     result.push({ todo: t, startDate: startDate });
                 }
@@ -5851,7 +5856,7 @@ function renderAllCellTodos() {
 
     allCells.forEach(function(cell) {
         var dateStr = cell.getAttribute('data-date');
-        ['cell-todos','cell-todo-more'].forEach(function(cls) {
+        ['cell-todos','cell-todo-more','cell-boss-wrap'].forEach(function(cls) {
             var el = cell.querySelector('.'+cls); if (el) el.parentNode.removeChild(el);
         });
         var frame = cell.querySelector('.fc-daygrid-day-frame');
@@ -5907,6 +5912,33 @@ function renderAllCellTodos() {
             var more = document.createElement('div'); more.className='cell-todo-more';
             more.textContent = '+'+extra; frame.appendChild(more);
         }
+        // 본부장 일정: 맨 아래에 주황색으로 추가
+        var bossItems = getTodosForDate(dateStr, true).filter(function(obj){ return !!obj.todo.boss; });
+        if (bossItems.length) {
+            var bossWrapDiv = document.createElement('div'); bossWrapDiv.className = 'cell-boss-wrap';
+            bossItems.forEach(function(obj) {
+                var t = obj.todo; var startDate = obj.startDate;
+                var btag = document.createElement('div');
+                if (t.endDate && t.endDate >= startDate && t.endDate !== startDate) {
+                    var isStart = dateStr === startDate;
+                    var isEnd   = dateStr === t.endDate;
+                    var dow = new Date(dateStr).getDay();
+                    var isWeekStart = dow === 1 && !isStart;
+                    var cls = isStart && isEnd ? 'span-solo' : isStart ? 'span-start' : isEnd ? 'span-end' : isWeekStart ? 'span-week-start' : 'span-mid';
+                    btag.className = 'cell-boss-item ' + cls;
+                    btag.style.background = (cls === 'span-mid') ? '#fdba74' : '#fed7aa';
+                    btag.style.color = '#c2410c';
+                    btag.textContent = (isStart || isWeekStart) ? t.text : '';
+                    if (cls === 'span-mid') btag.innerHTML = '<span style="display:block;border-top:2px solid #ea580c;width:100%;opacity:0.6;"></span>';
+                } else {
+                    btag.className = 'cell-boss-item';
+                    btag.textContent = t.text;
+                }
+                btag.title = t.text;
+                bossWrapDiv.appendChild(btag);
+            });
+            frame.appendChild(bossWrapDiv);
+        }
     });
 }
 
@@ -5930,8 +5962,9 @@ function renderList(date) {
     // 기간 일정 포함: 이 날짜에 걸치는 기간 일정도 수집
     var spanItems = []; // { todo, startDate, isSpan }
     Object.keys(todos).forEach(function(sd) {
-        if (sd === date) return; // 직접 등록된 건 아래에서 처리
+        if (sd === date) return;
         (todos[sd]||[]).forEach(function(t) {
+            if (t.boss) return; // 본부장 항목은 별도
             if (t.endDate && date > sd && date <= t.endDate) {
                 spanItems.push({ todo: t, startDate: sd });
             }
@@ -6003,6 +6036,18 @@ function renderList(date) {
         detailBox.appendChild(detailActions);
 
         var editBtn = document.createElement('button'); editBtn.type='button'; editBtn.className='todo-edit-btn'; editBtn.innerHTML='✏️'; editBtn.title='수정';
+        // 본부장 체크박스 (detailActions 왼쪽 하단에 배치)
+        var bossCb = document.createElement('input'); bossCb.type = 'checkbox'; bossCb.checked = !!t.boss;
+        bossCb.title = '본부장 일정';
+        var bossWrap = document.createElement('span'); bossWrap.className = 'boss-check-wrap';
+        var bossLbl = document.createElement('span'); bossLbl.textContent = '본부장';
+        bossWrap.appendChild(bossCb); bossWrap.appendChild(bossLbl);
+        // detailActions: 본부장 왼쪽, 버튼 오른쪽
+        detailActions.insertBefore(bossWrap, cancelBtn);
+        detailActions.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
+        var detailBtns = document.createElement('div'); detailBtns.style.cssText='display:flex;gap:6px;';
+        detailBtns.appendChild(cancelBtn); detailBtns.appendChild(saveBtn);
+        detailActions.appendChild(detailBtns);
         var row = document.createElement('div'); row.className = 'todo-item-row';
         row.appendChild(cb); row.appendChild(span); row.appendChild(editBtn); row.appendChild(btn);
         li.appendChild(row); li.appendChild(detailBox);
@@ -6012,6 +6057,13 @@ function renderList(date) {
                 todos[d][idx].done = cb.checked;
                 span.className = 'todo-text clickable' + (cb.checked ? ' done' : '');
                 _markDirty();
+            };
+            bossCb.onchange = function() {
+                // 체크: boss=true (달력 맨 아래 주황 표시)
+                // 비활성화: boss=false (일반 일정으로, 내용 그대로 유지)
+                todos[d][idx].boss = bossCb.checked;
+                _markDirty();
+                renderAllCellTodos();
             };
             span.onclick = function(e) {
                 e.stopPropagation();
