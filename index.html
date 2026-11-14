@@ -2453,6 +2453,55 @@ body.calendar-focused .day-cell .event-chip {
   }
 }
 </style>
+<style id="ycalender-v93-inline-calendar-editor">
+/* v93: compact, in-place editor for the selected day's calendar entries only */
+body.calendar-focused .daily-group-calendar .daily-group-items{justify-content:flex-start}
+body.calendar-focused .yc-inline-event-row{min-width:0;width:100%;}
+body.calendar-focused .yc-inline-event-row.is-open{border-radius:10px;background:#f7faff;box-shadow:inset 0 0 0 1px #dce9fb;padding:3px 4px 7px;margin:2px -4px;width:calc(100% + 8px)}
+body.calendar-focused .yc-inline-event-row .daily-check-line{width:100%;}
+body.calendar-focused .yc-inline-event-row.is-open .daily-item-title{color:#1f5eaa;}
+body.calendar-focused .yc-inline-event-row .yc-inline-edit-trigger{flex:none;width:25px;height:25px;display:grid;place-items:center;border-radius:6px;background:transparent;color:#91a8c4;font-size:15px;line-height:1}
+body.calendar-focused .yc-inline-event-row .yc-inline-edit-trigger:hover,body.calendar-focused .yc-inline-event-row.is-open .yc-inline-edit-trigger{background:#e6f0ff;color:#246bbb}
+body.calendar-focused .yc-inline-event-row{margin-top:6px}
+body.calendar-focused .yc-inline-event-row.is-open{border:1px solid #cfe0f5;border-radius:15px;background:#ffffff;box-shadow:0 4px 16px rgba(28,83,145,.06);overflow:hidden}
+body.calendar-focused .yc-inline-event-row.is-open .daily-check-line{margin:0;padding:10px 12px 8px;background:linear-gradient(180deg,#f4f9ff 0%,#f9fbff 100%);border-bottom:1px solid #e1ebf8;border-radius:0}
+body.calendar-focused .yc-inline-event-row.is-open .daily-item-title{font-weight:800;color:#265792}
+body.calendar-focused .yc-inline-event-row.is-open .yc-inline-edit-trigger{background:#eaf2ff;color:#4f86d5;border-color:#d5e5fb}
+body.calendar-focused .yc-inline-calendar-editor{margin:0;padding:14px 14px 12px;background:#fff;display:flex;flex-direction:column;gap:10px;min-width:0}
+body.calendar-focused .yc-inline-calendar-label{display:flex;flex-direction:column;gap:6px;min-width:0;color:#4c6689;font-size:12px;font-weight:800;letter-spacing:-0.01em}
+body.calendar-focused .yc-inline-calendar-title,body.calendar-focused .yc-inline-calendar-note{width:100%;min-width:0;box-sizing:border-box;background:#fff;color:#203a5e;border:2px solid #d9e7fb;border-radius:12px;font-size:12.5px;font-weight:650;padding:10px 12px;line-height:1.55;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
+body.calendar-focused .yc-inline-calendar-title:focus,body.calendar-focused .yc-inline-calendar-note:focus{border-color:#76a9f2;box-shadow:0 0 0 3px rgba(122,170,241,.16);background:#fff}
+body.calendar-focused .yc-inline-calendar-note{min-height:112px;max-height:320px;resize:vertical;white-space:pre-wrap}
+body.calendar-focused .yc-inline-calendar-note::placeholder{color:#9fb0c4;font-weight:600}
+body.calendar-focused .yc-inline-calendar-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:2px}
+body.calendar-focused .yc-inline-file-pick{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #d7e4f7;background:#f8fbff;border-radius:11px;color:#5a77a0;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+body.calendar-focused .yc-inline-file-pick:hover{background:#f1f7ff;border-color:#c7daf5}
+body.calendar-focused .yc-inline-paste-hint{font-size:11px;color:#8b9ebb;font-weight:700}
+body.calendar-focused .yc-inline-image-grid{display:flex;gap:8px;flex-wrap:wrap}
+body.calendar-focused .yc-inline-image-tile{position:relative;width:66px;height:66px;border-radius:12px;border:1px solid #d7e4f7;background:#f6f9fe;overflow:hidden}
+body.calendar-focused .yc-inline-image-view{width:100%;height:100%;border:0;background:transparent;display:grid;place-items:center;color:#6f89ab;font-size:19px;cursor:pointer}
+body.calendar-focused .yc-inline-image-view img{width:100%;height:100%;object-fit:cover}
+body.calendar-focused .yc-inline-image-remove{position:absolute;top:4px;right:4px;width:20px;height:20px;border:0;border-radius:999px;background:#fffbfc;color:#df6a77;box-shadow:0 1px 4px rgba(0,0,0,.08);font-size:14px;font-weight:800;cursor:pointer;line-height:1}
+body.calendar-focused .yc-inline-date-details{border-top:1px solid #edf2f9;padding-top:8px;font-size:11px;color:#6580a3}
+body.calendar-focused .yc-inline-date-details summary{cursor:pointer;list-style:disclosure-closed;font-weight:800;color:#5d7ba5}
+body.calendar-focused .yc-inline-date-details[open] summary{margin-bottom:9px}
+body.calendar-focused .yc-inline-date-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+body.calendar-focused .yc-inline-date-row label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:800;color:#5f7799}
+body.calendar-focused .yc-inline-date-row input{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #d9e4f3;border-radius:10px;background:#fbfdff;color:#28415f;font-size:12px;font-weight:700}
+body.calendar-focused .yc-inline-calendar-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid #edf2f9;padding-top:10px}
+body.calendar-focused .yc-inline-flags,body.calendar-focused .yc-inline-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+body.calendar-focused .yc-inline-flag{display:inline-flex;align-items:center;gap:5px;color:#637b9b;font-size:12px;font-weight:800}
+body.calendar-focused .yc-inline-flag input{accent-color:#4f8be8}
+body.calendar-focused .yc-inline-btn{font-size:12px;font-weight:800;border-radius:10px;padding:8px 14px;border:1px solid #dde5f2;background:#fff;color:#667b98;white-space:nowrap;cursor:pointer}
+body.calendar-focused .yc-inline-btn:hover{background:#f5f8fd}
+body.calendar-focused .yc-inline-btn.save{background:#2f79cf;color:#fff;border-color:#2f79cf}
+body.calendar-focused .yc-inline-btn.save:hover{background:#2365b2}
+body.calendar-focused .yc-inline-btn.delete{border-color:#f3d5da;color:#cd6a76;background:#fff8f9}
+body.calendar-focused .yc-inline-error{margin:0;color:#cb5a67;font-size:11px;font-weight:800}
+@media(max-width:760px){body.calendar-focused .yc-inline-event-row.is-open .daily-check-line{padding:9px 10px 8px}body.calendar-focused .yc-inline-calendar-editor{padding:12px 11px 11px}body.calendar-focused .yc-inline-calendar-title,body.calendar-focused .yc-inline-calendar-note{font-size:12px}body.calendar-focused .yc-inline-calendar-bottom{align-items:flex-start}body.calendar-focused .yc-inline-actions{margin-left:auto}}
+@media(max-width:390px){body.calendar-focused .yc-inline-date-row{grid-template-columns:1fr}body.calendar-focused .yc-inline-btn{padding:8px 12px}}
+@media print{body.calendar-focused .yc-inline-calendar-editor{display:none!important}}
+</style>
 </head>
 <body class="calendar-focused">
   <div class="shell">
@@ -2931,11 +2980,35 @@ function renderCalendar(){
    const estimatedHoliday=Number(key.slice(0,4))>=2028 && Number(key.slice(0,4))<=2100;
    const holidayContent=holiday?`<div class="kr-holiday-label" title="${estimatedHoliday?'현행 법령 기준 예상 공휴일 · 발표 전 변경 가능':'대한민국 공휴일 · 공식 월력 기준'} · ${escapeHtml(holiday)}">${escapeHtml(holiday)}</div>`:'';
    const max=view==='week'?10:5;
-   const chips=matches.slice(0,max).map((e,barIndex)=>{const type=category(e.type),important=priorityOf(e)<2;const zebraBackground=barIndex%2===0?"#eaf2ff":"#f8fafc";return `<button class="event-chip ${e.chief?'priority-chief':e.director?'priority-director':''} ${isDailyDone(e,key)?'is-done':''}" data-id="${escapeHtml(e.id)}" title="${escapeHtml(eventDisplayTitle(e))}" style="color:${important?(e.chief?'#b75b1b':'#245ca5'):type.color};background:${important?(e.chief?'#fff1e4':'#e9f1ff'):zebraBackground};border-color:${important?(e.chief?'#f59c53':'#6d9ce4'):type.color}"><span class="chip-title">${escapeHtml(eventDisplayTitle(e))}</span></button>`;}).join('');
+   const chips=matches.slice(0,max).map((e,barIndex)=>{const type=category(e.type),important=priorityOf(e)<2;const zebraBackground=barIndex%2===0?"#eaf2ff":"#f8fafc";return `<button class="event-chip ${e.chief?'priority-chief':e.director?'priority-director':''} ${isDailyDone(e,key)?'is-done':''}" data-id="${escapeHtml(e.id)}" title="${escapeHtml(eventDisplayTitle(e))} · 클릭하여 바로 수정" style="color:${important?(e.chief?'#b75b1b':'#245ca5'):type.color};background:${important?(e.chief?'#fff1e4':'#e9f1ff'):zebraBackground};border-color:${important?(e.chief?'#f59c53':'#6d9ce4'):type.color}"><span class="chip-title">${escapeHtml(eventDisplayTitle(e))}</span></button>`;}).join('');
    return `<div class="day-cell ${isThisMonth?'':'other-month'} ${key===todayStr?'today':''} ${key===selectedDate?'selected':''} ${d.getDay()===0?'sunday':''} ${d.getDay()===6?'saturday':''} ${holiday?'kr-holiday-day':''}" data-day="${key}" tabindex="0" role="button" aria-label="${key}${holiday?' '+holiday:''} 일정 ${matches.length}건"><span class="day-number">${d.getDate()}</span>${holidayContent}<div class="cell-events">${chips}${matches.length>max?`<span class="more-events">+${matches.length-max}개 더보기</span>`:''}</div></div>`;
  }).join('');
  root.querySelectorAll('.day-cell').forEach(node=>{node.addEventListener('click',()=>selectDay(node.dataset.day));node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectDay(node.dataset.day);}});});
- root.querySelectorAll('.event-chip').forEach(chip=>chip.addEventListener('click',e=>{e.stopPropagation();openEvent(chip.dataset.id);}));
+ root.querySelectorAll('.event-chip').forEach(chip=>chip.addEventListener('click',e=>{e.stopPropagation();ycOpenEventFromCalendar(chip.dataset.id,chip.closest('.day-cell')?.dataset.day);}));
+}
+// v95: A calendar event bar uses the same inline editing form as the daily detail list.
+// The date under the clicked bar is authoritative for repeating/multi-day entries.
+function ycOpenEventFromCalendar(id,day){
+ const event=events.find(entry=>entry.id===id);
+ const date=fromYMD(day);
+ if(!event||!date||!inRange(event,day))return;
+ const alreadyOpen=ycInlineEventDraft?.id===id&&ycInlineEventDraft.day===day;
+ selectedDate=day;
+ if(view==='month'&&(date.getFullYear()!==anchor.getFullYear()||date.getMonth()!==anchor.getMonth())){
+   anchor=new Date(date.getFullYear(),date.getMonth(),1);
+ }
+ // A collapsed calendar group should not hide the editor opened from the month view.
+ dailyCollapsedGroups.delete('calendar');
+ if(alreadyOpen)renderDayDetails();
+ else ycOpenInlineEvent(id);
+ renderCalendar();
+ requestAnimationFrame(()=>{
+   const editor=$('ycInlineCalendarForm');
+   if(editor){
+     const box=editor.closest('.yc-inline-event-row')||editor;
+     box.scrollIntoView({behavior:'smooth',block:'nearest'});
+   }
+ });
 }
 function selectDay(day){selectedDate=day;const d=fromYMD(day);if(d&&d.getMonth()!==anchor.getMonth()&&view==='month')anchor=new Date(d.getFullYear(),d.getMonth(),1);render();}
 const dailyCollapsedGroups=new Set();
@@ -3044,7 +3117,144 @@ function openRoutineReadPopup(day){
 $('routineReadClose').addEventListener('click',()=>$('routineReadModal').close());
 $('routineReadDone').addEventListener('click',()=>$('routineReadModal').close());
 
+// v93: edit a selected calendar item immediately below its row (no floating modal).
+let ycInlineEventDraft=null;
+function ycCloseInlineEvent(shouldRender=true){
+  if(ycInlineEventDraft){
+    for(const pending of ycInlineEventDraft.pending||[])URL.revokeObjectURL(pending.url);
+    ycInlineEventDraft=null;
+  }
+  if(shouldRender)renderDayDetails();
+}
+function ycOpenInlineEvent(id){
+  if(ycInlineEventDraft?.id===id){ycCloseInlineEvent();return;}
+  ycCloseInlineEvent(false);
+  const original=events.find(item=>item.id===id);
+  if(!original)return;
+  ycInlineEventDraft={id:original.id,day:selectedDate,title:original.title||'',note:original.note||'',
+    start:original.start,end:original.end,chief:Boolean(original.chief),director:Boolean(original.director),
+    chiefAt:Number(original.chiefCheckedAt||0),directorAt:Number(original.directorCheckedAt||0),
+    kept:[...(original.attachments||[])],removed:[],pending:[],error:'',busy:false,datesOpen:false};
+  renderDayDetails();
+  requestAnimationFrame(()=>{
+    const input=$('ycInlineEventTitle');
+    if(input){input.focus({preventScroll:true});input.setSelectionRange(input.value.length,input.value.length);}
+  });
+}
+function ycInlineEventHtml(item){
+  const draft=ycInlineEventDraft;
+  if(!draft||draft.id!==item.id||draft.day!==selectedDate)return '';
+  const images=[...draft.kept.map(a=>`<div class="yc-inline-image-tile"><button type="button" class="yc-inline-image-view" data-yc-image-saved="${escapeHtml(a.id)}" aria-label="첨부 이미지 보기">▧</button><button type="button" class="yc-inline-image-remove" data-yc-remove-saved="${escapeHtml(a.id)}" aria-label="첨부 이미지 제거">×</button></div>`),
+    ...draft.pending.map(p=>`<div class="yc-inline-image-tile"><button type="button" class="yc-inline-image-view" data-yc-image-pending="${escapeHtml(p.id)}" aria-label="첨부 이미지 보기"><img src="${escapeHtml(p.url)}" alt="첨부 이미지 미리보기"></button><button type="button" class="yc-inline-image-remove" data-yc-remove-pending="${escapeHtml(p.id)}" aria-label="첨부 이미지 제거">×</button></div>`)].join('');
+  const dateInfo=draft.start===draft.end?draft.start:`${draft.start} ~ ${draft.end}`;
+  return `<form class="yc-inline-calendar-editor" id="ycInlineCalendarForm" aria-label="${escapeHtml(item.title||'일정')} 바로 수정">
+   <label class="yc-inline-calendar-label">일정 제목<input id="ycInlineEventTitle" class="yc-inline-calendar-title" maxlength="100" required value="${escapeHtml(draft.title)}" placeholder="일정 제목"></label>
+   <label class="yc-inline-calendar-label">세부 내용<textarea id="ycInlineEventNote" class="yc-inline-calendar-note" maxlength="3000" rows="4" placeholder="세부 내용을 입력하세요... (이미지는 Ctrl+V로 붙여넣기)">${escapeHtml(draft.note)}</textarea></label>
+   <div class="yc-inline-calendar-tools"><label class="yc-inline-file-pick">📎 이미지 첨부<input id="ycInlineImageFiles" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label><span class="yc-inline-paste-hint">이미지는 Ctrl+V로 붙여넣을 수 있습니다.</span></div>
+   <div class="yc-inline-image-grid" id="ycInlineImageGrid">${images}</div>
+   <details class="yc-inline-date-details" id="ycInlineDates" ${draft.datesOpen?'open':''}><summary>📅 ${escapeHtml(dateInfo)} · 날짜 변경</summary><div class="yc-inline-date-row"><label>시작일<input type="date" id="ycInlineStart" value="${escapeHtml(draft.start)}" required></label><label>종료일<input type="date" id="ycInlineEnd" value="${escapeHtml(draft.end)}" required></label></div></details>
+   <div class="yc-inline-calendar-bottom"><div class="yc-inline-flags"><label class="yc-inline-flag"><input type="checkbox" id="ycInlineChief" ${draft.chief?'checked':''}> 본부장</label><label class="yc-inline-flag"><input type="checkbox" id="ycInlineDirector" ${draft.director?'checked':''}> 행정과장</label></div><div class="yc-inline-actions"><button type="button" class="yc-inline-btn delete" id="ycInlineDelete">삭제</button><button type="button" class="yc-inline-btn" id="ycInlineCancel">취소</button><button type="submit" class="yc-inline-btn save" id="ycInlineSave" ${draft.busy?'disabled':''}>${draft.busy?'저장 중…':'저장'}</button></div></div>
+   <p class="yc-inline-error" id="ycInlineError" role="alert" ${draft.error?'':'hidden'}>${escapeHtml(draft.error)}</p>
+  </form>`;
+}
+function ycAppendInlineImages(files){
+  const draft=ycInlineEventDraft;
+  if(!draft)return;
+  const allowed=['image/png','image/jpeg','image/webp','image/gif'];
+  for(const file of Array.from(files||[])){
+    if(!allowed.includes(file.type)){draft.error='JPG, PNG, WEBP, GIF 이미지만 첨부할 수 있습니다.';continue;}
+    if(file.size>30*1024*1024){draft.error='원본 이미지는 파일당 30MB 이하로 선택해 주세요.';continue;}
+    if(file.type==='image/gif'&&!window.JariCloud?.isOnline?.()&&file.size>1.2*1024*1024){draft.error='로컬에서는 GIF 원본이 1.2MB 이하여야 합니다.';continue;}
+    if(draft.kept.length+draft.pending.length>=10){draft.error='일정당 이미지는 최대 10개입니다.';break;}
+    draft.pending.push({id:makeId(),file,url:URL.createObjectURL(file)});
+  }
+  renderDayDetails();
+}
+function ycBindInlineEvent(){
+  const draft=ycInlineEventDraft,form=$('ycInlineCalendarForm');
+  if(!draft||!form)return;
+  for(const [key,id] of [['title','ycInlineEventTitle'],['note','ycInlineEventNote'],['start','ycInlineStart'],['end','ycInlineEnd']]){
+    const input=$(id);
+    input?.addEventListener('input',()=>{draft[key]=input.value;});
+  }
+  for(const [key,id,clock] of [['chief','ycInlineChief','chiefAt'],['director','ycInlineDirector','directorAt']]){
+    $(id)?.addEventListener('change',e=>{draft[key]=e.target.checked;draft[clock]=e.target.checked?priorityStamp():0;});
+  }
+  $('ycInlineDates')?.addEventListener('toggle',e=>{draft.datesOpen=e.currentTarget.open;});
+  $('ycInlineImageFiles')?.addEventListener('change',e=>{ycAppendInlineImages(e.target.files);e.target.value='';});
+  $('ycInlineEventNote')?.addEventListener('paste',e=>{
+    const files=[...e.clipboardData?.items||[]].filter(item=>item.kind==='file'&&item.type.startsWith('image/')).map(item=>item.getAsFile()).filter(Boolean);
+    if(files.length){e.preventDefault();ycAppendInlineImages(files);}
+  });
+  $('ycInlineCancel')?.addEventListener('click',()=>ycCloseInlineEvent());
+  $('ycInlineDelete')?.addEventListener('click',()=>{
+    const id=draft.id;deleteEventById(id,null);
+    if(!events.some(event=>event.id===id))ycCloseInlineEvent();
+  });
+  form.addEventListener('submit',ycSaveInlineEvent);
+  form.querySelectorAll('[data-yc-image-saved]').forEach(button=>{
+    const image=draft.kept.find(a=>a.id===button.dataset.ycImageSaved);
+    if(!image)return;
+    button.addEventListener('click',()=>window.JariAttachments?.open(image));
+    window.JariAttachments?.url(image).then(url=>{
+      if(button.isConnected){const img=document.createElement('img');img.src=url;img.alt='첨부 이미지';button.replaceChildren(img);}
+    }).catch(()=>{});
+  });
+  form.querySelectorAll('[data-yc-image-pending]').forEach(button=>button.addEventListener('click',()=>{
+    const p=draft.pending.find(x=>x.id===button.dataset.ycImagePending);
+    if(p)window.JariAttachments?.open({name:p.file.name,dataUrl:p.url});
+  }));
+  form.querySelectorAll('[data-yc-remove-saved]').forEach(button=>button.addEventListener('click',()=>{
+    const i=draft.kept.findIndex(x=>x.id===button.dataset.ycRemoveSaved);
+    if(i!==-1){draft.removed.push(draft.kept.splice(i,1)[0]);renderDayDetails();}
+  }));
+  form.querySelectorAll('[data-yc-remove-pending]').forEach(button=>button.addEventListener('click',()=>{
+    const i=draft.pending.findIndex(x=>x.id===button.dataset.ycRemovePending);
+    if(i!==-1){URL.revokeObjectURL(draft.pending[i].url);draft.pending.splice(i,1);renderDayDetails();}
+  }));
+}
+async function ycSaveInlineEvent(e){
+  e.preventDefault();
+  const draft=ycInlineEventDraft;
+  if(!draft||draft.busy)return;
+  draft.title=($('ycInlineEventTitle')?.value||'').trim();
+  draft.note=($('ycInlineEventNote')?.value||'').trim();
+  draft.start=$('ycInlineStart')?.value||draft.start;
+  draft.end=$('ycInlineEnd')?.value||draft.end;
+  if(!draft.title){draft.error='일정 제목을 입력해 주세요.';renderDayDetails();$('ycInlineEventTitle')?.focus();return;}
+  if(!fromYMD(draft.start)||!fromYMD(draft.end)||draft.start>draft.end){draft.error='시작일과 종료일을 확인해 주세요.';renderDayDetails();return;}
+  const old=events.find(x=>x.id===draft.id);
+  if(!old){draft.error='해당 일정을 찾을 수 없습니다.';renderDayDetails();return;}
+  draft.busy=true;draft.error='';
+  const save=$('ycInlineSave');if(save){save.disabled=true;save.textContent='저장 중…';}
+  const uploaded=[];
+  try{
+    for(const p of draft.pending){uploaded.push(await window.JariAttachments.upload(p.file,draft.id));}
+    const record={...old,title:draft.title,note:draft.note,start:draft.start,end:draft.end,
+      chief:draft.chief,director:draft.director,
+      chiefCheckedAt:draft.chief?(draft.chiefAt||Number(old.chiefCheckedAt)||priorityStamp()):0,
+      directorCheckedAt:draft.director?(draft.directorAt||Number(old.directorCheckedAt)||priorityStamp()):0,
+      attachments:[...draft.kept,...uploaded],updatedAt:new Date().toISOString()};
+    if(!validEvent(record))throw new Error('일정 입력 내용을 확인해 주세요.');
+    const index=events.findIndex(x=>x.id===draft.id);
+    events.splice(index,1,record);
+    store();
+    window.dispatchEvent(new CustomEvent('jari:entry-save',{detail:{kind:'calendar',record}}));
+    const removed=[...draft.removed];
+    ycCloseInlineEvent(false);
+    selectedDate=record.start;
+    anchor=new Date(Number(record.start.slice(0,4)),Number(record.start.slice(5,7))-1,1);
+    render();toast('일정이 수정되었습니다.');
+    for(const item of removed)window.JariAttachments?.remove(item).catch(()=>{});
+  }catch(error){
+    for(const item of uploaded)window.JariAttachments?.remove(item).catch(()=>{});
+    draft.busy=false;draft.error='저장 실패: '+(error.message||'첨부 이미지를 확인해 주세요.');
+    if(ycInlineEventDraft===draft)renderDayDetails();
+  }
+}
+
 function renderDayDetails(){
+ if(ycInlineEventDraft && ycInlineEventDraft.day!==selectedDate)ycCloseInlineEvent(false);
  const d=fromYMD(selectedDate)||now;
  $('selectedDayTitle').textContent=`${d.getMonth()+1}월 ${d.getDate()}일`;
  $('selectedWeekday').textContent=`${'일월화수목금토'[d.getDay()]}요일 · ${d.getFullYear()}년${koreanHoliday(selectedDate)?' · '+koreanHoliday(selectedDate):''}`;
@@ -3066,7 +3276,11 @@ function renderDayDetails(){
       const id=escapeHtml(item.id);
       const isWorkItem=['spending','report','meeting'].includes(group.id);
       const quickDelete=isWorkItem?`<button type="button" class="daily-quick-delete" data-daily-quick-delete="${id}" data-daily-delete-kind="${group.id}" title="${group.label} 빠른 삭제" aria-label="${escapeHtml(item.title||'제목 없음')} 빠른 삭제">×</button>`:'';
-      return `<div class="daily-check-line ${complete?'is-checked':''}"><input type="checkbox" class="daily-check-input" aria-label="${escapeHtml(item.title||'업무')} 완료" data-daily-kind="${group.id}" data-daily-id="${id}" ${complete?'checked':''}><button type="button" class="daily-item-title" data-daily-open="${group.id}" data-daily-id="${id}" title="클릭하여 내용 확인 및 수정">${escapeHtml(group.id==='calendar'?eventDisplayTitle(item):(item.title||'제목 없음'))}</button>${quickDelete}</div>`;
+      if(group.id==='calendar'){
+        const editing=ycInlineEventDraft?.id===item.id&&ycInlineEventDraft.day===selectedDate;
+        return `<div class="yc-inline-event-row ${editing?'is-open':''}"><div class="daily-check-line ${complete?'is-checked':''}"><input type="checkbox" class="daily-check-input" aria-label="${escapeHtml(item.title||'일정')} 완료" data-daily-kind="calendar" data-daily-id="${id}" ${complete?'checked':''}><button type="button" class="daily-item-title" data-daily-open="calendar" data-daily-id="${id}" aria-expanded="${Boolean(editing)}" title="클릭하여 바로 아래에서 일정 수정">${escapeHtml(eventDisplayTitle(item))}</button><button type="button" class="yc-inline-edit-trigger" data-daily-open="calendar" data-daily-id="${id}" title="바로 수정" aria-label="${escapeHtml(item.title||'일정')} 바로 수정">✎</button></div>${editing?ycInlineEventHtml(item):''}</div>`;
+      }
+      return `<div class="daily-check-line ${complete?'is-checked':''}"><input type="checkbox" class="daily-check-input" aria-label="${escapeHtml(item.title||'업무')} 완료" data-daily-kind="${group.id}" data-daily-id="${id}" ${complete?'checked':''}><button type="button" class="daily-item-title" data-daily-open="${group.id}" data-daily-id="${id}" title="클릭하여 내용 확인 및 수정">${escapeHtml(item.title||'제목 없음')}</button>${quickDelete}</div>`;
     }).join('');
     const lines=routineScheduleNotice+itemLines;
     const canAdd=group.id!=='calendar';
@@ -3094,9 +3308,10 @@ function renderDayDetails(){
  }));
  el.querySelectorAll('[data-daily-open]').forEach(btn=>btn.addEventListener('click',()=>{
    const id=btn.dataset.dailyId,kind=btn.dataset.dailyOpen;
-   if(kind==='calendar')openEvent(id);
+   if(kind==='calendar')ycOpenInlineEvent(id);
    else {const item=window.JariWorkspace?.getItem?.(id);if(item)window.YWorkQuick?.open?.(kind,item);}
  }));
+ ycBindInlineEvent();
  // v60: Add quick-delete to spending/report/meeting items. Each record represents its entire repeat series.
  el.querySelectorAll('[data-daily-quick-delete]').forEach(btn=>btn.addEventListener('click',event=>{
    event.preventDefault();event.stopPropagation();
@@ -3191,12 +3406,14 @@ function initModal(){
  $('profileForm').addEventListener('submit',e=>{e.preventDefault();const name=$('profileName').value.trim(),team=$('profileTeam').value.trim();if(!name){toast('이름을 입력해주세요.');return;}profile={name,team};profileStore();$('profileModal').close();render();toast('내 정보가 저장되었습니다.');});
 }
 function openNewEvent(date=todayStr){
+ if(ycInlineEventDraft)ycCloseInlineEvent(false);
  $('eventForm').reset();$('eventId').value='';$('modalTitle').textContent='새 일정 등록';$('deleteEvent').hidden=true;$('formError').hidden=true;
  $('eventStart').value=date;$('eventEnd').value=date;
  eventPriorityTimes={chief:0,director:0};resetEventImageDraft();renderEventImages();
  $('eventModal').showModal();$('eventTitle').focus();
 }
 function editEvent(id){
+ if(ycInlineEventDraft)ycCloseInlineEvent(false);
  const event=events.find(e=>e.id===id);if(!event)return;
  $('eventForm').reset();$('eventId').value=event.id;$('modalTitle').textContent='일정 수정';$('deleteEvent').hidden=false;$('formError').hidden=true;
  $('eventTitle').value=event.title||'';$('eventNote').value=event.note||'';$('eventStart').value=event.start;$('eventEnd').value=event.end;
@@ -6758,3 +6975,5 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
 </script>
 </body>
 </html>
+
+<!-- Y Calender v84 · secure-context diagnostics · 2026-11-14 -->
