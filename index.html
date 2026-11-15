@@ -1102,8 +1102,15 @@ body.calendar-focused .page-footer{padding-top:14px}
 .budget-quick-actions .budget-quick-save{background:#2b70c7;border-color:#2b70c7;color:#fff}
 .budget-quick-actions button:disabled{opacity:.55;cursor:wait}
 .budget-quick-error{margin:8px 0 0;color:#bb3e53;font-size:11px;font-weight:750}
-@media(max-width:760px){.budget-inline-expense-tools>td{padding:8px!important}@media print{.budget-inline-expense-row,.budget-inline-expense-tools{display:none!important}}
+@media(max-width:760px){.budget-inline-expense-tools>td{padding:8px!important}}
+@media print{.budget-inline-expense-row,.budget-inline-expense-tools{display:none!important}}
 
+/* v104 — In-table ledger edit + bottom full-width row control. */
+.budget-ledger-bottom-add{display:block;box-sizing:border-box;width:100%;height:32px;margin-top:15px;border:1px dashed #7faff3;border-radius:7px;background:#f9fbff;color:#2e71c5;font-size:11px;font-weight:750;text-align:center;cursor:pointer;transition:background .12s,border-color .12s}
+.budget-ledger-bottom-add:hover{background:#edf5ff;border-color:#438be8}
+.budget-inline-expense-editing{background:#f3f8ff;border-top-color:#7daef1}
+.budget-inline-expense-editing + .budget-inline-expense-tools{border-bottom-color:#b9d6f8}
+@media print{.budget-ledger-bottom-add{display:none!important}}
 /* v102 - concise empty state for user-authored formula reference list */
 .budget-formula-empty-refs{display:inline-block;color:#8294ad;font-size:11px;line-height:1.6;padding:6px 2px}
 </style>
@@ -5825,18 +5832,26 @@ function summaryRowHtml({key,label,value,mode,hidden=false,removed=false,custom=
   const badge=hidden?' <span class="budget-row-flag">숨김</span>':'';
   return `<div class="budget-info-cell ${custom?'budget-custom-summary-row':''} ${hidden||removed?'budget-summary-hidden':''}" data-summary-key="${esc(key)}"><div class="budget-info-label"><span>${esc(label)}${badge}</span><button type="button" class="budget-pencil" data-summary-edit="${esc(key)}" title="${esc(label)} 행 설정" aria-label="${esc(label)} 행 설정 열기">✎</button></div><div class="budget-info-value ${error?'budget-formula-error':''} ${computed?'computed':''} ${negative?'negative':''}"><span title="${esc(error||'')}">${esc(value||'—')}${error?'<small class="budget-summary-error-note">수식 확인 필요</small>':''}</span><button type="button" class="budget-info-edit" data-summary-edit="${esc(key)}" aria-label="${esc(label)} 편집">수정</button></div></div>`;
 }
-function summaryRowsHtml(b,tot){const p=cleanBudget(b);
+// v103: the screen and Excel export share the same row order, visibility and displayed values.
+function budgetVisibleSummaryData(b,tot){const p=cleanBudget(b);
   const custom=p.summaryRows.filter(r=>!r.removed&&!r.deleted&&(showHidden||!r.hidden)).map(r=>{
     const result=r.mode==='formula'?summaryResult(p,`custom:${r.id}`,r):null;
-    const val=result?.value??null;
-    return summaryRowHtml({key:`custom:${r.id}`,label:r.label||'새 항목',value:r.mode==='formula'?result.text:(/^-?(0|[1-9]\d*)$/.test(String(r.value??'').trim())?fmt(Number(r.value)):String(r.value??'')),mode:r.mode,hidden:r.hidden,custom:true,computed:r.mode==='formula',negative:result?.negative||false,error:result?.error||''});
+    return {key:`custom:${r.id}`,label:r.label||'새 항목',
+      value:r.mode==='formula'?result.text:(/^-?(0|[1-9]\d*)$/.test(String(r.value??'').trim())?fmt(Number(r.value)):String(r.value??'')),
+      mode:r.mode,hidden:r.hidden,custom:true,computed:r.mode==='formula',negative:result?.negative||false,error:result?.error||'',
+      numericValue:r.mode==='formula'&&Number.isFinite(result?.value)?Math.round(result.value):null};
   });
-  // Deleted standard rows are never restored by the 'show hidden' toggle.
+  // As in the UI, removed default fields must never be regenerated for export.
   const base=summaryDefaults.filter(x=>!p.summaryConfig?.[x.key]?.removed&&(showHidden||!p.summaryConfig?.[x.key]?.hidden)).map(x=>{
     const cfg=summaryConfig(p,x.key),v=formattedSummaryValue(p,x.key,cfg,tot);
-    return summaryRowHtml({key:x.key,label:cfg.label||x.label,value:v.text,mode:cfg.mode,hidden:cfg.hidden,removed:cfg.removed,negative:v.negative,computed:v.computed,error:v.error||''});
+    const number=v.computed?summaryNumeric(p,x.key):null;
+    return {key:x.key,label:cfg.label||x.label,value:v.text,mode:cfg.mode,hidden:cfg.hidden,removed:cfg.removed,
+      negative:v.negative,computed:v.computed,error:v.error||'',numericValue:Number.isFinite(number)?Math.round(number):null};
   });
-  return [...custom,...base].join('')||'<div class="budget-no-summary">등록된 정보 행이 없습니다. ‘+ 행 추가’를 눌러 새 항목을 만들어 주세요.</div>';
+  return [...custom,...base];
+}
+function summaryRowsHtml(b,tot){
+  return budgetVisibleSummaryData(b,tot).map(summaryRowHtml).join('')||'<div class="budget-no-summary">등록된 정보 행이 없습니다. ‘+ 행 추가’를 눌러 새 항목을 만들어 주세요.</div>';
 }
 function hiddenSummaryCount(b){const p=cleanBudget(b);return p.summaryRows.filter(x=>x.hidden&&!x.removed&&!x.deleted).length+summaryDefaults.filter(x=>p.summaryConfig?.[x.key]?.hidden&&!p.summaryConfig?.[x.key]?.removed).length;}
 // v102: show ONLY explicitly authored budget-information rows as selectable formula references.
@@ -6094,24 +6109,31 @@ function budgetQuickWireDate(input,draft){
     if(budgetQuickIsoDate(formatted)){input.value=formatted;draft.date=formatted;}
   });
 }
-function inlineExpenseRowsHtml(){
+function inlineExpenseRowsHtml(rowId=''){
   const d=inlineExpenseDraft;
-  if(!d||d.ledgerId!==selectedId)return '';
-  return `<tr class="budget-inline-expense-row budget-hide-print" aria-label="신규 집행내역 입력 행">
+  if(!d||d.ledgerId!==selectedId||(d.editId||'')!==rowId)return '';
+  const editing=!!d.editId;
+  return `<tr class="budget-inline-expense-row ${editing?'budget-inline-expense-editing':''} budget-hide-print" aria-label="${editing?'집행내역 수정 행':'신규 집행내역 입력 행'}">
     <td><input id="budgetQuickDate" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="16" aria-label="집행 일자" placeholder="YYYYMMDD" title="숫자 8자리 입력: 예) 20261101" required value="${esc(budgetQuickDisplayDate(d.date))}"></td>
     <td><input id="budgetQuickCategory" type="text" aria-label="집행 구분" maxlength="80" placeholder="구분" value="${esc(d.category)}"></td>
     <td><input id="budgetQuickDescription" type="text" aria-label="사업명" maxlength="300" required placeholder="사업명을 입력하세요" value="${esc(d.description)}"></td>
     <td><input id="budgetQuickAmount" type="number" aria-label="집행금액" min="0" step="1" required placeholder="금액" value="${esc(d.amount)}"></td>
     <td class="budget-quick-daily-cell"><label><input id="budgetQuickDaily" type="checkbox" ${d.daily?'checked':''}><span>${d.daily?'O':'X'}</span></label></td>
-    <td class="budget-quick-new-tag">신규</td>
+    <td class="budget-quick-new-tag">${editing?'수정':'신규'}</td>
   </tr><tr class="budget-inline-expense-tools budget-hide-print"><td colspan="6">
      <div class="budget-quick-tools-main"><div class="budget-quick-actions"><button id="budgetQuickCancel" type="button">취소</button><button id="budgetQuickSave" type="button" class="budget-quick-save" ${d.busy?'disabled':''}>${d.busy?'저장 중…':'저장'}</button></div></div>
      <p id="budgetQuickError" role="alert" class="budget-quick-error" hidden></p>
    </td></tr>`;
 }
-function startInlineExpense(){
-  if(inlineExpenseDraft?.ledgerId!==selectedId){
-    inlineExpenseDraft={ledgerId:selectedId,date:today(),category:'',description:'',amount:'',daily:false,busy:false};
+function startInlineExpense(editId=''){
+  const b=budgetById(selectedId);
+  if(!b)return;
+  if(editId&&!(b.lineItems||[]).some(r=>r.id===editId))return;
+  const current=inlineExpenseDraft;
+  if(current?.busy)return;
+  if(!current||current.ledgerId!==selectedId||(current.editId||'')!==editId){
+    const original=editId?(b.lineItems||[]).find(r=>r.id===editId):null;
+    inlineExpenseDraft={ledgerId:selectedId,editId,date:original?.date||today(),category:original?.category||'',description:original?.description||'',amount:original?String(original.amount??''):'',daily:!!original?.daily,busy:false};
     render();
   }
   const field=$('budgetQuickDescription');
@@ -6129,6 +6151,7 @@ function bindInlineExpense(){
   $('budgetQuickSave').onclick=saveInlineExpense;
   for(const key of ['budgetQuickDate','budgetQuickCategory','budgetQuickDescription','budgetQuickAmount'])$(key)?.addEventListener('keydown',e=>{
     if(e.key==='Enter'&&!e.isComposing){e.preventDefault();saveInlineExpense();}
+    if(e.key==='Escape'){e.preventDefault();cancelInlineExpense();}
   });
 }
 async function saveInlineExpense(){
@@ -6147,9 +6170,16 @@ async function saveInlineExpense(){
   }
   d.busy=true;$('budgetQuickSave').disabled=true;$('budgetQuickSave').textContent='저장 중…';error.hidden=true;
   try{
-    const line={id:uid(),date,category:$('budgetQuickCategory').value.trim(),description:desc,amount,daily:$('budgetQuickDaily').checked,hidden:false,note:'',attachments:[]};
-    saveBudget({...b,lineItems:[...(b.lineItems||[]),line]});
-    inlineExpenseDraft=null;render();notify('집행내역을 추가했습니다.');
+    const old=d.editId?(b.lineItems||[]).find(r=>r.id===d.editId):null;
+    if(d.editId&&!old)throw Error('수정하려는 집행내역을 찾을 수 없습니다.');
+    // Preserve existing attachment and note metadata while editing the five visible columns.
+    const line={...(old||{}),id:old?.id||uid(),date,category:$('budgetQuickCategory').value.trim(),description:desc,amount,daily:$('budgetQuickDaily').checked,
+       ...(!old?{hidden:false,note:'',attachments:[]}:{} )};
+    const lines=[...(b.lineItems||[])];
+    if(old){const index=lines.findIndex(r=>r.id===old.id);lines[index]=line;}
+    else lines.push(line);
+    saveBudget({...b,lineItems:lines});
+    inlineExpenseDraft=null;render();notify(old?'집행내역을 수정했습니다.':'집행내역을 추가했습니다.');
   }catch(err){
     d.busy=false;
     const button=$('budgetQuickSave');if(button){button.disabled=false;button.textContent='저장';}
@@ -6164,17 +6194,17 @@ function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=dateSortedBudge
   <div class="budget-ledger-paper"><header class="budget-paper-title"><strong>${esc(head)}</strong>${subtitle?`<span>${esc(subtitle)}</span>`:''}</header>
   <div class="budget-detail-controls"><button id="budgetAddRow" class="budget-outline">＋ 행 추가</button><button id="budgetShowHidden" class="budget-outline">${showHidden?'숨김행 감추기':'숨김행 보기'} ${hiddenSummaryCount(p)+rows.filter(x=>x.hidden).length?`(${hiddenSummaryCount(p)+rows.filter(x=>x.hidden).length})`:''}</button><button id="budgetEditInfo" class="budget-edit-all">✎ 예산 정보 수정</button></div>
   <div class="budget-info-grid">${summaryRowsHtml(p,t)}</div>
-  <div class="budget-ledger-toolbar"><div><strong>집행내역</strong><span>거래 내용을 선택하면 수정할 수 있습니다.</span></div><button type="button" id="budgetAddExpense" class="budget-btn budget-expense-add">＋ 집행내역 추가</button></div>
-  <div class="budget-table-wrap"><table class="budget-ledger-table"><colgroup><col style="width:13%"><col style="width:12%"><col style="width:44%"><col style="width:15%"><col style="width:11%"><col style="width:5%"></colgroup><thead><tr><th>일자</th><th>구분</th><th>사업명</th><th>집행금액</th><th>일상경비여부</th><th class="budget-hide-print">삭제</th></tr></thead><tbody>${show.map(r=>`<tr data-edit-line="${esc(r.id)}" class="${r.hidden?'budget-hidden-row':''} ${r.legacy?'budget-legacy-row':''}" title="${r.legacy?'기존 지출업무 연동 행':'클릭하여 수정'}"><td>${esc(showDate(r.date))}<span class="budget-calendar-glyph">▦</span></td><td>${r.category?esc(r.category):'<span class="budget-empty-category">—</span>'}</td><td><span class="budget-descrip">${esc(r.description||'')}</span>${r.note?`<small class="budget-note">${esc(r.note)}</small>`:''}${(r.attachments||[]).length?`<button class="budget-attach-link budget-hide-print" data-line-images="${esc(r.id)}" title="첨부이미지 보기">📎 ${r.attachments.length}</button>`:''}${r.hidden?'<small class="budget-row-hidden-label">숨김</small>':''}</td><td class="budget-number">${fmt(r.amount)} 원</td><td class="budget-daily ${r.daily?'yes':'no'}">${r.daily?'O':'X'}</td><td class="budget-row-actions budget-hide-print">${r.legacy?'<span title="지출업무에서 수정">↗</span>':`<button class="budget-del-row" data-delete-line="${esc(r.id)}" title="행 삭제">×</button>`}</td></tr>`).join('')}${inlineExpenseRowsHtml()}${!show.length&&!inlineExpenseDraft?'<tr class="budget-no-rows"><td colspan="6">아직 집행내역이 없습니다. ‘+ 집행내역 추가’ 버튼으로 등록하세요.</td></tr>':''}</tbody></table></div>
+  <div class="budget-ledger-toolbar"><div><strong>집행내역</strong><span>행을 선택하면 표에서 바로 수정할 수 있습니다.</span></div></div>
+  <div class="budget-table-wrap"><table class="budget-ledger-table"><colgroup><col style="width:13%"><col style="width:12%"><col style="width:44%"><col style="width:15%"><col style="width:11%"><col style="width:5%"></colgroup><thead><tr><th>일자</th><th>구분</th><th>사업명</th><th>집행금액</th><th>일상경비여부</th><th class="budget-hide-print">삭제</th></tr></thead><tbody>${show.map(r=>inlineExpenseDraft?.editId===r.id ? inlineExpenseRowsHtml(r.id) : `<tr data-edit-line="${esc(r.id)}" class="${r.hidden?'budget-hidden-row':''} ${r.legacy?'budget-legacy-row':''}" title="${r.legacy?'기존 지출업무 연동 행':'클릭하여 수정'}"><td>${esc(showDate(r.date))}<span class="budget-calendar-glyph">▦</span></td><td>${r.category?esc(r.category):'<span class="budget-empty-category">—</span>'}</td><td><span class="budget-descrip">${esc(r.description||'')}</span>${r.note?`<small class="budget-note">${esc(r.note)}</small>`:''}${(r.attachments||[]).length?`<button class="budget-attach-link budget-hide-print" data-line-images="${esc(r.id)}" title="첨부이미지 보기">📎 ${r.attachments.length}</button>`:''}${r.hidden?'<small class="budget-row-hidden-label">숨김</small>':''}</td><td class="budget-number">${fmt(r.amount)} 원</td><td class="budget-daily ${r.daily?'yes':'no'}">${r.daily?'O':'X'}</td><td class="budget-row-actions budget-hide-print">${r.legacy?'<span title="지출업무에서 수정">↗</span>':`<button class="budget-del-row" data-delete-line="${esc(r.id)}" title="행 삭제">×</button>`}</td></tr>`).join('')}${inlineExpenseRowsHtml('')}${!show.length&&!inlineExpenseDraft?'<tr class="budget-no-rows"><td colspan="6">아직 집행내역이 없습니다. 아래 ‘+ 행 추가’로 등록하세요.</td></tr>':''}</tbody></table></div><button type="button" id="budgetAddExpense" class="budget-ledger-bottom-add budget-hide-print">＋ 행 추가</button>
   <div class="budget-ledger-foot">총 ${rows.length}건 · 화면 표시 ${show.length}건 · 일상경비 O는 배정액에서, 전체 금액은 총 예산액에서 차감됩니다.</div></div>
   </section>`;
   $('budgetDetailClose').onclick=()=>{selectedId='';inlineExpenseDraft=null;render();};
-  $('budgetAddRow').onclick=addSummaryRow;$('budgetAddExpense').onclick=startInlineExpense;bindInlineExpense();$('budgetShowHidden').onclick=()=>{showHidden=!showHidden;render();};$('budgetEditInfo').onclick=()=>openBudgetForm(p.id);
+  $('budgetAddRow').onclick=addSummaryRow;$('budgetAddExpense').onclick=()=>startInlineExpense();bindInlineExpense();$('budgetShowHidden').onclick=()=>{showHidden=!showHidden;render();};$('budgetEditInfo').onclick=()=>openBudgetForm(p.id);
   document.querySelectorAll('[data-summary-edit]').forEach(x=>x.onclick=e=>{e.stopPropagation();editSummaryRow(x.dataset.summaryEdit,x);});
   $('budgetPdf').onclick=()=>{document.title=`${p.year} ${p.title} 집행장부`;window.print();document.title='Y Calender | 나의 업무관리';};
   $('budgetExcel').onclick=()=>exportBudgetExcel(p).catch(err=>notify('엑셀 저장 실패: '+err.message));
   // Detail toolbar intentionally omits Excel upload per requested layout.
-  $('moduleItems').querySelectorAll('[data-edit-line]').forEach(tr=>tr.addEventListener('click',e=>{if(e.target.closest('button'))return;if(tr.classList.contains('budget-legacy-row')){notify('이 내역은 지출업무 화면에서 수정할 수 있습니다.');return;}openLineForm(tr.dataset.editLine);}));
+  $('moduleItems').querySelectorAll('[data-edit-line]').forEach(tr=>tr.addEventListener('click',e=>{if(e.target.closest('button'))return;if(tr.classList.contains('budget-legacy-row')){notify('이 내역은 지출업무 화면에서 수정할 수 있습니다.');return;}startInlineExpense(tr.dataset.editLine);}));
   $('moduleItems').querySelectorAll('[data-delete-line]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();deleteLine(btn.dataset.deleteLine);});
   $('moduleItems').querySelectorAll('[data-line-images]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();const row=rows.find(x=>x.id===btn.dataset.lineImages);openImageList(row?.attachments||[]);});
 }
@@ -6267,27 +6297,57 @@ function deleteLine(id){const b=budgetById(selectedId),line=b?.lineItems?.find(x
 function openImageList(images){if(!images.length)return;if(images.length===1){window.JariAttachments.open(images[0]);return;}
   const names=images.map((a,i)=>`${i+1}. ${a.name}`).join('\n');const val=prompt(`열어볼 첨부 이미지 번호를 선택해주세요.\n${names}`,'1');if(val&&images[Number(val)-1])window.JariAttachments.open(images[Number(val)-1]);
 }
-async function exportBudgetExcel(b){const X=window.JariExcel.needExcel(),book=new X.Workbook(),sheet=book.addWorksheet('집행장부');const p=cleanBudget(b),t=totals(p),rows=dateSortedBudgetLines(p),end=Math.max(11,10+rows.length),{cat,grp}=titleParts(p);
-  sheet.mergeCells('A1:H1');sheet.getCell('A1').value=p.heading||`${grp} - ${cat}`;sheet.getCell('A1').font={size:17,bold:true,color:{argb:'FF233A5D'}};sheet.getCell('A1').alignment={horizontal:'center',vertical:'middle'};sheet.getRow(1).height=39;
-  sheet.mergeCells('A2:H2');sheet.getCell('A2').value=p.description||p.title;sheet.getCell('A2').alignment={horizontal:'center'};sheet.getRow(2).height=25;
-  [['A4','연도'],['B4',p.year],['D4','예산목'],['E4',p.account],['A5','한계예산'],['B5',p.limitBudget],['D5','총 예산액'],['E5',p.totalBudget],['A6','일상경비배정액'],['B6',p.dailyAllocated],['D6','일상경비잔액'],['A7','집행금액지출합계'],['D7','총금액 잔액']].forEach(([cell,v])=>sheet.getCell(cell).value=v);
-  sheet.getCell('E6').value={formula:`B6-SUMIF(E11:E${end},"O",D11:D${end})`,result:t.dailyRemain};
-  sheet.getCell('B7').value={formula:`SUM(D11:D${end})`,result:t.spent};
-  sheet.getCell('E7').value={formula:'E5-B7',result:t.totalRemain};
-  ['B5','E5','B6','E6','B7','E7'].forEach(k=>sheet.getCell(k).numFmt='#,##0" 원";[Red]-#,##0" 원"');
-  const labels=['일자','구분','사업명','집행금액','일상경비여부','비고','숨김','첨부파일명'];window.JariExcel.addHeader(sheet,labels,10);
-  rows.forEach((r,i)=>{const row=sheet.getRow(i+11);row.values=[normalizeDate(r.date),window.JariExcel.safe(r.category),window.JariExcel.safe(r.description),parseAmt(r.amount),r.daily?'O':'X',window.JariExcel.safe(r.note),r.hidden?'O':'X',(r.attachments||[]).map(x=>x.name).join(', ')];row.getCell(4).numFmt='#,##0" 원"';});
-  sheet.columns=[{width:20},{width:19},{width:60},{width:20},{width:18},{width:28},{width:12},{width:40}];window.JariExcel.styleRows(sheet,10,10+rows.length,8);sheet.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0};
-  // Custom header fields are kept in a separate tab so the canonical account
-  // formulas and ledger column positions remain unchanged on every export.
-  const modifiedDefaults=summaryDefaults.filter(x=>p.summaryConfig?.[x.key]&&!p.summaryConfig[x.key].removed);
-  if(p.summaryRows.length||modifiedDefaults.length){
-    const additional=book.addWorksheet('추가 정보');
-    window.JariExcel.addHeader(additional,['항목명','행 종류','표시값','수식 구성','화면 숨김'],1);
-    const dataset=[...p.summaryRows.map(x=>({label:x.label,mode:x.mode||'basic',value:x.mode==='formula'?summaryNumeric(p,`custom:${x.id}`):String(x.value??''),formula:x.mode==='formula'?formulaExpression(x):'',hidden:x.hidden})),...modifiedDefaults.map(x=>{const v=formattedSummaryValue(p,x.key,summaryConfig(p,x.key),t);return {label:p.summaryConfig[x.key]?.label||x.label,mode:p.summaryConfig[x.key]?.mode||x.mode,value:v.text,formula:p.summaryConfig[x.key]?.mode==='formula'?formulaExpression(p.summaryConfig[x.key]):'',hidden:p.summaryConfig[x.key]?.hidden||p.summaryConfig[x.key]?.removed};})];
-    for(const r of dataset)additional.addRow([window.JariExcel.safe(r.label||''),r.mode==='formula'?'수식행':'기본행',window.JariExcel.safe(r.value??''),window.JariExcel.safe(r.formula||''),r.hidden?'O':'X']);
-    additional.columns=[{width:29},{width:15},{width:30},{width:48},{width:14}];
+// v103: export the CURRENT budget information as shown, instead of hard-coded legacy fields.
+async function exportBudgetExcel(b){
+  const X=window.JariExcel.needExcel(),book=new X.Workbook(),sheet=book.addWorksheet('집행장부');
+  const p=cleanBudget(b),t=totals(p),rows=dateSortedBudgetLines(p);
+  const visibleInfo=budgetVisibleSummaryData(p,t);
+  sheet.mergeCells('A1:H1');sheet.getCell('A1').value=window.JariExcel.safe(p.title||'예산');
+  sheet.getCell('A1').font={size:17,bold:true,color:{argb:'FF233A5D'}};
+  sheet.getCell('A1').alignment={horizontal:'center',vertical:'middle'};sheet.getRow(1).height=39;
+  sheet.mergeCells('A2:H2');sheet.getCell('A2').value=window.JariExcel.safe(p.account||'');
+  sheet.getCell('A2').alignment={horizontal:'center',vertical:'middle'};
+  sheet.getCell('A2').font={size:10,color:{argb:'FF627EA8'}};sheet.getRow(2).height=25;
+  for(let i=0;i<visibleInfo.length;i++){
+    const r=visibleInfo[i],n=4+Math.floor(i/2),first=i%2===0;
+    const labelStart=first?'A':'E',labelEnd=first?'B':'F',valueStart=first?'C':'G',valueEnd=first?'D':'H';
+    sheet.mergeCells(`${labelStart}${n}:${labelEnd}${n}`);
+    sheet.mergeCells(`${valueStart}${n}:${valueEnd}${n}`);
+    const labelCell=sheet.getCell(`${labelStart}${n}`),valueCell=sheet.getCell(`${valueStart}${n}`);
+    labelCell.value=window.JariExcel.safe(r.label);
+    labelCell.font={size:10,bold:true,color:{argb:'FF284568'}};
+    labelCell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE9F1FC'}};
+    labelCell.alignment={horizontal:'left',vertical:'middle',indent:1,wrapText:true};
+    // Formula results are exported as their evaluated numeric values, not as
+    // unrelated fixed Excel formulas. Excel can then use them in calculations.
+    if(r.computed&&r.numericValue!==null&&!r.error){
+      valueCell.value=r.numericValue;
+      valueCell.numFmt='#,##0"원";[Red]-#,##0"원"';
+    }else if(!r.computed&&/^-?(?:0|[1-9]\d{0,2}(?:,\d{3})*)$/.test(String(r.value??''))){
+      valueCell.value=Number(String(r.value).replace(/,/g,''));
+      valueCell.numFmt='#,##0;[Red]-#,##0';
+    }else{
+      valueCell.value=window.JariExcel.safe(r.value??'');
+    }
+    valueCell.font={size:10,bold:Boolean(r.computed),color:{argb:r.error?'FFBC4550':r.negative?'FFCE414E':r.computed?'FF2766BF':'FF233A5D'}};
+    valueCell.alignment={horizontal:typeof valueCell.value==='number'?'right':'left',vertical:'middle',indent:1,wrapText:true};
+    valueCell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+    if(r.error)valueCell.note=String(r.error);
+    sheet.getRow(n).height=29;
   }
+  // The detail table is placed after the dynamic summary, so additional user
+  // rows cannot overlap the expense header. The import feature still recognizes
+  // the exact same '일자' and '집행금액' column names.
+  const headerRow=Math.max(10,4+Math.ceil(visibleInfo.length/2)+2);
+  window.JariExcel.addHeader(sheet,['일자','구분','사업명','집행금액','일상경비여부','비고','숨김','첨부파일명'],headerRow);
+  rows.forEach((r,i)=>{
+    const row=sheet.getRow(headerRow+i+1);
+    row.values=[normalizeDate(r.date),window.JariExcel.safe(r.category),window.JariExcel.safe(r.description),parseAmt(r.amount),r.daily?'O':'X',window.JariExcel.safe(r.note),r.hidden?'O':'X',(r.attachments||[]).map(x=>x.name).join(', ')];
+    row.getCell(4).numFmt='#,##0" 원"';
+  });
+  sheet.columns=[{width:20},{width:19},{width:60},{width:22},{width:22},{width:26},{width:13},{width:40}];
+  window.JariExcel.styleRows(sheet,headerRow,headerRow+rows.length,8);
+  sheet.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0};
   await window.JariExcel.write(book,`${p.year}-${p.title}-집행장부`);
 }
 function openImportModal(){$('budgetImportError').hidden=true;$('budgetImportForm').reset();$('budgetExcelModal').showModal();}
