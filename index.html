@@ -444,6 +444,12 @@
 @media(max-width:470px){.budget-overview{align-items:flex-start}.budget-main-add{white-space:nowrap;font-size:11px;padding:10px 9px}.budget-overview h2{font-size:22px}.budget-summary-grid{gap:8px}.budget-summary-card{min-height:106px;padding:11px}.budget-summary-top{font-size:11px}.budget-summary-card strong{font-size:19px}.budget-sum-hint{font-size:9px}.budget-year-control>span{display:none}.budget-year-control{padding:0 7px}.budget-group-chip{padding:7px 10px;font-size:11px}.budget-board-v3 .budget-palette.budget-cards-grid{grid-template-columns:1fr}.budget-board-v3 .budget-tile.budget-category-card{min-height:180px}.budget-card-group{margin-top:9px}.budget-card-divider{margin:10px 0}.budget-board-v3 .budget-card-amount{font-size:19px}.budget-summary-card strong small,.budget-summary-card strong span{font-size:10px}.budget-list-heading h3{font-size:16px}.module-heading-actions{width:100%;flex-wrap:wrap}}
 @media print{.budget-overview,.budget-list-section,.budget-summary-grid,.budget-board-v3{display:none!important}.budget-detail-head{display:none!important}.budget-ledger-paper{padding:0!important}.budget-paper-title{background:#fff!important;border:1px solid #222!important;border-radius:2px!important;box-shadow:none!important}.budget-paper-title strong{font-size:14px!important}.budget-paper-title span{font-size:11px!important}.budget-info-grid{border-radius:0!important}.budget-table-wrap{border-radius:0!important}.budget-detail-view{overflow:visible!important}}
 
+/* v97: compact new-budget dialog matching four-field reference, without changing edit mode. */
+#budgetInfoModal [data-budget-existing-only][hidden]{display:none!important}
+#budgetInfoModal.is-create .modal-body{padding-bottom:18px}
+#budgetInfoModal.is-create .modal-footer{padding-top:12px;padding-bottom:12px}
+#budgetInfoModal.is-create .field-row{margin-bottom:0}
+#budgetInfoModal.is-create .modal-body>.field:nth-of-type(2){margin-bottom:13px}
 /* v4: Budget dialogs — contain horizontal width and make only the form body scroll.
    The previous 650px-wide form sat inside a 590px-wide dialog, causing the
    horizontal scrollbar and clipping the close/save controls on narrower screens. */
@@ -1039,6 +1045,64 @@ body.calendar-focused .page-footer{padding-top:14px}
 /* v40 | 2026~2100 Korean public holiday status */
 .holiday-scope-note{font-size:11px;color:#7a8da9;max-width:70%;text-align:right;line-height:1.4}
 @media(max-width:700px){.holiday-scope-note{font-size:10px;max-width:65%;line-height:1.35}}
+
+/* v98: beginner-friendly budget row calculation interface */
+.budget-row-popover{width:min(700px,calc(100vw - 20px))!important}
+.budget-row-editor-grid{grid-template-columns:minmax(150px,1fr) minmax(220px,1.5fr);row-gap:15px;padding:19px 19px 12px;column-gap:17px}
+.budget-formula-advanced{gap:12px!important}
+.yc-formula-intro{display:flex;flex-direction:column;gap:4px}
+.yc-formula-intro strong{font-size:15px;color:#25496f;font-weight:800}
+.yc-formula-intro span{font-size:12px;font-weight:550;color:#8194ad}
+.yc-formula-method select{width:100%;border:1px solid #cfdef0;border-radius:11px;background:#f9fbff;color:#264d77;min-height:46px;padding:11px 13px;font-size:14px;font-weight:750}
+.yc-formula-options{padding:13px 13px;border-radius:12px;border:1px solid #e0e9f6;background:#f6faff}
+.yc-formula-options[hidden],.yc-formula-options [hidden]{display:none!important}
+.yc-formula-options .budget-editor-control input,.yc-formula-options .budget-editor-control select{width:100%;font-size:13px;font-weight:650;border:1px solid #d5e2f3;border-radius:9px;min-height:39px;padding:8px 10px;box-sizing:border-box;color:#264667;background:#fff}
+.yc-formula-math{display:grid;grid-template-columns:minmax(0,1fr) 124px minmax(0,1fr);gap:9px;align-items:end}
+.yc-formula-generated{font-size:11px;color:#6b829c;font-weight:650}
+.budget-formula-advanced .budget-formula-result{margin:0;padding:12px 14px;border-radius:11px;align-items:center}
+.budget-formula-advanced .budget-formula-result>span{font-size:12px}
+.budget-formula-advanced .budget-formula-result output{font-size:19px}
+.yc-formula-advanced-details{border:1px solid #e4eaf4;border-radius:12px;overflow:hidden;background:#fff}
+.yc-formula-advanced-details summary{list-style:none;cursor:pointer;padding:11px 13px;color:#5a7497;font-weight:750;font-size:12px;background:#f8fafc;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.yc-formula-advanced-details summary::-webkit-details-marker{display:none}
+.yc-formula-advanced-details summary:before{content:'▸';font-size:12px;color:#6b89af}
+.yc-formula-advanced-details[open] summary:before{content:'▾'}
+.yc-formula-advanced-details summary span{font-size:10px;font-weight:550;color:#9aa9bc}
+.yc-formula-advanced-content{padding:13px;display:flex;flex-direction:column;gap:11px}
+.yc-formula-advanced-content textarea{min-height:88px;border-radius:10px;padding:12px;font-size:13px;font-weight:650}
+.yc-formula-advanced-content .budget-formula-ref-label{font-size:11px}
+.yc-formula-advanced-content .budget-formula-tags,.yc-formula-advanced-content .budget-formula-examples{gap:5px}
+.yc-formula-advanced-content .budget-formula-tags button,.yc-formula-advanced-content .budget-formula-examples button{padding:7px 9px;border-radius:8px;font-size:11px}
+.yc-formula-advanced-content .budget-formula-guide{font-size:10px;line-height:1.5;color:#8494ab}
+@media(max-width:760px){.budget-row-popover{width:calc(100vw - 14px)!important}.budget-row-editor-grid{grid-template-columns:1fr;padding:14px;gap:12px}.yc-formula-math{grid-template-columns:1fr 90px 1fr}.yc-formula-method select{font-size:12px;min-height:42px}.budget-formula-advanced .budget-formula-result output{font-size:17px}}
+@media(max-width:390px){.yc-formula-math{grid-template-columns:1fr}.yc-formula-advanced-details summary span{display:none}}
+
+
+/* v99 — Inline expense creation. Saved ledger rows are ordered by date ascending. */
+.budget-inline-expense-row{background:#f6faff;border-top:2px solid #a9cafa}
+.budget-inline-expense-row td{padding:8px 5px!important;height:auto!important;vertical-align:middle!important}
+.budget-inline-expense-row input[type="date"],.budget-inline-expense-row input[type="text"],.budget-inline-expense-row input[type="number"]{box-sizing:border-box;display:block;width:100%;min-width:0;max-width:100%;height:35px;border:1px solid #c9d9ef;border-radius:7px;padding:5px 7px;color:#244263;background:#fff;font:inherit;font-size:11px;outline:none}
+.budget-inline-expense-row input:focus{border-color:#6fa5eb;box-shadow:0 0 0 2px #daebff}
+.budget-inline-expense-row input[type="number"]{text-align:right;appearance:textfield}
+.budget-inline-expense-row input[type="number"]::-webkit-inner-spin-button,.budget-inline-expense-row input[type="number"]::-webkit-outer-spin-button{appearance:none;margin:0}
+.budget-inline-expense-row .budget-quick-daily-cell{text-align:center}
+.budget-quick-daily-cell label{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:#52769d;cursor:pointer}
+.budget-quick-daily-cell input{accent-color:#2787d1;width:16px;height:16px}
+.budget-inline-expense-row .budget-quick-new-tag{text-align:center;color:#3975c0;font-size:10px;font-weight:800}
+.budget-inline-expense-tools{background:#f9fbff;border-bottom:2px solid #d7e8fb}
+.budget-inline-expense-tools>td{padding:9px 12px 12px!important;border-top:0!important}
+.budget-quick-tools-main{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:#536f94}
+.budget-quick-tools-main strong{font-size:11px;color:#2d619c}
+.budget-quick-tools-main span{font-size:10px;color:#8a9fba}
+.budget-inline-expense-tools>td{padding:5px 12px 7px!important}
+.budget-quick-tools-main{align-items:center;gap:8px}
+.budget-inline-expense-row input#budgetQuickDate{font-variant-numeric:tabular-nums;letter-spacing:-.02em;font-size:10.5px}
+.budget-quick-actions{order:1;margin-left:auto;display:flex;gap:7px}
+.budget-quick-actions button{border:1px solid #d5e1f2;color:#577293;background:white;border-radius:7px;padding:7px 13px;font-size:11px;font-weight:800;cursor:pointer}
+.budget-quick-actions .budget-quick-save{background:#2b70c7;border-color:#2b70c7;color:#fff}
+.budget-quick-actions button:disabled{opacity:.55;cursor:wait}
+.budget-quick-error{margin:8px 0 0;color:#bb3e53;font-size:11px;font-weight:750}
+@media(max-width:760px){.budget-inline-expense-tools>td{padding:8px!important}@media print{.budget-inline-expense-row,.budget-inline-expense-tools{display:none!important}}
 </style>
 <style>
 /* v31 — compact date-based floating task planner */
@@ -5543,6 +5607,8 @@ function removeEmptyOldStarters(){
   finally{removingOldStarters=false;}
 }
 let selectedId='',showHidden=false,editingLineId='',removingImageIds=new Set(),lastBoardSearch='',activeGroup='전체',activeYear=new Date().getFullYear();
+// v99: New budget expenses are drafted in the ledger table, not in a floating dialog.
+let inlineExpenseDraft=null;
 const workspace=()=>window.JariWorkspace;
 const budgets=()=>workspace().getItems().filter(x=>x.kind==='budget');
 const budgetById=id=>workspace().getItem(id);
@@ -5554,11 +5620,18 @@ function rawLines(b){const current=cleanBudget(b);const existing=(current.lineIt
 }
 function totals(b){const rows=rawLines(b),spent=rows.reduce((s,r)=>s+parseAmt(r.amount),0),dailySpent=rows.filter(r=>r.daily).reduce((s,r)=>s+parseAmt(r.amount),0),p=cleanBudget(b);return {spent,dailySpent,dailyRemain:p.dailyAllocated-dailySpent,totalRemain:p.totalBudget-spent};}
 function normalizeDate(v){if(v instanceof Date&&!Number.isNaN(v)){return [v.getUTCFullYear(),String(v.getUTCMonth()+1).padStart(2,'0'),String(v.getUTCDate()).padStart(2,'0')].join('-');}if(typeof v==='number'&&v>15000&&v<100000){return normalizeDate(new Date(Math.round((v-25569)*86400000)));}const s=String(v??'').trim().replace(/\./g,'-').replace(/\//g,'-');const m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(!m)return '';const y=Number(m[1]),mo=Number(m[2]),day=Number(m[3]),d=new Date(y,mo-1,day);return d.getFullYear()===y&&d.getMonth()===mo-1&&d.getDate()===day?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:'';}
+// Stable ascending date order (older first). Undated legacy records appear last.
+function dateSortedBudgetLines(b){
+  return rawLines(b).map((item,index)=>({item,index})).sort((a,b)=>{
+    const da=normalizeDate(a.item.date)||'9999-12-31',db=normalizeDate(b.item.date)||'9999-12-31';
+    return da<db?-1:da>db?1:a.index-b.index;
+  }).map(({item})=>item);
+}
 function showDate(iso){const date=normalizeDate(iso);if(!date)return esc(iso);const d=new Date(date+'T00:00:00');return `${date}(${['일','월','화','수','목','금','토'][d.getDay()]})`;}
 function titleParts(b){const cat=b.category||String(b.title).replace(/\s*\([^)]*\)\s*$/,'');const grp=b.group||(String(b.title).match(/\(([^)]*)\)/)?.[1]||'');return {cat,grp};}
 function findPreset(p){return budgets().find(x=>Number(x.year||activeYear)===activeYear&&(x.title===p.full||x.category===p.title&&x.group===p.group));}
-function makeFromPreset(p){const year=activeYear;return {id:uid(),kind:'budget',title:p.full,category:p.title,group:p.group,color:p.color,year,heading:p.full==='사무관리비 (부서운영비)'?'부서운영 기본경비 - 사무관리비':`${p.group} - ${p.title}`,account:p.full==='사무관리비 (부서운영비)'?'부서운영 기본경비 - 일반운영비 - 사무관리비(201-01)':'',description:p.full==='사무관리비 (부서운영비)'?'임대, 렌탈, 기타 물품구매용':'',limitBudget:0,totalBudget:0,dailyAllocated:0,lineItems:[],updatedAt:new Date().toISOString()};}
-function closeBudget(){selectedId='';workspace().switchSection('calendar');}
+function makeFromPreset(p){const year=activeYear;return {id:uid(),kind:'budget',title:p.full,category:p.title,group:p.group,color:p.color,year,heading:p.full==='사무관리비 (부서운영비)'?'부서운영 기본경비 - 사무관리비':`${p.group} - ${p.title}`,account:p.full==='사무관리비 (부서운영비)'?'부서운영 기본경비 - 일반운영비 - 사무관리비(201-01)':'',description:p.full==='사무관리비 (부서운영비)'?'임대, 렌탈, 기타 물품구매용':'',limitBudget:0,totalBudget:0,dailyAllocated:0,lineItems:[],summaryRows:[],summaryConfig:blankBudgetSummaryConfig(),updatedAt:new Date().toISOString()};}
+function closeBudget(){selectedId='';inlineExpenseDraft=null;workspace().switchSection('calendar');}
 function saveBudget(entry){const normalized=cleanBudget(entry);normalized.updatedAt=new Date().toISOString();workspace().upsertItem(normalized);}
 function render(){closeRowPopover();if($('workspacePanel').hidden)return;const root=$('moduleItems');if(!root)return;
   $('moduleSummary').hidden=true;
@@ -5643,10 +5716,10 @@ function renderBoard(){
     let b=el.dataset.budgetId?budgetById(el.dataset.budgetId):p?findPreset(p):budgets().find(x=>x.title===n&&Number(x.year)===activeYear);
     if(!b&&p){b=makeFromPreset(p);saveBudget(b);}
     if(!b)return;
-    selectedId=b.id;showHidden=false;render();
+    selectedId=b.id;inlineExpenseDraft=null;showHidden=false;render();
   }));
 }
-function showBoard(){selectedId='';showHidden=false;lastBoardSearch='';activeGroup='전체';}
+function showBoard(){selectedId='';inlineExpenseDraft=null;showHidden=false;lastBoardSearch='';activeGroup='전체';}
 
 // Editable summary rows. Existing accounting totals remain canonical: custom display
 // formulas never alter the authoritative expense ledger or its balances.
@@ -5662,6 +5735,8 @@ const summaryDefaults=[
 ];
 const NUMERIC_BUILTINS=[['limitBudget','한계예산'],['totalBudget','총 예산액'],['dailyAllocated','일상경비배정액'],['dailySpent','일상경비 집행합계'],['spent','집행금액지출합계'],['dailyRemain','일상경비잔액'],['totalRemain','총금액 잔액'],['zero','0']];
 const BASE_REF_NAMES={year:'연도',account:'예산목',limitBudget:'한계예산',totalBudget:'총 예산액',dailyAllocated:'일상경비배정액',dailySpent:'일상경비 집행합계',spent:'집행금액지출합계',dailyRemain:'일상경비잔액',totalRemain:'총금액 잔액',zero:'0'};
+// v96: New ledgers start with no auto-generated information rows. Existing ledgers retain their settings.
+function blankBudgetSummaryConfig(){return Object.fromEntries(summaryDefaults.map(row=>[row.key,{removed:true,hidden:false}]));}
 const BUDGET_RANGES=['집행금액','구분','사업명','일상경비여부','일자','비고'];
 function summaryConfig(b,key){const base=summaryDefaults.find(x=>x.key===key)||{};return {...base,...(b.summaryConfig?.[key]||{})};}
 function formulaExpression(row){
@@ -5765,6 +5840,76 @@ function formulaSuggestionHtml(b){
   const p=cleanBudget(b),names=[...NUMERIC_BUILTINS.map(([,label])=>label),...p.summaryRows.map(x=>x.label).filter(Boolean)];
   return `<div class="budget-formula-tags" aria-label="수식 항목 빠른 입력">${[...new Set(names)].map(name=>`<button type="button" data-formula-insert="${esc(`[${name}]`)}" title="${esc(name)} 참조 삽입">${esc(name)}</button>`).join('')}</div>`;
 }
+// v98 - simple formula builder. The existing advanced calculation engine remains unchanged.
+const YC_FORMULA_TEMPLATES={
+  sum:'=SUM(집행내역[집행금액])',
+  daily:'=SUMIF(집행내역[일상경비여부], "O", 집행내역[집행금액])',
+  remaining:'=[총 예산액] - SUM(집행내역[집행금액])',
+  dailyRemaining:'=[일상경비배정액] - SUMIF(집행내역[일상경비여부], "O", 집행내역[집행금액])'
+};
+function ycFormulaSetAdvanced(value){
+  const area=$('ycFormulaAdvancedDetails');
+  if(area)area.open=Boolean(value);
+}
+function ycFormulaBuildExpression(){
+  const type=$('ycFormulaPreset')?.value;
+  if(Object.hasOwn(YC_FORMULA_TEMPLATES,type))return YC_FORMULA_TEMPLATES[type];
+  if(type==='category'){
+    const name=$('ycFormulaCategory')?.value.trim()||'';
+    return name?`=SUMIF(집행내역[구분], ${JSON.stringify(name)}, 집행내역[집행금액])`:'';
+  }
+  if(type==='math'){
+    const left=$('ycFormulaLeft')?.value,right=$('ycFormulaRight')?.value,operator=$('ycFormulaOperator')?.value;
+    return left&&right&&['+','-','*','/'].includes(operator)?`=${left} ${operator} ${right}`:'';
+  }
+  return $('budgetRowForm').elements.formulaExpression.value;
+}
+function ycFormulaUpdateOptions(){
+  const type=$('ycFormulaPreset')?.value;
+  $('ycFormulaOptions').hidden=!['category','math'].includes(type);
+  $('ycFormulaCategoryOptions').hidden=type!=='category';
+  $('ycFormulaMathOptions').hidden=type!=='math';
+  $('ycFormulaGenerated').textContent=type==='manual'?'직접 작성한 수식으로 계산합니다.':(
+    type==='category'&&!$('ycFormulaCategory').value.trim()?'집행내역에서 구분을 입력해 주세요.':
+    type==='math'?'선택한 두 항목으로 계산합니다.':'선택한 방식으로 자동 계산합니다.');
+}
+function ycFormulaApplyPreset(){
+  const type=$('ycFormulaPreset').value;
+  ycFormulaUpdateOptions();
+  if(type==='manual'){ycFormulaSetAdvanced(true);refreshRowEditor();return;}
+  $('budgetRowForm').elements.formulaExpression.value=ycFormulaBuildExpression();
+  refreshRowEditor();
+}
+function ycFormulaInit(p,row){
+  const select=$('ycFormulaPreset'),expr=$('budgetRowForm').elements.formulaExpression.value.trim();
+  const compact=t=>String(t||'').replace(/\s+/g,'').replace(/^=/,'');
+  const matched=Object.entries(YC_FORMULA_TEMPLATES).find(([,template])=>compact(template)===compact(expr))?.[0];
+  const items=[...NUMERIC_BUILTINS,...p.summaryRows.filter(x=>!x.removed&&!x.deleted&&x.id!==row.id).map(x=>['custom:'+x.id,x.label])].filter(([,label])=>label&&label!=='0');
+  for(const id of ['ycFormulaLeft','ycFormulaRight']){
+    $(id).innerHTML=items.map(([key,label])=>`<option value="${esc('['+label+']')}">${esc(label)}</option>`).join('');
+  }
+  const selectRef=(id,label)=>{const el=$(id);if([...el.options].some(opt=>opt.value===`[${label}]`))el.value=`[${label}]`;};
+  selectRef('ycFormulaLeft','총 예산액');selectRef('ycFormulaRight','집행금액지출합계');$('ycFormulaOperator').value='-';
+  const cats=[...new Set(rawLines(p).map(x=>x.category?.trim()).filter(Boolean))];
+  $('ycFormulaCategoryHints').innerHTML=cats.map(cat=>`<option value="${esc(cat)}"></option>`).join('');
+  $('ycFormulaCategory').value='';
+  let mode=matched||'manual';
+  if(!expr)mode='sum';
+  // Recognize formulas produced by the beginner calculator on reopening.
+  const catMatch=expr.match(/^=?SUMIF\(집행내역\[구분\],\s*"((?:[^"\\]|\\.)*)",\s*집행내역\[집행금액\]\)$/);
+  if(!matched&&catMatch){try{$('ycFormulaCategory').value=JSON.parse('"'+catMatch[1]+'"');mode='category';}catch(e){mode='manual';}}
+  const mathMatch=expr.match(/^=?\s*(\[[^\]\r\n]+\])\s*([+*/-])\s*(\[[^\]\r\n]+\])\s*$/);
+  if(!matched&&mathMatch){
+    const [all,left,operator,right]=mathMatch;
+    if([...$('ycFormulaLeft').options].some(o=>o.value===left)&&[...$('ycFormulaRight').options].some(o=>o.value===right)){
+      $('ycFormulaLeft').value=left;$('ycFormulaRight').value=right;$('ycFormulaOperator').value=operator;mode='math';
+    }
+  }
+  select.value=mode;
+  ycFormulaSetAdvanced(mode==='manual'&&Boolean(expr));
+  ycFormulaUpdateOptions();
+  if(!expr&&row.mode==='formula')ycFormulaApplyPreset();
+}
 let activeSummaryKey='',activeSummaryAnchor=null;
 function editSummaryRow(key,anchor){const original=budgetById(selectedId);if(!original)return;const p=cleanBudget(original);
   const custom=key.startsWith('custom:');const row=custom?p.summaryRows.find(x=>x.id===key.slice(7)):summaryConfig(p,key);if(!row||row.removed||row.deleted)return;
@@ -5774,6 +5919,7 @@ function editSummaryRow(key,anchor){const original=budgetById(selectedId);if(!or
   f.elements.basicValue.value=custom?String(row.value??''):['year','account','limitBudget','totalBudget','dailyAllocated'].includes(key)?String(p[key]??''):String(row.value??'');
   f.elements.formulaExpression.value=formulaExpression(row);
   $('budgetFormulaRefChips').innerHTML=formulaSuggestionHtml(p);
+  ycFormulaInit(p,row);
   $('budgetRowTitle').textContent=custom?'사용자 지정 행 편집':`기본 정보 행 편집 · ${row.label}`;
   $('budgetSummaryRemove').textContent=custom?'행 삭제':'항목 제거';
   $('budgetSummaryHide').textContent=row.hidden||row.removed?'복원':'숨김';
@@ -5835,6 +5981,7 @@ function saveSummaryEditor(e){e.preventDefault();const b=budgetById(selectedId);
   const mode=f.elements.rowMode.value;
   const expr=f.elements.formulaExpression.value.trim();
   if(mode==='formula'){
+    if(!expr){notify('계산에 사용할 항목을 선택하거나 구분을 입력해 주세요.');return;}
     try{window.JariBudgetFormula.parse(expr);}
     catch(err){$('budgetFormulaError').hidden=false;$('budgetFormulaError').textContent=err.message;notify('수식 구문을 확인해주세요.');return;}
     const draft={key,mode:'formula',label,expression:expr};
@@ -5869,7 +6016,121 @@ function setSummaryVisibility(action){const b=budgetById(selectedId),p=cleanBudg
   closeRowPopover();saveBudget(p);render();notify(action==='delete'?'행을 제거했습니다.':'행 표시 상태를 변경했습니다.');
 }
 function addSummaryRow(){const b=budgetById(selectedId),p=cleanBudget(b),id=uid();p.summaryRows.push({id,label:'새 항목',mode:'basic',value:'',hidden:false});saveBudget(p);render();const el=document.querySelector(`[data-summary-edit="custom:${id}"]`);if(el)editSummaryRow(`custom:${id}`,el);}
-function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=rawLines(p),show=rows.filter(x=>showHidden||!x.hidden);
+// v100: text-based 8-digit date input for new budget execution rows only.
+const budgetQuickWeekdays=['일','월','화','수','목','금','토'];
+function budgetQuickIsoDate(raw){
+  const digits=String(raw||'').replace(/\D/g,'');
+  if(digits.length!==8)return '';
+  const y=Number(digits.slice(0,4)),m=Number(digits.slice(4,6)),day=Number(digits.slice(6,8));
+  if(y<1000||y>9999||m<1||m>12||day<1||day>31)return '';
+  const d=new Date(y,m-1,day);
+  return d.getFullYear()===y&&d.getMonth()===m-1&&d.getDate()===day?`${digits.slice(0,4)}-${digits.slice(4,6)}-${digits.slice(6,8)}`:'';
+}
+function budgetQuickDisplayDate(raw){
+  const iso=budgetQuickIsoDate(raw);
+  if(!iso)return String(raw||'');
+  const [y,m,d]=iso.split('-').map(Number);
+  return `${iso}(${budgetQuickWeekdays[new Date(y,m-1,d).getDay()]})`;
+}
+function budgetQuickWireDate(input,draft){
+  if(!input)return;
+  input.addEventListener('focus',()=>{
+    // A plain numeric string can be selected and deleted just like any other text.
+    const iso=budgetQuickIsoDate(input.value);
+    if(iso){input.value=iso.replace(/-/g,'');input.select();}
+  });
+  input.addEventListener('keydown',e=>{
+    // Once an 8-digit date has been formatted, Backspace should remove a date digit,
+    // not just the trailing parenthesis/weekday text.
+    if(e.key==='Backspace'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&
+       input.selectionStart===input.selectionEnd&&input.selectionStart===input.value.length&&
+       /^\d{4}-\d{2}-\d{2}\([일월화수목금토]\)$/.test(input.value)){
+      e.preventDefault();input.value=input.value.replace(/\D/g,'').slice(0,-1);
+      draft.date=input.value;input.setSelectionRange(input.value.length,input.value.length);
+    }
+  });
+  input.addEventListener('input',()=>{
+    // Avoid accidental numeric corruption while retaining direct editing and pasting.
+    let value=input.value;
+    const digits=value.replace(/\D/g,'');
+    if(digits.length===8&&budgetQuickIsoDate(digits)){
+      value=budgetQuickDisplayDate(digits);
+      input.value=value;
+      input.setSelectionRange(value.length,value.length);
+    }else if(digits.length<=8&&/^[\d./\s-]*$/.test(value)){
+      input.value=digits;
+    }
+    draft.date=input.value;
+  });
+  input.addEventListener('blur',()=>{
+    const formatted=budgetQuickDisplayDate(input.value);
+    if(budgetQuickIsoDate(formatted)){input.value=formatted;draft.date=formatted;}
+  });
+}
+function inlineExpenseRowsHtml(){
+  const d=inlineExpenseDraft;
+  if(!d||d.ledgerId!==selectedId)return '';
+  return `<tr class="budget-inline-expense-row budget-hide-print" aria-label="신규 집행내역 입력 행">
+    <td><input id="budgetQuickDate" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="16" aria-label="집행 일자" placeholder="YYYYMMDD" title="숫자 8자리 입력: 예) 20261101" required value="${esc(budgetQuickDisplayDate(d.date))}"></td>
+    <td><input id="budgetQuickCategory" type="text" aria-label="집행 구분" maxlength="80" placeholder="구분" value="${esc(d.category)}"></td>
+    <td><input id="budgetQuickDescription" type="text" aria-label="사업명" maxlength="300" required placeholder="사업명을 입력하세요" value="${esc(d.description)}"></td>
+    <td><input id="budgetQuickAmount" type="number" aria-label="집행금액" min="0" step="1" required placeholder="금액" value="${esc(d.amount)}"></td>
+    <td class="budget-quick-daily-cell"><label><input id="budgetQuickDaily" type="checkbox" ${d.daily?'checked':''}><span>${d.daily?'O':'X'}</span></label></td>
+    <td class="budget-quick-new-tag">신규</td>
+  </tr><tr class="budget-inline-expense-tools budget-hide-print"><td colspan="6">
+     <div class="budget-quick-tools-main"><div class="budget-quick-actions"><button id="budgetQuickCancel" type="button">취소</button><button id="budgetQuickSave" type="button" class="budget-quick-save" ${d.busy?'disabled':''}>${d.busy?'저장 중…':'저장'}</button></div></div>
+     <p id="budgetQuickError" role="alert" class="budget-quick-error" hidden></p>
+   </td></tr>`;
+}
+function startInlineExpense(){
+  if(inlineExpenseDraft?.ledgerId!==selectedId){
+    inlineExpenseDraft={ledgerId:selectedId,date:today(),category:'',description:'',amount:'',daily:false,busy:false};
+    render();
+  }
+  const field=$('budgetQuickDescription');
+  if(field){field.scrollIntoView({block:'nearest',behavior:'smooth'});field.focus({preventScroll:true});}
+}
+function cancelInlineExpense(){inlineExpenseDraft=null;render();}
+function bindInlineExpense(){
+  const d=inlineExpenseDraft;
+  if(!d||d.ledgerId!==selectedId||!$('budgetQuickSave'))return;
+  budgetQuickWireDate($('budgetQuickDate'),d);
+  const mapping=[['budgetQuickCategory','category'],['budgetQuickDescription','description'],['budgetQuickAmount','amount']];
+  for(const [id,key] of mapping)$(id)?.addEventListener('input',e=>{d[key]=e.target.value;});
+  $('budgetQuickDaily')?.addEventListener('change',e=>{d.daily=e.target.checked;const lbl=e.target.parentNode.querySelector('span');if(lbl)lbl.textContent=d.daily?'O':'X';});
+  $('budgetQuickCancel').onclick=cancelInlineExpense;
+  $('budgetQuickSave').onclick=saveInlineExpense;
+  for(const key of ['budgetQuickDate','budgetQuickCategory','budgetQuickDescription','budgetQuickAmount'])$(key)?.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.isComposing){e.preventDefault();saveInlineExpense();}
+  });
+}
+async function saveInlineExpense(){
+  const d=inlineExpenseDraft;
+  if(!d||d.busy||d.ledgerId!==selectedId)return;
+  const b=budgetById(selectedId),error=$('budgetQuickError');
+  if(!b)return;
+  const date=budgetQuickIsoDate($('budgetQuickDate').value),desc=$('budgetQuickDescription').value.trim(),amountText=$('budgetQuickAmount').value.trim();
+  const amount=Number(amountText);
+  if(!date||!desc||amountText===''||!Number.isFinite(amount)||amount<0||!Number.isInteger(amount)){
+    error.textContent=!date?'날짜를 숫자 8자리로 정확하게 입력해 주세요. (예: 20261101)':'사업명과 0원 이상의 정수 금액을 입력해 주세요.';error.hidden=false;
+    for(const id of ['budgetQuickDate','budgetQuickDescription','budgetQuickAmount']){
+      const el=$(id);if(el&&((id==='budgetQuickDate'&&!date)||!el.value.trim()||(id==='budgetQuickAmount'&&(!Number.isFinite(amount)||amount<0||!Number.isInteger(amount))))){el.focus();break;}
+    }
+    return;
+  }
+  d.busy=true;$('budgetQuickSave').disabled=true;$('budgetQuickSave').textContent='저장 중…';error.hidden=true;
+  try{
+    const line={id:uid(),date,category:$('budgetQuickCategory').value.trim(),description:desc,amount,daily:$('budgetQuickDaily').checked,hidden:false,note:'',attachments:[]};
+    saveBudget({...b,lineItems:[...(b.lineItems||[]),line]});
+    inlineExpenseDraft=null;render();notify('집행내역을 추가했습니다.');
+  }catch(err){
+    d.busy=false;
+    const button=$('budgetQuickSave');if(button){button.disabled=false;button.textContent='저장';}
+    error.textContent='집행내역 저장 실패: '+(err?.message||String(err));error.hidden=false;
+  }
+}
+function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=dateSortedBudgetLines(p),show=rows.filter(x=>showHidden||!x.hidden);
+  if(inlineExpenseDraft&&inlineExpenseDraft.ledgerId!==p.id)inlineExpenseDraft=null;
   // Match the heading to the budget selection card (title + account/subproject).
   const head=p.title||'예산';const subtitle=p.account||'';
   $('moduleItems').innerHTML=`<section class="budget-detail-view"><div class="budget-detail-head"><span class="budget-detail-name"><strong>${esc(p.title)}</strong></span><div class="budget-detail-actions"><button class="budget-btn pdf-save" id="budgetPdf">▣ &nbsp;PDF저장</button><button class="budget-btn excel-save" id="budgetExcel">📥 &nbsp;엑셀저장</button><button id="budgetDetailClose" class="budget-close" type="button" title="예산 항목 목록으로 돌아가기" aria-label="예산 항목 목록으로 돌아가기">×</button></div></div>
@@ -5877,11 +6138,11 @@ function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=rawLines(p),sho
   <div class="budget-detail-controls"><button id="budgetAddRow" class="budget-outline">＋ 행 추가</button><button id="budgetShowHidden" class="budget-outline">${showHidden?'숨김행 감추기':'숨김행 보기'} ${hiddenSummaryCount(p)+rows.filter(x=>x.hidden).length?`(${hiddenSummaryCount(p)+rows.filter(x=>x.hidden).length})`:''}</button><button id="budgetEditInfo" class="budget-edit-all">✎ 예산 정보 수정</button></div>
   <div class="budget-info-grid">${summaryRowsHtml(p,t)}</div>
   <div class="budget-ledger-toolbar"><div><strong>집행내역</strong><span>거래 내용을 선택하면 수정할 수 있습니다.</span></div><button type="button" id="budgetAddExpense" class="budget-btn budget-expense-add">＋ 집행내역 추가</button></div>
-  <div class="budget-table-wrap"><table class="budget-ledger-table"><colgroup><col style="width:13%"><col style="width:12%"><col style="width:44%"><col style="width:15%"><col style="width:11%"><col style="width:5%"></colgroup><thead><tr><th>일자</th><th>구분</th><th>사업명</th><th>집행금액</th><th>일상경비여부</th><th class="budget-hide-print">삭제</th></tr></thead><tbody>${show.map(r=>`<tr data-edit-line="${esc(r.id)}" class="${r.hidden?'budget-hidden-row':''} ${r.legacy?'budget-legacy-row':''}" title="${r.legacy?'기존 지출업무 연동 행':'클릭하여 수정'}"><td>${esc(showDate(r.date))}<span class="budget-calendar-glyph">▦</span></td><td>${r.category?esc(r.category):'<span class="budget-empty-category">—</span>'}</td><td><span class="budget-descrip">${esc(r.description||'')}</span>${r.note?`<small class="budget-note">${esc(r.note)}</small>`:''}${(r.attachments||[]).length?`<button class="budget-attach-link budget-hide-print" data-line-images="${esc(r.id)}" title="첨부이미지 보기">📎 ${r.attachments.length}</button>`:''}${r.hidden?'<small class="budget-row-hidden-label">숨김</small>':''}</td><td class="budget-number">${fmt(r.amount)} 원</td><td class="budget-daily ${r.daily?'yes':'no'}">${r.daily?'O':'X'}</td><td class="budget-row-actions budget-hide-print">${r.legacy?'<span title="지출업무에서 수정">↗</span>':`<button class="budget-del-row" data-delete-line="${esc(r.id)}" title="행 삭제">×</button>`}</td></tr>`).join('')||'<tr class="budget-no-rows"><td colspan="6">아직 집행내역이 없습니다. ‘+ 집행내역 추가’ 버튼으로 등록하세요.</td></tr>'}</tbody></table></div>
+  <div class="budget-table-wrap"><table class="budget-ledger-table"><colgroup><col style="width:13%"><col style="width:12%"><col style="width:44%"><col style="width:15%"><col style="width:11%"><col style="width:5%"></colgroup><thead><tr><th>일자</th><th>구분</th><th>사업명</th><th>집행금액</th><th>일상경비여부</th><th class="budget-hide-print">삭제</th></tr></thead><tbody>${show.map(r=>`<tr data-edit-line="${esc(r.id)}" class="${r.hidden?'budget-hidden-row':''} ${r.legacy?'budget-legacy-row':''}" title="${r.legacy?'기존 지출업무 연동 행':'클릭하여 수정'}"><td>${esc(showDate(r.date))}<span class="budget-calendar-glyph">▦</span></td><td>${r.category?esc(r.category):'<span class="budget-empty-category">—</span>'}</td><td><span class="budget-descrip">${esc(r.description||'')}</span>${r.note?`<small class="budget-note">${esc(r.note)}</small>`:''}${(r.attachments||[]).length?`<button class="budget-attach-link budget-hide-print" data-line-images="${esc(r.id)}" title="첨부이미지 보기">📎 ${r.attachments.length}</button>`:''}${r.hidden?'<small class="budget-row-hidden-label">숨김</small>':''}</td><td class="budget-number">${fmt(r.amount)} 원</td><td class="budget-daily ${r.daily?'yes':'no'}">${r.daily?'O':'X'}</td><td class="budget-row-actions budget-hide-print">${r.legacy?'<span title="지출업무에서 수정">↗</span>':`<button class="budget-del-row" data-delete-line="${esc(r.id)}" title="행 삭제">×</button>`}</td></tr>`).join('')}${inlineExpenseRowsHtml()}${!show.length&&!inlineExpenseDraft?'<tr class="budget-no-rows"><td colspan="6">아직 집행내역이 없습니다. ‘+ 집행내역 추가’ 버튼으로 등록하세요.</td></tr>':''}</tbody></table></div>
   <div class="budget-ledger-foot">총 ${rows.length}건 · 화면 표시 ${show.length}건 · 일상경비 O는 배정액에서, 전체 금액은 총 예산액에서 차감됩니다.</div></div>
   </section>`;
-  $('budgetDetailClose').onclick=()=>{selectedId='';render();};
-  $('budgetAddRow').onclick=addSummaryRow;$('budgetAddExpense').onclick=()=>openLineForm();$('budgetShowHidden').onclick=()=>{showHidden=!showHidden;render();};$('budgetEditInfo').onclick=()=>openBudgetForm(p.id);
+  $('budgetDetailClose').onclick=()=>{selectedId='';inlineExpenseDraft=null;render();};
+  $('budgetAddRow').onclick=addSummaryRow;$('budgetAddExpense').onclick=startInlineExpense;bindInlineExpense();$('budgetShowHidden').onclick=()=>{showHidden=!showHidden;render();};$('budgetEditInfo').onclick=()=>openBudgetForm(p.id);
   document.querySelectorAll('[data-summary-edit]').forEach(x=>x.onclick=e=>{e.stopPropagation();editSummaryRow(x.dataset.summaryEdit,x);});
   $('budgetPdf').onclick=()=>{document.title=`${p.year} ${p.title} 집행장부`;window.print();document.title='Y Calender | 나의 업무관리';};
   $('budgetExcel').onclick=()=>exportBudgetExcel(p).catch(err=>notify('엑셀 저장 실패: '+err.message));
@@ -5893,11 +6154,29 @@ function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=rawLines(p),sho
 function openBudgetForm(id='',focus=''){const b=id?cleanBudget(budgetById(id)):{kind:'budget',title:'',category:'',group:'',year:activeYear,account:'',heading:'',description:'',limitBudget:0,totalBudget:0,dailyAllocated:0,color:colors[0],lineItems:[]};
   $('budgetModalTitle').textContent=id?'예산 정보 수정':'새 예산 추가';const form=$('budgetInfoForm');form.elements.budgetId.value=id;
   for(const key of ['title','category','group','year','heading','account','description','limitBudget','totalBudget','dailyAllocated','color'])form.elements[key].value=b[key]??'';
-  $('budgetDelete').hidden=!id;$('budgetInfoError').hidden=true;$('budgetInfoModal').showModal();if(focus)form.elements[focus]?.focus();else form.elements.title.focus();
+  // On creation, show only the four fields needed to create a blank budget.
+  // The original amount inputs remain in the DOM with zero values so that existing
+  // budget records and the save handler continue to work unchanged.
+  const creating=!id;
+  const budgetDialog=$('budgetInfoModal');
+  budgetDialog.classList.toggle('is-create',creating);
+  budgetDialog.querySelectorAll('[data-budget-existing-only]').forEach(section=>{section.hidden=creating;});
+  for(const name of ['limitBudget','totalBudget','dailyAllocated']){
+    const input=form.elements[name];
+    input.disabled=creating;
+    input.required=!creating;
+    if(creating)input.value='0';
+  }
+  $('budgetDelete').hidden=creating;$('budgetInfoError').hidden=true;budgetDialog.showModal();if(focus)form.elements[focus]?.focus();else form.elements.title.focus();
 }
 function saveBudgetForm(e){e.preventDefault();const form=e.target,id=form.elements.budgetId.value,old=id?budgetById(id):null;
   const title=form.elements.title.value.trim();if(!title){showError('budgetInfoError','예산 이름을 입력해주세요.');return;}
-  const b=cleanBudget({...(old||{}),id:id||uid(),title,category:form.elements.category.value.trim(),group:form.elements.group.value.trim(),year:Number(form.elements.year.value),heading:form.elements.heading.value.trim(),account:form.elements.account.value.trim(),description:form.elements.description.value.trim(),color:form.elements.color.value,limitBudget:parseAmt(form.elements.limitBudget.value),totalBudget:parseAmt(form.elements.totalBudget.value),dailyAllocated:parseAmt(form.elements.dailyAllocated.value),lineItems:old?.lineItems||[]});
+  const b=cleanBudget({...(old||{}),id:id||uid(),title,category:form.elements.category.value.trim(),group:form.elements.group.value.trim(),year:Number(form.elements.year.value),heading:form.elements.heading.value.trim(),account:form.elements.account.value.trim(),description:form.elements.description.value.trim(),color:form.elements.color.value,limitBudget:parseAmt(form.elements.limitBudget.value),totalBudget:parseAmt(form.elements.totalBudget.value),dailyAllocated:parseAmt(form.elements.dailyAllocated.value),
+    // Do not populate default rows or expenses when a budget is first created.
+    // Do not reset these collections while editing an existing budget.
+    summaryRows:old?.summaryRows||[],
+    summaryConfig:old?.summaryConfig||blankBudgetSummaryConfig(),
+    lineItems:old?.lineItems||[]});
   for(const k of ['limitBudget','totalBudget','dailyAllocated'])if(b[k]<0){showError('budgetInfoError','예산 금액은 0원 이상이어야 합니다.');return;}
   saveBudget(b);selectedId=b.id;activeYear=b.year;$('budgetInfoModal').close();render();notify(old?'예산 정보를 수정했습니다.':'예산을 추가했습니다.');
 }
@@ -5961,7 +6240,7 @@ function deleteLine(id){const b=budgetById(selectedId),line=b?.lineItems?.find(x
 function openImageList(images){if(!images.length)return;if(images.length===1){window.JariAttachments.open(images[0]);return;}
   const names=images.map((a,i)=>`${i+1}. ${a.name}`).join('\n');const val=prompt(`열어볼 첨부 이미지 번호를 선택해주세요.\n${names}`,'1');if(val&&images[Number(val)-1])window.JariAttachments.open(images[Number(val)-1]);
 }
-async function exportBudgetExcel(b){const X=window.JariExcel.needExcel(),book=new X.Workbook(),sheet=book.addWorksheet('집행장부');const p=cleanBudget(b),t=totals(p),rows=rawLines(p),end=Math.max(11,10+rows.length),{cat,grp}=titleParts(p);
+async function exportBudgetExcel(b){const X=window.JariExcel.needExcel(),book=new X.Workbook(),sheet=book.addWorksheet('집행장부');const p=cleanBudget(b),t=totals(p),rows=dateSortedBudgetLines(p),end=Math.max(11,10+rows.length),{cat,grp}=titleParts(p);
   sheet.mergeCells('A1:H1');sheet.getCell('A1').value=p.heading||`${grp} - ${cat}`;sheet.getCell('A1').font={size:17,bold:true,color:{argb:'FF233A5D'}};sheet.getCell('A1').alignment={horizontal:'center',vertical:'middle'};sheet.getRow(1).height=39;
   sheet.mergeCells('A2:H2');sheet.getCell('A2').value=p.description||p.title;sheet.getCell('A2').alignment={horizontal:'center'};sheet.getRow(2).height=25;
   [['A4','연도'],['B4',p.year],['D4','예산목'],['E4',p.account],['A5','한계예산'],['B5',p.limitBudget],['D5','총 예산액'],['E5',p.totalBudget],['A6','일상경비배정액'],['B6',p.dailyAllocated],['D6','일상경비잔액'],['A7','집행금액지출합계'],['D7','총금액 잔액']].forEach(([cell,v])=>sheet.getCell(cell).value=v);
@@ -6008,7 +6287,7 @@ function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
  <label class="field"><span>예산목 / 세부사업명</span><input name="account" maxlength="250" placeholder="예: 부서운영 기본경비 - 일반운영비 - 사무관리비(201-01)"></label>
  <input name="category" type="hidden"><input name="group" type="hidden"><input name="heading" type="hidden"><input name="description" type="hidden">
  <div class="field-row"><label class="field"><span>회계연도</span><input name="year" type="number" min="2000" max="2100" required></label><label class="field"><span>카테고리 색상</span><input name="color" type="color"></label></div>
- <div class="field-row"><label class="field"><span>한계예산 (원)</span><input name="limitBudget" type="number" min="0" step="1" required></label><label class="field"><span>총 예산액 (원)</span><input name="totalBudget" type="number" min="0" step="1" required></label></div><label class="field"><span>일상경비배정액 (원)</span><input name="dailyAllocated" type="number" min="0" step="1" required></label><p class="budget-hint">잔액과 집행금액 합계는 집행내역을 기준으로 자동 계산됩니다.</p><p class="form-error" id="budgetInfoError" hidden></p></div>
+ <div class="field-row" data-budget-existing-only><label class="field"><span>한계예산 (원)</span><input name="limitBudget" type="number" min="0" step="1" required></label><label class="field"><span>총 예산액 (원)</span><input name="totalBudget" type="number" min="0" step="1" required></label></div><label class="field" data-budget-existing-only><span>일상경비배정액 (원)</span><input name="dailyAllocated" type="number" min="0" step="1" required></label><p class="budget-hint" data-budget-existing-only>잔액과 집행금액 합계는 집행내역을 기준으로 자동 계산됩니다.</p><p class="form-error" id="budgetInfoError" hidden></p></div>
  <div class="modal-footer"><button type="button" id="budgetDelete" class="danger-button" hidden>예산 삭제</button><span class="footer-spacer"></span><button type="button" class="outline-button" data-close-budget>취소</button><button type="submit" class="primary-button">저장하기</button></div></form></dialog>
  <dialog class="modal budget-form-dialog" id="budgetLineModal" aria-labelledby="budgetLineTitle"><form id="budgetLineForm" class="modal-content"><div class="modal-header"><div><span class="small-kicker">EXPENSE LEDGER</span><h2 id="budgetLineTitle">집행내역 추가</h2></div><button type="button" class="close-modal" data-close-line>×</button></div><div class="modal-body"><div class="field-row"><label class="field"><span>일자 *</span><input name="date" type="date" required></label><label class="field"><span>구분 (선택)</span><input name="category" maxlength="80" placeholder="선택 입력: 현수막, 사무용품, 복합기"></label></div>
  <label class="field"><span>사업명 / 집행 내용 *</span><input name="description" required maxlength="350" placeholder="예: 소방본부 현수막 제작"></label><label class="field"><span>집행금액 (원) *</span><input name="amount" type="number" min="0" step="1" required placeholder="0"></label>
@@ -6019,24 +6298,48 @@ function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
     <form id="budgetRowForm" class="budget-row-editor-form">
       <div class="budget-row-editor-top"><span class="budget-popover-grip" aria-hidden="true">⠿</span><strong id="budgetRowTitle">정보 행 편집</strong><button type="button" id="budgetRowClose" class="budget-row-x" aria-label="닫기">×</button></div>
       <div class="budget-row-editor-grid">
-        <label class="budget-editor-control budget-editor-type"><span>행 종류</span><select name="rowMode"><option value="basic">기본행</option><option value="formula">수식행</option></select></label>
+        <label class="budget-editor-control budget-editor-type"><span>입력 방식</span><select name="rowMode"><option value="basic">값 직접 입력</option><option value="formula">자동 계산 (수식)</option></select></label>
         <label class="budget-editor-control budget-editor-title"><span>항목명</span><input type="text" name="rowLabel" required maxlength="100" placeholder="항목명 입력"></label>
         <div class="budget-editor-computation" id="budgetBasicArea"><label class="budget-editor-control"><span>표시 값</span><input type="text" name="basicValue" placeholder="값 입력"></label><small id="budgetBasicHelp"></small></div>
         <div class="budget-editor-computation budget-formula-advanced" id="budgetFormulaArea" hidden>
-          <label class="budget-editor-control" for="budgetFormulaExpression"><span>고급 수식 · Excel 방식</span><textarea id="budgetFormulaExpression" name="formulaExpression" rows="4" spellcheck="false" placeholder="= 엑셀함수 사용가능&#10;= 더하기(+), 곱하기(*), 빼기(-), 나누기(/)"></textarea></label>
-          <div class="budget-formula-ref-label">항목 선택 → 수식에 삽입</div><div id="budgetFormulaRefChips"></div>
-          <div class="budget-formula-ref-label">집행내역 범위</div><div class="budget-formula-tags budget-formula-ranges" id="budgetFormulaRanges">
-            <button type="button" data-formula-insert="집행내역[집행금액]">집행금액</button><button type="button" data-formula-insert="집행내역[구분]">구분</button><button type="button" data-formula-insert="집행내역[사업명]">사업명</button><button type="button" data-formula-insert="집행내역[일상경비여부]">일상경비여부</button><button type="button" data-formula-insert="집행내역[일자]">일자</button><button type="button" data-formula-insert="집행내역[비고]">비고</button>
+          <div class="yc-formula-intro"><strong>무엇을 계산할까요?</strong><span>계산 방법을 고르면 수식은 자동으로 만들어집니다.</span></div>
+          <label class="budget-editor-control yc-formula-method"><span>계산 방법 선택</span><select id="ycFormulaPreset" aria-label="계산 방법 선택">
+             <option value="sum">전체 집행금액 합계</option>
+             <option value="daily">일상경비 집행금액 합계</option>
+             <option value="remaining">총 예산 잔액 (총 예산액 − 집행금액)</option>
+             <option value="dailyRemaining">일상경비 잔액</option>
+             <option value="category">특정 구분의 집행금액 합계</option>
+             <option value="math">두 항목으로 계산하기 (더하기·빼기 등)</option>
+             <option value="manual">직접 수식 입력 (고급)</option>
+          </select></label>
+          <div id="ycFormulaOptions" class="yc-formula-options" hidden>
+             <div id="ycFormulaCategoryOptions" hidden><label class="budget-editor-control"><span>어떤 구분의 금액을 합산할까요?</span><input type="text" id="ycFormulaCategory" list="ycFormulaCategoryHints" placeholder="예: 사무용품"></label><datalist id="ycFormulaCategoryHints"></datalist></div>
+             <div id="ycFormulaMathOptions" class="yc-formula-math" hidden>
+               <label class="budget-editor-control"><span>첫 번째 항목</span><select id="ycFormulaLeft"></select></label>
+               <label class="budget-editor-control"><span>계산 기호</span><select id="ycFormulaOperator"><option value="+">더하기 (+)</option><option value="-">빼기 (−)</option><option value="*">곱하기 (×)</option><option value="/">나누기 (÷)</option></select></label>
+               <label class="budget-editor-control"><span>두 번째 항목</span><select id="ycFormulaRight"></select></label>
+             </div>
           </div>
-          <div class="budget-formula-ref-label">예제 입력</div><div class="budget-formula-examples">
-            <button type="button" data-formula-example='=[총 예산액] - SUM(집행내역[집행금액])'>총 예산 잔액</button>
-            <button type="button" data-formula-example='=SUMIF(집행내역[일상경비여부], &quot;O&quot;, 집행내역[집행금액])'>일상경비 집행합계</button>
-            <button type="button" data-formula-example='=SUMIFS(집행내역[집행금액], 집행내역[구분], &quot;사무용품&quot;, 집행내역[일상경비여부], &quot;O&quot;)'>조건 2개 합산</button>
-            <button type="button" data-formula-example='=IF([총금액 잔액] &lt; 0, ABS([총금액 잔액]), 0)'>초과 집행액</button>
-          </div>
-          <div class="budget-formula-result"><span>미리보기 결과</span><output id="budgetFormulaPreview">수식 입력 대기</output></div>
+          <div class="yc-formula-generated" id="ycFormulaGenerated" aria-live="polite"></div>
+          <div class="budget-formula-result"><span>예상 계산 결과</span><output id="budgetFormulaPreview">계산 방법을 선택해 주세요</output></div>
           <p class="budget-formula-error-message" id="budgetFormulaError" role="alert" hidden></p>
-          <p class="budget-formula-guide">SUM · SUMIF · SUMIFS · COUNT · COUNTIF · COUNTIFS · AVERAGE · MIN · MAX · IF · IFERROR · ROUND · ROUNDUP · ROUNDDOWN · ABS · AND · OR · NOT 지원. 여러 항목은 [항목명]으로 참조합니다. 숫자는 1000처럼 천 단위 쉼표 없이, 조건은 큰따옴표로 입력하세요. 실제 집행금액은 변경되지 않습니다.</p>
+          <details class="yc-formula-advanced-details" id="ycFormulaAdvancedDetails">
+            <summary>고급 수식 직접 입력 <span>Excel 함수·사용자 정의 계산</span></summary>
+            <div class="yc-formula-advanced-content">
+              <label class="budget-editor-control" for="budgetFormulaExpression"><span>수식 입력</span><textarea id="budgetFormulaExpression" name="formulaExpression" rows="3" spellcheck="false" placeholder="예: =[총 예산액] - SUM(집행내역[집행금액])"></textarea></label>
+              <div class="budget-formula-ref-label">항목을 클릭하면 수식에 입력됩니다</div><div id="budgetFormulaRefChips"></div>
+              <div class="budget-formula-ref-label">집행내역 항목</div><div class="budget-formula-tags budget-formula-ranges" id="budgetFormulaRanges">
+                <button type="button" data-formula-insert="집행내역[집행금액]">집행금액</button><button type="button" data-formula-insert="집행내역[구분]">구분</button><button type="button" data-formula-insert="집행내역[사업명]">사업명</button><button type="button" data-formula-insert="집행내역[일상경비여부]">일상경비 여부</button><button type="button" data-formula-insert="집행내역[일자]">일자</button><button type="button" data-formula-insert="집행내역[비고]">비고</button>
+              </div>
+              <div class="budget-formula-ref-label">수식 예시</div><div class="budget-formula-examples">
+                <button type="button" data-formula-example='=[총 예산액] - SUM(집행내역[집행금액])'>총 예산 잔액</button>
+                <button type="button" data-formula-example='=SUMIF(집행내역[일상경비여부], &quot;O&quot;, 집행내역[집행금액])'>일상경비 집행합계</button>
+                <button type="button" data-formula-example='=SUMIFS(집행내역[집행금액], 집행내역[구분], &quot;사무용품&quot;, 집행내역[일상경비여부], &quot;O&quot;)'>조건 2개 합산</button>
+                <button type="button" data-formula-example='=IF([총금액 잔액] &lt; 0, ABS([총금액 잔액]), 0)'>초과 집행액</button>
+              </div>
+              <p class="budget-formula-guide">SUM · SUMIF · SUMIFS · COUNT · IF · ROUND 등 Excel 방식 함수 지원 · [항목명]으로 참조 · 원본 집행내역에는 영향 없음</p>
+            </div>
+          </details>
         </div>
       </div><p id="budgetFieldNote" class="budget-editor-note"></p>
       <footer class="budget-row-editor-actions"><button type="button" id="budgetSummaryHide" class="budget-small-neutral">숨김</button><button type="button" id="budgetSummaryRemove" class="budget-small-danger">삭제</button><span class="footer-spacer"></span><button type="button" id="budgetRowCancel" class="outline-button">취소</button><button type="submit" class="primary-button">저장</button></footer>
@@ -6060,16 +6363,18 @@ function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
   $('budgetRowForm').addEventListener('submit',saveSummaryEditor);
   $('budgetRowClose').onclick=closeRowPopover;$('budgetRowCancel').onclick=closeRowPopover;
   $('budgetSummaryHide').onclick=()=>setSummaryVisibility('hide');$('budgetSummaryRemove').onclick=()=>setSummaryVisibility('delete');
-  $('budgetRowForm').elements.rowMode.addEventListener('change',refreshRowEditor);
-  $('budgetRowForm').elements.formulaExpression.addEventListener('input',refreshRowEditor);
+  $('budgetRowForm').elements.rowMode.addEventListener('change',()=>{if($('budgetRowForm').elements.rowMode.value==='formula'&&!$('budgetRowForm').elements.formulaExpression.value.trim())ycFormulaApplyPreset();refreshRowEditor();});
+  $('budgetRowForm').elements.formulaExpression.addEventListener('input',()=>{$('ycFormulaPreset').value='manual';ycFormulaUpdateOptions();refreshRowEditor();});
+  $('ycFormulaPreset').addEventListener('change',ycFormulaApplyPreset);
+  ['ycFormulaCategory','ycFormulaLeft','ycFormulaOperator','ycFormulaRight'].forEach(id=>$(id).addEventListener(id==='ycFormulaCategory'?'input':'change',ycFormulaApplyPreset));
   $('budgetRowForm').elements.rowLabel.addEventListener('input',refreshRowEditor);
   function insertFormulaSnippet(snippet){const field=$('budgetRowForm').elements.formulaExpression;
     const start=field.selectionStart,end=field.selectionEnd;
-    field.value=field.value.slice(0,start)+snippet+field.value.slice(end);field.focus();field.setSelectionRange(start+snippet.length,start+snippet.length);refreshRowEditor();
+    field.value=field.value.slice(0,start)+snippet+field.value.slice(end);$('ycFormulaPreset').value='manual';ycFormulaUpdateOptions();field.focus();field.setSelectionRange(start+snippet.length,start+snippet.length);refreshRowEditor();
   }
   $('budgetFormulaRefChips').addEventListener('click',e=>{const btn=e.target.closest('[data-formula-insert]');if(btn)insertFormulaSnippet(btn.dataset.formulaInsert);});
   $('budgetFormulaRanges').addEventListener('click',e=>{const btn=e.target.closest('[data-formula-insert]');if(btn)insertFormulaSnippet(btn.dataset.formulaInsert);});
-  $('budgetFormulaArea').querySelectorAll('[data-formula-example]').forEach(btn=>btn.addEventListener('click',()=>{const field=$('budgetRowForm').elements.formulaExpression;field.value=btn.dataset.formulaExample;field.focus();refreshRowEditor();}));
+  $('budgetFormulaArea').querySelectorAll('[data-formula-example]').forEach(btn=>btn.addEventListener('click',()=>{const field=$('budgetRowForm').elements.formulaExpression;field.value=btn.dataset.formulaExample;$('ycFormulaPreset').value='manual';ycFormulaUpdateOptions();field.focus();refreshRowEditor();}));
   window.addEventListener('resize',()=>placeRowPopover(activeSummaryAnchor));
   window.addEventListener('scroll',()=>placeRowPopover(activeSummaryAnchor),{passive:true});
   window.visualViewport?.addEventListener('resize',()=>placeRowPopover(activeSummaryAnchor));
