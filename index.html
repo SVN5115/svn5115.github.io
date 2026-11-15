@@ -1103,6 +1103,9 @@ body.calendar-focused .page-footer{padding-top:14px}
 .budget-quick-actions button:disabled{opacity:.55;cursor:wait}
 .budget-quick-error{margin:8px 0 0;color:#bb3e53;font-size:11px;font-weight:750}
 @media(max-width:760px){.budget-inline-expense-tools>td{padding:8px!important}@media print{.budget-inline-expense-row,.budget-inline-expense-tools{display:none!important}}
+
+/* v102 - concise empty state for user-authored formula reference list */
+.budget-formula-empty-refs{display:inline-block;color:#8294ad;font-size:11px;line-height:1.6;padding:6px 2px}
 </style>
 <style>
 /* v31 — compact date-based floating task planner */
@@ -5836,9 +5839,29 @@ function summaryRowsHtml(b,tot){const p=cleanBudget(b);
   return [...custom,...base].join('')||'<div class="budget-no-summary">등록된 정보 행이 없습니다. ‘+ 행 추가’를 눌러 새 항목을 만들어 주세요.</div>';
 }
 function hiddenSummaryCount(b){const p=cleanBudget(b);return p.summaryRows.filter(x=>x.hidden&&!x.removed&&!x.deleted).length+summaryDefaults.filter(x=>p.summaryConfig?.[x.key]?.hidden&&!p.summaryConfig?.[x.key]?.removed).length;}
-function formulaSuggestionHtml(b){
-  const p=cleanBudget(b),names=[...NUMERIC_BUILTINS.map(([,label])=>label),...p.summaryRows.map(x=>x.label).filter(Boolean)];
-  return `<div class="budget-formula-tags" aria-label="수식 항목 빠른 입력">${[...new Set(names)].map(name=>`<button type="button" data-formula-insert="${esc(`[${name}]`)}" title="${esc(name)} 참조 삽입">${esc(name)}</button>`).join('')}</div>`;
+// v102: show ONLY explicitly authored budget-information rows as selectable formula references.
+// The names below were shipped as built-in calculation aliases or appeared in the
+// former demonstration/reference list. Keep their evaluation compatibility, but
+// never present them as user-created data. Rows edited/created in the current UI
+// are explicitly marked and remain selectable even if their label matches a name.
+const LEGACY_BUDGET_REFERENCE_SAMPLES=new Set([
+ '한계예산','총 예산액','총예산액','일상경비배정액','일상경비 집행합계','일상경비집행합계',
+ '집행금액지출합계','일상경비잔액','총금액 잔액','편성 예산','일상경비(교부액)',
+ '일상경비 집행금액','전체 집행금액','일상경비 잔액','0'
+]);
+function authoredBudgetReferences(p,excludedId=''){
+  return p.summaryRows.filter(row=>{
+    const label=String(row.label||'').trim();
+    return row.id!==excludedId&&!row.removed&&!row.deleted&&!row.hidden&&label&&
+      (row.userCreated===true||!LEGACY_BUDGET_REFERENCE_SAMPLES.has(label));
+  });
+}
+function formulaSuggestionHtml(b,excludedId=''){
+  const p=cleanBudget(b);
+  const names=[...new Set(authoredBudgetReferences(p,excludedId).map(row=>String(row.label||'').trim()))];
+  return `<div class="budget-formula-tags" aria-label="직접 등록한 수식 참조 항목">${names.length?
+    names.map(name=>`<button type="button" data-formula-insert="${esc(`[${name}]`)}" title="${esc(name)} 참조 삽입">${esc(name)}</button>`).join(''):
+    '<span class="budget-formula-empty-refs">직접 추가한 정보 행이 없습니다. ‘+ 행 추가’에서 항목을 등록해 주세요.</span>'}</div>`;
 }
 // v98 - simple formula builder. The existing advanced calculation engine remains unchanged.
 const YC_FORMULA_TEMPLATES={
@@ -5871,7 +5894,8 @@ function ycFormulaUpdateOptions(){
   $('ycFormulaMathOptions').hidden=type!=='math';
   $('ycFormulaGenerated').textContent=type==='manual'?'직접 작성한 수식으로 계산합니다.':(
     type==='category'&&!$('ycFormulaCategory').value.trim()?'집행내역에서 구분을 입력해 주세요.':
-    type==='math'?'선택한 두 항목으로 계산합니다.':'선택한 방식으로 자동 계산합니다.');
+    type==='math'?!$('ycFormulaLeft')?.value?'먼저 ‘+ 행 추가’에서 계산할 항목을 등록해 주세요.':'선택한 두 항목으로 계산합니다.':
+    '선택한 방식으로 자동 계산합니다.');
 }
 function ycFormulaApplyPreset(){
   const type=$('ycFormulaPreset').value;
@@ -5884,12 +5908,15 @@ function ycFormulaInit(p,row){
   const select=$('ycFormulaPreset'),expr=$('budgetRowForm').elements.formulaExpression.value.trim();
   const compact=t=>String(t||'').replace(/\s+/g,'').replace(/^=/,'');
   const matched=Object.entries(YC_FORMULA_TEMPLATES).find(([,template])=>compact(template)===compact(expr))?.[0];
-  const items=[...NUMERIC_BUILTINS,...p.summaryRows.filter(x=>!x.removed&&!x.deleted&&x.id!==row.id).map(x=>['custom:'+x.id,x.label])].filter(([,label])=>label&&label!=='0');
+  // No built-in numeric aliases or legacy demonstration names in the dropdown.
+  const items=authoredBudgetReferences(p,row.id).map(x=>['custom:'+x.id,String(x.label).trim()]);
+  const placeholder='<option value="" disabled selected>직접 등록한 항목이 없습니다</option>';
   for(const id of ['ycFormulaLeft','ycFormulaRight']){
-    $(id).innerHTML=items.map(([key,label])=>`<option value="${esc('['+label+']')}">${esc(label)}</option>`).join('');
+    $(id).innerHTML=items.length?
+      items.map(([key,label])=>`<option value="${esc('['+label+']')}">${esc(label)}</option>`).join(''):
+      placeholder;
   }
-  const selectRef=(id,label)=>{const el=$(id);if([...el.options].some(opt=>opt.value===`[${label}]`))el.value=`[${label}]`;};
-  selectRef('ycFormulaLeft','총 예산액');selectRef('ycFormulaRight','집행금액지출합계');$('ycFormulaOperator').value='-';
+  $('ycFormulaOperator').value='-';
   const cats=[...new Set(rawLines(p).map(x=>x.category?.trim()).filter(Boolean))];
   $('ycFormulaCategoryHints').innerHTML=cats.map(cat=>`<option value="${esc(cat)}"></option>`).join('');
   $('ycFormulaCategory').value='';
@@ -5918,7 +5945,7 @@ function editSummaryRow(key,anchor){const original=budgetById(selectedId);if(!or
   f.reset();f.elements.rowLabel.value=row.label||'새 항목';f.elements.rowMode.value=row.mode||'basic';
   f.elements.basicValue.value=custom?String(row.value??''):['year','account','limitBudget','totalBudget','dailyAllocated'].includes(key)?String(p[key]??''):String(row.value??'');
   f.elements.formulaExpression.value=formulaExpression(row);
-  $('budgetFormulaRefChips').innerHTML=formulaSuggestionHtml(p);
+  $('budgetFormulaRefChips').innerHTML=formulaSuggestionHtml(p,custom?key.slice(7):'');
   ycFormulaInit(p,row);
   $('budgetRowTitle').textContent=custom?'사용자 지정 행 편집':`기본 정보 행 편집 · ${row.label}`;
   $('budgetSummaryRemove').textContent=custom?'행 삭제':'항목 제거';
@@ -5990,7 +6017,7 @@ function saveSummaryEditor(e){e.preventDefault();const b=budgetById(selectedId);
   }
   // Rewrite references to renamed custom fields so existing formulas keep working.
   if(custom)rewriteSummaryRefs(p,row.label,label);
-  if(custom){Object.assign(row,{label,mode,expression:mode==='formula'?expr:'',value:f.elements.basicValue.value});}
+  if(custom){Object.assign(row,{label,mode,expression:mode==='formula'?expr:'',value:f.elements.basicValue.value,userCreated:true});}
   else{
     const cfg={...p.summaryConfig[key],label,mode,expression:mode==='formula'?expr:'',value:f.elements.basicValue.value};
     p.summaryConfig[key]=cfg;
@@ -6015,7 +6042,7 @@ function setSummaryVisibility(action){const b=budgetById(selectedId),p=cleanBudg
     else{r.hidden=!r.hidden;r.removed=false;}p.summaryConfig[key]=r;}
   closeRowPopover();saveBudget(p);render();notify(action==='delete'?'행을 제거했습니다.':'행 표시 상태를 변경했습니다.');
 }
-function addSummaryRow(){const b=budgetById(selectedId),p=cleanBudget(b),id=uid();p.summaryRows.push({id,label:'새 항목',mode:'basic',value:'',hidden:false});saveBudget(p);render();const el=document.querySelector(`[data-summary-edit="custom:${id}"]`);if(el)editSummaryRow(`custom:${id}`,el);}
+function addSummaryRow(){const b=budgetById(selectedId),p=cleanBudget(b),id=uid();p.summaryRows.push({id,label:'새 항목',mode:'basic',value:'',hidden:false,userCreated:true});saveBudget(p);render();const el=document.querySelector(`[data-summary-edit="custom:${id}"]`);if(el)editSummaryRow(`custom:${id}`,el);}
 // v100: text-based 8-digit date input for new budget execution rows only.
 const budgetQuickWeekdays=['일','월','화','수','목','금','토'];
 function budgetQuickIsoDate(raw){
