@@ -2584,6 +2584,29 @@ body.calendar-focused .yc-inline-error{margin:0;color:#cb5a67;font-size:11px;fon
 @media(max-width:390px){body.calendar-focused .yc-inline-date-row{grid-template-columns:1fr}body.calendar-focused .yc-inline-btn{padding:8px 12px}}
 @media print{body.calendar-focused .yc-inline-calendar-editor{display:none!important}}
 </style>
+<style id="ycalender-v106-excel-import-style">
+.budget-excel-import-btn{display:inline-flex;justify-content:center;align-items:center;gap:5px;padding:9px 13px;border:1px solid #bdd6f7;background:#f3f8ff;color:#2769b5;font-size:11.5px;font-weight:780;border-radius:8px;cursor:pointer;white-space:nowrap}
+.budget-excel-import-btn:hover{background:#e8f2ff;border-color:#89b9f0}
+.budget-import-template-wrap{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#f7faff;border:1px solid #e2ebf6;border-radius:9px;padding:10px 12px;color:#7186a4;font-size:11.5px}
+.budget-import-template-btn{background:transparent;border:0;color:#2e74c8;font-size:11.5px;font-weight:800;cursor:pointer;padding:4px 5px}
+.budget-import-template-btn:hover{text-decoration:underline}
+.budget-import-dedup{display:flex;align-items:center;gap:8px;color:#4f6689;font-size:11.5px;font-weight:700;cursor:pointer}
+.budget-import-dedup input{width:16px;height:16px;accent-color:#317bd0}
+.budget-import-preview{background:#fbfdff;border:1px solid #dbe6f4;border-radius:9px;padding:11px;min-height:54px}
+.budget-import-placeholder,.budget-import-more{color:#8599b3;font-size:11.5px;margin:8px 0}
+.budget-import-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.budget-import-stats span{background:#f0f6ff;border-radius:8px;padding:8px 5px;text-align:center;color:#507194;font-size:10.5px;white-space:nowrap}
+.budget-import-stats strong{font-size:14px;color:#2567be;margin-right:3px}
+.budget-import-stats .has-errors{background:#fff1f3;color:#a94d5a}.budget-import-stats .has-errors strong{color:#c54859}
+.budget-import-table-wrap{overflow-x:auto}.budget-import-table-wrap table{width:100%;border-collapse:collapse;font-size:10.5px;white-space:nowrap}
+.budget-import-table-wrap th{background:#eaf1fa;color:#567394;text-align:left;padding:7px 8px;border-bottom:1px solid #d5e3f2}
+.budget-import-table-wrap td{padding:7px 8px;border-bottom:1px solid #e8edf5;color:#435876;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.budget-import-table-wrap td:nth-child(4){text-align:right}
+.budget-import-errors{background:#fff6f6;color:#b74b59;border:1px solid #f4d9dd;border-radius:7px;padding:10px;font-size:11px;line-height:1.6}
+.budget-import-errors ul{margin:5px 0 0 17px;padding:0}
+@media(max-width:480px){.budget-excel-import-btn{padding:8px 9px;font-size:10.5px}.budget-import-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{.budget-excel-import-btn,#budgetExcelModal{display:none!important}}
+</style>
 </head>
 <body class="calendar-focused">
   <div class="shell">
@@ -6243,7 +6266,7 @@ function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=dateSortedBudge
   <div class="budget-ledger-paper"><header class="budget-paper-title"><strong>${esc(head)}</strong>${subtitle?`<span>${esc(subtitle)}</span>`:''}</header>
   <div class="budget-detail-controls"><button id="budgetAddRow" class="budget-outline">＋ 행 추가</button><button id="budgetShowHidden" class="budget-outline">${showHidden?'숨김행 감추기':'숨김행 보기'} ${hiddenSummaryCount(p)+rows.filter(x=>x.hidden).length?`(${hiddenSummaryCount(p)+rows.filter(x=>x.hidden).length})`:''}</button><button id="budgetEditInfo" class="budget-edit-all">✎ 예산 정보 수정</button></div>
   <div class="budget-info-grid">${summaryRowsHtml(p,t)}</div>
-  <div class="budget-ledger-toolbar"><div><strong>집행내역</strong><span>행을 선택하면 표에서 바로 수정할 수 있습니다.</span></div></div>
+  <div class="budget-ledger-toolbar"><div><strong>집행내역</strong><span>행을 선택하면 표에서 바로 수정할 수 있습니다.</span></div><button type="button" id="budgetOpenExcelImport" class="budget-excel-import-btn budget-hide-print" title="엑셀의 일자·구분·사업명·집행금액·일상경비여부를 일괄 등록">▤ 엑셀 불러오기</button></div>
   <div class="budget-table-wrap"><table class="budget-ledger-table"><colgroup><col style="width:13%"><col style="width:12%"><col style="width:44%"><col style="width:15%"><col style="width:11%"><col style="width:5%"></colgroup><thead><tr><th>일자</th><th>구분</th><th>사업명</th><th>집행금액</th><th>일상경비여부</th><th class="budget-hide-print">삭제</th></tr></thead><tbody>${show.map(r=>inlineExpenseDraft?.editId===r.id ? inlineExpenseRowsHtml(r.id) : `<tr data-edit-line="${esc(r.id)}" class="${r.hidden?'budget-hidden-row':''} ${r.legacy?'budget-legacy-row':''}" title="${r.legacy?'기존 지출업무 연동 행':'클릭하여 수정'}"><td>${esc(showDate(r.date))}<span class="budget-calendar-glyph">▦</span></td><td>${r.category?esc(r.category):'<span class="budget-empty-category">—</span>'}</td><td><span class="budget-descrip">${esc(r.description||'')}</span>${r.note?`<small class="budget-note">${esc(r.note)}</small>`:''}${(r.attachments||[]).length?`<button class="budget-attach-link budget-hide-print" data-line-images="${esc(r.id)}" title="첨부이미지 보기">📎 ${r.attachments.length}</button>`:''}${r.hidden?'<small class="budget-row-hidden-label">숨김</small>':''}</td><td class="budget-number">${fmt(r.amount)} 원</td><td class="budget-daily ${r.daily?'yes':'no'}">${r.daily?'O':'X'}</td><td class="budget-row-actions budget-hide-print">${r.legacy?'<span title="지출업무에서 수정">↗</span>':`<button class="budget-del-row" data-delete-line="${esc(r.id)}" title="행 삭제">×</button>`}</td></tr>`).join('')}${inlineExpenseRowsHtml('')}${!show.length&&!inlineExpenseDraft?'<tr class="budget-no-rows"><td colspan="6">아직 집행내역이 없습니다. 아래 ‘+ 행 추가’로 등록하세요.</td></tr>':''}</tbody></table></div><button type="button" id="budgetAddExpense" class="budget-ledger-bottom-add budget-hide-print">＋ 행 추가</button>
   <div class="budget-ledger-foot">총 ${rows.length}건 · 화면 표시 ${show.length}건 · 일상경비 O는 배정액에서, 전체 금액은 총 예산액에서 차감됩니다.</div></div>
   </section>`;
@@ -6252,7 +6275,7 @@ function renderDetail(b){const p=cleanBudget(b),t=totals(p),rows=dateSortedBudge
   document.querySelectorAll('[data-summary-edit]').forEach(x=>x.onclick=e=>{e.stopPropagation();editSummaryRow(x.dataset.summaryEdit,x);});
   $('budgetPdf').onclick=()=>{document.title=`${p.year} ${p.title} 집행장부`;window.print();document.title='Y Calender | 나의 업무관리';};
   $('budgetExcel').onclick=()=>exportBudgetExcel(p).catch(err=>notify('엑셀 저장 실패: '+err.message));
-  // Detail toolbar intentionally omits Excel upload per requested layout.
+  $('budgetOpenExcelImport').onclick=openImportModal;
   $('moduleItems').querySelectorAll('[data-edit-line]').forEach(tr=>tr.addEventListener('click',e=>{if(e.target.closest('button'))return;if(tr.classList.contains('budget-legacy-row')){notify('이 내역은 지출업무 화면에서 수정할 수 있습니다.');return;}startInlineExpense(tr.dataset.editLine);}));
   $('moduleItems').querySelectorAll('[data-delete-line]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();deleteLine(btn.dataset.deleteLine);});
   $('moduleItems').querySelectorAll('[data-line-images]').forEach(btn=>btn.onclick=e=>{e.stopPropagation();const row=rows.find(x=>x.id===btn.dataset.lineImages);openImageList(row?.attachments||[]);});
@@ -6399,23 +6422,140 @@ async function exportBudgetExcel(b){
   sheet.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0};
   await window.JariExcel.write(book,`${p.year}-${p.title}-집행장부`);
 }
-function openImportModal(){$('budgetImportError').hidden=true;$('budgetImportForm').reset();$('budgetExcelModal').showModal();}
-async function importBudgetExcel(e){e.preventDefault();const button=$('budgetImportSave');button.disabled=true;const b=budgetById(selectedId);
-  try{const f=$('budgetImportForm');const file=f.elements.file.files[0];const matrix=await window.JariExcel.read(file);
-    const headerRow=matrix.findIndex(row=>row.some(v=>String(v||'').trim()==='일자')&&row.some(v=>String(v||'').trim()==='집행금액'));
-    if(headerRow<0)throw Error('「일자」, 「집행금액」 열이 있는 집행장부를 업로드해주세요.');
-    const names=matrix[headerRow].map(v=>String(v??'').trim());const find=(name)=>names.indexOf(name);const dateI=find('일자'),catI=find('구분'),descI=find('사업명'),amountI=find('집행금액'),dailyI=find('일상경비여부'),noteI=find('비고'),hiddenI=find('숨김');
-    if(descI<0)throw Error('「사업명」 열이 없습니다.');
-    const imported=[];
-    for(const row of matrix.slice(headerRow+1).slice(0,3000)){
-      const desc=String(row[descI]??'').trim(),date=normalizeDate(row[dateI]);if(!desc&&!date)continue;if(!desc||!date)continue;
-      const amount=parseAmt(row[amountI]);if(amount<0)throw Error('집행금액은 음수가 될 수 없습니다.');
-      imported.push({id:uid(),date,category:catI>=0?String(row[catI]??'').trim():'',description:desc,amount,daily:/^(o|○|예|y|true|1)$/i.test(String(row[dailyI]??'').trim()),note:noteI>=0?String(row[noteI]??''):'',hidden:hiddenI>=0?/^(o|○|예|y|true|1)$/i.test(String(row[hiddenI]??'').trim()):false,attachments:[]});
-    }
-    if(!imported.length)throw Error('가져올 수 있는 집행내역이 없습니다.');
-    const mode=f.elements.mode.value;const old=b.lineItems||[];if(!confirm(`${imported.length}건을 ${mode==='replace'?'기존 집행행을 대체하여':'기존 집행행에 추가하여'} 저장하시겠습니까?`))return;
-    saveBudget({...b,lineItems:mode==='replace'?imported:[...old,...imported]});$('budgetExcelModal').close();render();notify(`${imported.length}건의 집행내역을 가져왔습니다.`);
-  }catch(err){showError('budgetImportError','엑셀 가져오기 실패: '+err.message);}finally{button.disabled=false;}
+// v106: import spreadsheet expense rows with validation and an explicit preview.
+let budgetImportParsed=null,budgetImportSeq=0;
+function budgetImportColumnName(v){return String(v??'').replace(/^\uFEFF/,'').trim().toLowerCase().replace(/[\s\u00a0\/()（）\[\]_-]/g,'');}
+function budgetImportDate(raw){
+  const digits=String(raw??'').trim().replace(/\D/g,'');
+  if(digits.length===8&&/^\d{8}$/.test(digits)){
+    const iso=budgetQuickIsoDate(digits);if(iso)return iso;
+  }
+  if(typeof raw==='string'){
+    const ko=raw.replace(/년\s*/g,'-').replace(/월\s*/g,'-').replace(/일\s*$/g,'');
+    const parsed=normalizeDate(ko);if(parsed)return parsed;
+  }
+  return normalizeDate(raw);
+}
+function budgetImportAmount(raw){
+  if(typeof raw==='number')return Number.isInteger(raw)&&raw>=0&&Number.isSafeInteger(raw)?raw:null;
+  const cleaned=String(raw??'').trim().replace(/[\s\u00a0,₩￦원]/g,'');
+  if(!/^\d+(?:\.0+)?$/.test(cleaned))return null;
+  const amount=Number(cleaned);return Number.isSafeInteger(amount)&&amount>=0?amount:null;
+}
+function budgetImportDaily(raw){
+  if(raw===true||raw===1)return true;
+  if(raw===false||raw===0)return false;
+  const s=String(raw??'').trim().toLowerCase().replace(/\s+/g,'');
+  if(['','x','×','✕','✖','아니오','아니요','n','no','false','0','미해당','비대상','미포함','-'].includes(s))return false;
+  if(['o','○','◯','●','예','네','y','yes','true','1','해당','포함','일상경비'].includes(s))return true;
+  return null;
+}
+function budgetImportKey(r){return [r.date,(r.category||'').trim(),(r.description||'').trim(),r.amount,r.daily?'O':'X'].join('\u001f');}
+function budgetImportParse(matrix,b){
+  if(!Array.isArray(matrix)||!matrix.length)throw Error('엑셀 시트가 비어 있습니다.');
+  const labels={date:['일자','날짜','집행일자','집행일'],category:['구분','분류'],description:['사업명','집행내용','지출내용','적요'],amount:['집행금액','금액','지출금액'],daily:['일상경비여부','일상경비','일상경비ox']};
+  const fields=Object.keys(labels);
+  let header=-1,cols=null;
+  for(let i=0;i<Math.min(matrix.length,60);i++){
+    const names=matrix[i].map(budgetImportColumnName);
+    const indexes={};for(const key of fields)indexes[key]=names.findIndex(n=>labels[key].includes(n));
+    if(fields.every(k=>indexes[k]>=0)){header=i;cols=indexes;break;}
+  }
+  if(header<0)throw Error('「일자, 구분, 사업명, 집행금액, 일상경비여부」 5개 열의 제목을 찾지 못했습니다. 첫 번째 시트의 열 이름을 확인해 주세요.');
+  const found=[],issues=[],max=3000;let emptyDaily=0;
+  const body=matrix.slice(header+1);
+  if(body.length>max)issues.push(`집행내역이 ${max}행을 초과합니다. ${max}행 이하로 나누어 업로드해 주세요.`);
+  body.slice(0,max).forEach((row,i)=>{
+    const rowNum=header+i+2;
+    if(!row||!row.some(v=>v!==''&&v!==null&&v!==undefined&&String(v).trim()!==''))return;
+    const desc=String(row[cols.description]??'').trim();
+    const date=budgetImportDate(row[cols.date]);
+    const amount=budgetImportAmount(row[cols.amount]);
+    const daily=budgetImportDaily(row[cols.daily]);
+    const problems=[];
+    if(!date)problems.push('일자');
+    if(!desc)problems.push('사업명');
+    if(amount===null)problems.push('집행금액');
+    if(daily===null)problems.push('일상경비여부(O/X)');
+    if(problems.length){issues.push(`${rowNum}행: ${problems.join('·')} 확인 필요`);return;}
+    if(String(row[cols.daily]??'').trim()==='')emptyDaily++;
+    found.push({date,category:String(row[cols.category]??'').trim(),description:desc,amount,daily,note:'',hidden:false,attachments:[]});
+  });
+  return {found,issues,emptyDaily};
+}
+function budgetImportReady(){
+  const file=$('budgetImportForm')?.elements.file.files[0];
+  const valid=Boolean(file&&budgetImportParsed&&!budgetImportParsed.issues.length&&budgetImportParsed.selected.length);
+  $('budgetImportSave').disabled=!valid;
+  return valid;
+}
+function budgetImportRefreshPreview(){
+  const el=$('budgetImportPreview'),parsed=budgetImportParsed,b=budgetById(selectedId);
+  if(!el)return;
+  if(!parsed){el.innerHTML='<p class="budget-import-placeholder">파일을 선택하면 인식한 집행내역을 미리 보여드립니다.</p>';budgetImportReady();return;}
+  const existing=new Set(($('budgetImportForm').elements.skipExisting.checked?(b?.lineItems||[]):[]).map(budgetImportKey));
+  const selected=[];let duplicate=0;
+  for(const row of parsed.found){
+    const key=budgetImportKey(row);
+    if(existing.has(key)){duplicate++;continue;}
+    selected.push(row);
+    if($('budgetImportForm').elements.skipExisting.checked)existing.add(key);
+  }
+  parsed.selected=selected;
+  const bad=parsed.issues.length;
+  const summary=`<div class="budget-import-stats"><span><strong>${parsed.found.length}</strong>건 인식</span><span><strong>${duplicate}</strong>건 중복 제외</span><span class="${bad?'has-errors':''}"><strong>${bad}</strong>건 오류</span><span><strong>${selected.length}</strong>건 추가 예정</span></div>`;
+  const preview=selected.slice(0,7).map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.category||'—')}</td><td>${esc(r.description)}</td><td>${fmt(r.amount)}원</td><td>${r.daily?'O':'X'}</td></tr>`).join('');
+  const errs=bad?`<div class="budget-import-errors"><strong>수정이 필요한 행이 있습니다. 파일을 수정한 후 다시 선택해 주세요.</strong><ul>${parsed.issues.slice(0,8).map(v=>`<li>${esc(v)}</li>`).join('')}</ul>${bad>8?`<small>외 ${bad-8}건</small>`:''}</div>`:'';
+  el.innerHTML=summary+(selected.length?`<div class="budget-import-table-wrap"><table><thead><tr><th>일자</th><th>구분</th><th>사업명</th><th>집행금액</th><th>일상경비</th></tr></thead><tbody>${preview}</tbody></table></div>${selected.length>7?`<p class="budget-import-more">외 ${selected.length-7}건이 더 등록됩니다.</p>`:''}`:'<p class="budget-import-placeholder">새로 추가할 집행내역이 없습니다.</p>')+errs+(parsed.emptyDaily?`<p class="budget-import-more">일상경비여부가 비어 있는 ${parsed.emptyDaily}건은 X로 인식했습니다.</p>`:'');
+  budgetImportReady();
+}
+async function budgetImportPickFile(){
+  const seq=++budgetImportSeq,form=$('budgetImportForm'),file=form.elements.file.files[0];
+  budgetImportParsed=null;$('budgetImportError').hidden=true;$('budgetImportSave').disabled=true;
+  $('budgetImportPreview').innerHTML=file?'<p class="budget-import-placeholder">엑셀 파일을 분석하는 중입니다…</p>':'<p class="budget-import-placeholder">파일을 선택하면 인식한 집행내역을 미리 보여드립니다.</p>';
+  if(!file)return;
+  try{
+    const matrix=await window.JariExcel.read(file);
+    if(seq!==budgetImportSeq)return;
+    budgetImportParsed=budgetImportParse(matrix,budgetById(selectedId));
+    budgetImportRefreshPreview();
+  }catch(err){if(seq!==budgetImportSeq)return;showError('budgetImportError','엑셀 읽기 실패: '+(err?.message||String(err)));$('budgetImportPreview').innerHTML='';}
+}
+function openImportModal(){
+  ++budgetImportSeq;budgetImportParsed=null;
+  const form=$('budgetImportForm');form.reset();
+  $('budgetImportError').hidden=true;
+  $('budgetImportPreview').innerHTML='<p class="budget-import-placeholder">파일을 선택하면 인식한 집행내역을 미리 보여드립니다.</p>';
+  $('budgetImportSave').disabled=true;
+  $('budgetExcelModal').showModal();
+}
+async function budgetDownloadImportTemplate(){
+  try{
+    const ExcelJS=window.JariExcel.needExcel(),book=new ExcelJS.Workbook(),sheet=book.addWorksheet('집행내역');
+    sheet.addRow(['일자','구분','사업명','집행금액','일상경비여부']);
+    sheet.columns=[{width:21},{width:23},{width:56},{width:20},{width:22}];
+    window.JariExcel.addHeader(sheet,['일자','구분','사업명','집행금액','일상경비여부'],1);
+    sheet.views=[{state:'frozen',ySplit:1}];
+    sheet.getColumn(4).numFmt='#,##0';
+    for(let i=2;i<=500;i++)sheet.getCell(`E${i}`).dataValidation={type:'list',allowBlank:true,formulae:['"O,X"'],showErrorMessage:true,error:'O 또는 X를 선택하세요.'};
+    await window.JariExcel.write(book,'집행내역_엑셀_입력양식');
+  }catch(err){showError('budgetImportError','엑셀 양식 저장 실패: '+(err?.message||String(err)));}
+}
+function importBudgetExcel(e){
+  e.preventDefault();
+  if(!budgetImportReady())return;
+  const b=budgetById(selectedId),file=$('budgetImportForm').elements.file.files[0];
+  if(!b||!file||!budgetImportParsed)return;
+  const rows=budgetImportParsed.selected;
+  if(!rows.length)return;
+  const button=$('budgetImportSave');button.disabled=true;
+  try{
+    const old=b.lineItems||[];
+    const added=rows.map(r=>({...r,id:uid()}));
+    saveBudget({...b,lineItems:[...old,...added]});
+    ++budgetImportSeq;budgetImportParsed=null;
+    $('budgetExcelModal').close();render();notify(`엑셀에서 집행내역 ${added.length}건을 추가했습니다.`);
+  }catch(err){showError('budgetImportError','엑셀 가져오기 실패: '+(err?.message||String(err)));button.disabled=false;}
 }
 function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
  <dialog class="modal budget-form-dialog" id="budgetInfoModal" aria-labelledby="budgetModalTitle"><form id="budgetInfoForm" class="modal-content"><div class="modal-header"><div><span class="small-kicker">BUDGET SETUP</span><h2 id="budgetModalTitle">예산 추가</h2></div><button type="button" class="close-modal" data-close-budget>×</button></div><div class="modal-body"><input type="hidden" name="budgetId">
@@ -6429,7 +6569,7 @@ function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
  <label class="field"><span>사업명 / 집행 내용 *</span><input name="description" required maxlength="350" placeholder="예: 소방본부 현수막 제작"></label><label class="field"><span>집행금액 (원) *</span><input name="amount" type="number" min="0" step="1" required placeholder="0"></label>
  <div class="field-row"><label class="check-line"><input name="daily" type="checkbox"> 일상경비 집행 (O)</label><label class="check-line"><input name="hidden" type="checkbox"> 집행행 숨김</label></div><label class="field"><span>비고 (선택)</span><textarea name="note" rows="2" maxlength="1000"></textarea></label><label class="field"><span>증빙 이미지 첨부 (최대 8개 · 자동 고화질 압축)</span><input name="imageFiles" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif"></label><div id="budgetLineImages" class="attached-list"></div><p class="form-error" id="budgetLineError" hidden></p></div>
  <div class="modal-footer"><span class="footer-spacer"></span><button type="button" class="outline-button" data-close-line>취소</button><button type="submit" id="budgetLineSave" class="primary-button">저장하기</button></div></form></dialog>
- <dialog class="modal budget-form-dialog" id="budgetExcelModal" aria-labelledby="budgetImportTitle"><form id="budgetImportForm" class="modal-content"><div class="modal-header"><div><span class="small-kicker">EXCEL IMPORT</span><h2 id="budgetImportTitle">집행내역 엑셀 가져오기</h2></div><button type="button" class="close-modal" data-close-import>×</button></div><div class="modal-body"><p class="budget-hint">엑셀의 첫 시트에서 ‘일자, 구분, 사업명, 집행금액, 일상경비여부’ 열을 인식합니다. 이 사이트에서 저장한 .xlsx 양식을 다시 가져올 수 있으며 CSV도 지원합니다. 첨부 이미지는 엑셀에 포함되지 않습니다.</p><label class="field"><span>파일 선택</span><input type="file" name="file" required accept=".xlsx,.csv"></label><label class="field"><span>가져오기 방식</span><select name="mode"><option value="append">기존 행 유지하고 추가</option><option value="replace">기존 집행행 모두 대체</option></select></label><p class="form-error" id="budgetImportError" hidden></p></div><div class="modal-footer"><span class="footer-spacer"></span><button type="button" class="outline-button" data-close-import>취소</button><button type="submit" id="budgetImportSave" class="primary-button">가져오기</button></div></form></dialog>`;
+ <dialog class="modal budget-form-dialog" id="budgetExcelModal" aria-labelledby="budgetImportTitle"><form id="budgetImportForm" class="modal-content"><div class="modal-header"><div><span class="small-kicker">EXCEL IMPORT</span><h2 id="budgetImportTitle">집행내역 엑셀 불러오기</h2></div><button type="button" class="close-modal" data-close-import>×</button></div><div class="modal-body"><p class="budget-hint">엑셀 첫 번째 시트의 <strong>일자 · 구분 · 사업명 · 집행금액 · 일상경비여부</strong> 5개 열을 읽어 집행내역에 추가합니다. 기존 자료는 삭제되지 않습니다.</p><div class="budget-import-template-wrap"><span>양식이 없으신가요?</span><button type="button" id="budgetExcelTemplate" class="budget-import-template-btn">↓ 빈 엑셀 양식 받기</button></div><label class="field"><span>엑셀 파일 선택 (.xlsx 또는 .csv)</span><input type="file" name="file" required accept=".xlsx,.csv"></label><label class="budget-import-dedup"><input type="checkbox" name="skipExisting" checked> 이미 등록된 동일 내역은 중복 추가하지 않기</label><div id="budgetImportPreview" class="budget-import-preview" aria-live="polite"><p class="budget-import-placeholder">파일을 선택하면 인식한 집행내역을 미리 보여드립니다.</p></div><p class="form-error" id="budgetImportError" role="alert" hidden></p></div><div class="modal-footer"><span class="footer-spacer"></span><button type="button" class="outline-button" data-close-import>취소</button><button type="submit" id="budgetImportSave" class="primary-button" disabled>확인 후 가져오기</button></div></form></dialog>`;
   el.insertAdjacentHTML('beforeend',`<aside id="budgetRowPopover" class="budget-row-popover" hidden role="dialog" aria-label="예산 정보 행 설정" aria-modal="false">
     <form id="budgetRowForm" class="budget-row-editor-form">
       <div class="budget-row-editor-top"><span class="budget-popover-grip" aria-hidden="true">⠿</span><strong id="budgetRowTitle">정보 행 편집</strong><button type="button" id="budgetRowClose" class="budget-row-x" aria-label="닫기">×</button></div>
@@ -6495,7 +6635,7 @@ function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
   $('budgetDeleteForm').addEventListener('submit',confirmBudgetDeletion);
   for(const id of ['budgetDeleteCancel','budgetDeleteCancelTop'])$(id).addEventListener('click',()=>$('budgetDeleteModal').close());
   $('budgetDeleteModal').addEventListener('close',()=>{pendingBudgetDeleteId='';});
-  $('budgetInfoForm').addEventListener('submit',saveBudgetForm);$('budgetDelete').onclick=deleteBudget;$('budgetLineForm').addEventListener('submit',saveLineForm);$('budgetImportForm').addEventListener('submit',importBudgetExcel);
+  $('budgetInfoForm').addEventListener('submit',saveBudgetForm);$('budgetDelete').onclick=deleteBudget;$('budgetLineForm').addEventListener('submit',saveLineForm);$('budgetImportForm').addEventListener('submit',importBudgetExcel);$('budgetImportForm').elements.file.addEventListener('change',budgetImportPickFile);$('budgetImportForm').elements.skipExisting.addEventListener('change',budgetImportRefreshPreview);$('budgetExcelTemplate').addEventListener('click',budgetDownloadImportTemplate);
   $('budgetRowForm').addEventListener('submit',saveSummaryEditor);
   $('budgetRowClose').onclick=closeRowPopover;$('budgetRowCancel').onclick=closeRowPopover;
   $('budgetSummaryHide').onclick=()=>setSummaryVisibility('hide');$('budgetSummaryRemove').onclick=()=>setSummaryVisibility('delete');
