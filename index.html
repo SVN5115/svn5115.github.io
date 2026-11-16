@@ -1074,6 +1074,14 @@ body.calendar-focused .page-footer{padding-top:14px}
 .yc-formula-advanced-content .budget-formula-tags,.yc-formula-advanced-content .budget-formula-examples{gap:5px}
 .yc-formula-advanced-content .budget-formula-tags button,.yc-formula-advanced-content .budget-formula-examples button{padding:7px 9px;border-radius:8px;font-size:11px}
 .yc-formula-advanced-content .budget-formula-guide{font-size:10px;line-height:1.5;color:#8494ab}
+
+/* v105 — single user-defined total-budget source */
+.budget-total-source-box{display:flex;flex-direction:column;align-items:flex-start;gap:5px;margin-top:2px;padding:9px 11px;border:1px solid #dce8fa;border-radius:10px;background:#f7faff}
+.budget-total-source-box[hidden]{display:none!important}
+.budget-total-source-choice{display:inline-flex;align-items:center;gap:7px;cursor:pointer;color:#37669f;font-size:11.5px;font-weight:750}
+.budget-total-source-choice input{width:15px;height:15px;min-width:15px;accent-color:#2872c5;cursor:pointer}
+.budget-total-source-box small{font-size:10px!important;color:#8093af;line-height:1.45}
+.budget-total-source-badge{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:5px;background:#e3efff;color:#2c70bf;font-size:9px;font-weight:750;white-space:nowrap}
 @media(max-width:760px){.budget-row-popover{width:calc(100vw - 14px)!important}.budget-row-editor-grid{grid-template-columns:1fr;padding:14px;gap:12px}.yc-formula-math{grid-template-columns:1fr 90px 1fr}.yc-formula-method select{font-size:12px;min-height:42px}.budget-formula-advanced .budget-formula-result output{font-size:17px}}
 @media(max-width:390px){.yc-formula-math{grid-template-columns:1fr}.yc-formula-advanced-details summary span{display:none}}
 
@@ -5623,7 +5631,18 @@ const workspace=()=>window.JariWorkspace;
 const budgets=()=>workspace().getItems().filter(x=>x.kind==='budget');
 const budgetById=id=>workspace().getItem(id);
 function notify(msg){const el=$('toast');if(!el){alert(msg);return;}el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3300);}
-function cleanBudget(b){return {...b,id:b.id||uid(),kind:'budget',title:b.title||'새 예산',year:Number(b.year)||new Date().getFullYear(),account:b.account||'',heading:b.heading||'',description:b.description??b.body??'',limitBudget:parseAmt(b.limitBudget??b.amount??0),totalBudget:parseAmt(b.totalBudget??b.amount??0),dailyAllocated:parseAmt(b.dailyAllocated??b.amount??0),color:b.color||colors[0],lineItems:Array.isArray(b.lineItems)?b.lineItems:[],summaryRows:Array.isArray(b.summaryRows)?(b.summaryRowOrder==='creation'?b.summaryRows:[...b.summaryRows].reverse()).filter(r=>r&&!r.removed&&!r.deleted):[],summaryRowOrder:'creation',summaryConfig:b.summaryConfig&&typeof b.summaryConfig==='object'?b.summaryConfig:{}};}
+// v105: A user-designated amount row is the source of truth for this ledger's total budget.
+// Existing ledgers without a designation continue to use their original totalBudget value.
+function cleanBudget(b){
+  const p={...b,id:b.id||uid(),kind:'budget',title:b.title||'새 예산',year:Number(b.year)||new Date().getFullYear(),account:b.account||'',heading:b.heading||'',description:b.description??b.body??'',limitBudget:parseAmt(b.limitBudget??b.amount??0),totalBudget:parseAmt(b.totalBudget??b.amount??0),dailyAllocated:parseAmt(b.dailyAllocated??b.amount??0),color:b.color||colors[0],lineItems:Array.isArray(b.lineItems)?b.lineItems:[],summaryRows:Array.isArray(b.summaryRows)?(b.summaryRowOrder==='creation'?b.summaryRows:[...b.summaryRows].reverse()).filter(r=>r&&!r.removed&&!r.deleted):[],summaryRowOrder:'creation',summaryConfig:b.summaryConfig&&typeof b.summaryConfig==='object'?b.summaryConfig:{}};
+  if(typeof p.totalBudgetSourceKey==='string'&&p.totalBudgetSourceKey.startsWith('custom:')){
+    const source=p.summaryRows.find(r=>`custom:${r.id}`===p.totalBudgetSourceKey&&r.mode==='basic');
+    const entered=String(source?.value??'').trim().replace(/[\s,₩원]/g,'');
+    const amount=/^\d+$/.test(entered)?Number(entered):NaN;
+    p.totalBudget=Number.isSafeInteger(amount)&&amount>=0?amount:0;
+  }
+  return p;
+}
 function rawLines(b){const current=cleanBudget(b);const existing=(current.lineItems||[]).map(x=>({...x,amount:parseAmt(x.amount),daily:!!x.daily}));
   const legacy=workspace().getItems().filter(x=>x.kind==='spending'&&x.budgetId===b.id&&x.status==='done').map(x=>({id:x.id,date:x.date||'',category:'지출 업무',description:x.title||x.body||'',amount:parseAmt(x.amount),daily:false,note:'기존 지출업무에서 연동',legacy:true,attachments:x.attachments||[]}));
   return [...existing,...legacy];
@@ -5828,8 +5847,8 @@ function formattedSummaryValue(b,key,config,tot){
   else value=String(config.value??'');
   return {text:value,negative:false,computed:false};
 }
-function summaryRowHtml({key,label,value,mode,hidden=false,removed=false,custom=false,negative=false,computed=false,error=""}){
-  const badge=hidden?' <span class="budget-row-flag">숨김</span>':'';
+function summaryRowHtml({key,label,value,mode,hidden=false,removed=false,custom=false,isBudgetTotal=false,negative=false,computed=false,error=""}){
+  const badge=(hidden?' <span class="budget-row-flag">숨김</span>':'')+(isBudgetTotal?' <span class="budget-total-source-badge">총 예산</span>':'');
   return `<div class="budget-info-cell ${custom?'budget-custom-summary-row':''} ${hidden||removed?'budget-summary-hidden':''}" data-summary-key="${esc(key)}"><div class="budget-info-label"><span>${esc(label)}${badge}</span><button type="button" class="budget-pencil" data-summary-edit="${esc(key)}" title="${esc(label)} 행 설정" aria-label="${esc(label)} 행 설정 열기">✎</button></div><div class="budget-info-value ${error?'budget-formula-error':''} ${computed?'computed':''} ${negative?'negative':''}"><span title="${esc(error||'')}">${esc(value||'—')}${error?'<small class="budget-summary-error-note">수식 확인 필요</small>':''}</span><button type="button" class="budget-info-edit" data-summary-edit="${esc(key)}" aria-label="${esc(label)} 편집">수정</button></div></div>`;
 }
 // v103: the screen and Excel export share the same row order, visibility and displayed values.
@@ -5838,7 +5857,7 @@ function budgetVisibleSummaryData(b,tot){const p=cleanBudget(b);
     const result=r.mode==='formula'?summaryResult(p,`custom:${r.id}`,r):null;
     return {key:`custom:${r.id}`,label:r.label||'새 항목',
       value:r.mode==='formula'?result.text:(/^-?(0|[1-9]\d*)$/.test(String(r.value??'').trim())?fmt(Number(r.value)):String(r.value??'')),
-      mode:r.mode,hidden:r.hidden,custom:true,computed:r.mode==='formula',negative:result?.negative||false,error:result?.error||'',
+      mode:r.mode,hidden:r.hidden,custom:true,isBudgetTotal:p.totalBudgetSourceKey===`custom:${r.id}`,computed:r.mode==='formula',negative:result?.negative||false,error:result?.error||'',
       numericValue:r.mode==='formula'&&Number.isFinite(result?.value)?Math.round(result.value):null};
   });
   // As in the UI, removed default fields must never be regenerated for export.
@@ -5960,6 +5979,9 @@ function editSummaryRow(key,anchor){const original=budgetById(selectedId);if(!or
   f.reset();f.elements.rowLabel.value=row.label||'새 항목';f.elements.rowMode.value=row.mode||'basic';
   f.elements.basicValue.value=custom?String(row.value??''):['year','account','limitBudget','totalBudget','dailyAllocated'].includes(key)?String(p[key]??''):String(row.value??'');
   f.elements.formulaExpression.value=formulaExpression(row);
+  const totalFlag=$('budgetRowTotalBudgetFlag'),totalBox=$('budgetRowTotalBudgetBox');
+  totalFlag.checked=custom&&p.totalBudgetSourceKey===key;
+  totalBox.hidden=!custom;
   $('budgetFormulaRefChips').innerHTML=formulaSuggestionHtml(p,custom?key.slice(7):'');
   ycFormulaInit(p,row);
   $('budgetRowTitle').textContent=custom?'사용자 지정 행 편집':`기본 정보 행 편집 · ${row.label}`;
@@ -5994,6 +6016,10 @@ function placeRowPopover(anchor){
 function closeRowPopover(){const p=$('budgetRowPopover');if(!p)return;p.hidden=true;p.classList.remove('open');activeSummaryKey='';activeSummaryAnchor=null;}
 function refreshRowEditor(){const f=$('budgetRowForm'),formula=f.elements.rowMode.value==='formula';
   $('budgetFormulaArea').hidden=!formula;$('budgetBasicArea').hidden=formula;
+  const budgetFlag=$('budgetRowTotalBudgetFlag');
+  budgetFlag.disabled=formula;
+  // A total-budget source must be a directly entered numeric amount.
+  if(formula)budgetFlag.checked=false;
   const key=activeSummaryKey,p=budgetById(selectedId);
   if(!p)return;
   if(!formula&&['dailyRemain','spent','totalRemain'].includes(key))$('budgetBasicHelp').textContent='기본행 값으로 전환해도 실제 장부 합계 계산은 유지됩니다.';
@@ -6021,6 +6047,15 @@ function saveSummaryEditor(e){e.preventDefault();const b=budgetById(selectedId);
     (custom&&Object.values(BASE_REF_NAMES).includes(label));
   if(duplicate){notify('동일한 이름의 행이 이미 있습니다. 다른 이름을 입력해주세요.');return;}
   const mode=f.elements.rowMode.value;
+  const shouldBeTotal=custom&&$('budgetRowTotalBudgetFlag').checked;
+  let checkedTotal=0;
+  if(shouldBeTotal){
+    if(mode!=='basic'){notify('총 예산 몫은 값을 직접 입력한 항목에서만 선택할 수 있습니다.');return;}
+    const digits=String(f.elements.basicValue.value).trim().replace(/[\s,₩원]/g,'');
+    const number=/^\d+$/.test(digits)?Number(digits):NaN;
+    if(!Number.isSafeInteger(number)||number<0){notify('총 예산 몫은 0원 이상의 숫자로 입력해주세요.');return;}
+    checkedTotal=number;
+  }
   const expr=f.elements.formulaExpression.value.trim();
   if(mode==='formula'){
     if(!expr){notify('계산에 사용할 항목을 선택하거나 구분을 입력해 주세요.');return;}
@@ -6032,7 +6067,17 @@ function saveSummaryEditor(e){e.preventDefault();const b=budgetById(selectedId);
   }
   // Rewrite references to renamed custom fields so existing formulas keep working.
   if(custom)rewriteSummaryRefs(p,row.label,label);
-  if(custom){Object.assign(row,{label,mode,expression:mode==='formula'?expr:'',value:f.elements.basicValue.value,userCreated:true});}
+  if(custom){
+    Object.assign(row,{label,mode,expression:mode==='formula'?expr:'',value:f.elements.basicValue.value,userCreated:true});
+    if(shouldBeTotal){
+      p.totalBudgetSourceKey=key;
+      p.totalBudget=checkedTotal;
+    }else if(p.totalBudgetSourceKey===key){
+      // Explicitly unticking the current total removes the total-budget designation.
+      p.totalBudgetSourceKey=null;
+      p.totalBudget=0;
+    }
+  }
   else{
     const cfg={...p.summaryConfig[key],label,mode,expression:mode==='formula'?expr:'',value:f.elements.basicValue.value};
     p.summaryConfig[key]=cfg;
@@ -6051,7 +6096,11 @@ function saveSummaryEditor(e){e.preventDefault();const b=budgetById(selectedId);
 }
 function setSummaryVisibility(action){const b=budgetById(selectedId),p=cleanBudget(b),key=activeSummaryKey;if(!key)return;
   const custom=key.startsWith('custom:');
-  if(action==='delete'&&custom){if(!confirm('이 사용자 지정 행을 삭제하시겠습니까?'))return;p.summaryRows=p.summaryRows.filter(x=>x.id!==key.slice(7));}
+  if(action==='delete'&&custom){
+    if(!confirm('이 사용자 지정 행을 삭제하시겠습니까?'))return;
+    p.summaryRows=p.summaryRows.filter(x=>x.id!==key.slice(7));
+    if(p.totalBudgetSourceKey===key){p.totalBudgetSourceKey=null;p.totalBudget=0;}
+  }
   else if(custom){const r=p.summaryRows.find(x=>x.id===key.slice(7));if(!r)return;r.hidden=!r.hidden;}
   else {const r={...(p.summaryConfig[key]||{})};if(action==='delete'){if(!confirm('이 항목을 화면에서 완전히 제거하시겠습니까?\n삭제 후에는 ‘숨김행 보기’에서도 다시 나타나지 않습니다.\n예산 계산에 필요한 원본 금액은 유지됩니다.'))return;r.removed=true;r.hidden=false;}
     else{r.hidden=!r.hidden;r.removed=false;}p.summaryConfig[key]=r;}
@@ -6387,7 +6436,7 @@ function injectDialogs(){const el=document.createElement('div');el.innerHTML=`
       <div class="budget-row-editor-grid">
         <label class="budget-editor-control budget-editor-type"><span>입력 방식</span><select name="rowMode"><option value="basic">값 직접 입력</option><option value="formula">자동 계산 (수식)</option></select></label>
         <label class="budget-editor-control budget-editor-title"><span>항목명</span><input type="text" name="rowLabel" required maxlength="100" placeholder="항목명 입력"></label>
-        <div class="budget-editor-computation" id="budgetBasicArea"><label class="budget-editor-control"><span>표시 값</span><input type="text" name="basicValue" placeholder="값 입력"></label><small id="budgetBasicHelp"></small></div>
+        <div class="budget-editor-computation" id="budgetBasicArea"><label class="budget-editor-control"><span>표시 값</span><input type="text" name="basicValue" placeholder="값 입력"></label><div class="budget-total-source-box" id="budgetRowTotalBudgetBox" hidden><label class="budget-total-source-choice"><input type="checkbox" id="budgetRowTotalBudgetFlag"><span>총 예산 몫</span></label><small>체크하면 이 항목의 금액을 해당 예산의 총예산으로 사용합니다. 예산마다 1개만 선택됩니다.</small></div><small id="budgetBasicHelp"></small></div>
         <div class="budget-editor-computation budget-formula-advanced" id="budgetFormulaArea" hidden>
           <div class="yc-formula-intro"><strong>무엇을 계산할까요?</strong><span>계산 방법을 고르면 수식은 자동으로 만들어집니다.</span></div>
           <label class="budget-editor-control yc-formula-method"><span>계산 방법 선택</span><select id="ycFormulaPreset" aria-label="계산 방법 선택">
@@ -7367,5 +7416,3 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
 </script>
 </body>
 </html>
-
-<!-- Y Calender v84 · secure-context diagnostics · 2026-11-14 -->
