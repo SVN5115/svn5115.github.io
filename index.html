@@ -3122,6 +3122,10 @@ function workOccursOnDate(item,day){
  if(!item?.date||!DAILY_WORK_KINDS[item.kind])return false;
  return window.YCalendarRecurrence.matches(item,day);
 }
+// v108: Both the calendar category badges and right-hand daily cards consume this exact list.
+function dailyWorkItemsOn(day){
+  return (window.JariWorkspace?.getItems?.()||[]).filter(item=>workOccursOnDate(item,day));
+}
 function isDailyDone(item,day){return Array.isArray(item.completedDates)&&item.completedDates.includes(day);}
 const ROUTINE_ICON_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.4 14.4a4.1 4.1 0 0 1-5.8 0L10.3 12a4.1 4.1 0 0 0-5.8 0 4.1 4.1 0 0 0 0 5.8 4.1 4.1 0 0 0 5.8 0l1.1-1.1"/><path d="M5.6 9.6a4.1 4.1 0 0 1 5.8 0l2.3 2.4a4.1 4.1 0 0 0 5.8 0 4.1 4.1 0 0 0 0-5.8 4.1 4.1 0 0 0-5.8 0l-1.1 1.1"/></svg>`;
 const SPENDING_ICON_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="m6.4 8 2.1 8 3.5-6.4 3.5 6.4 2.1-8M7 12.2h10M7.5 14.4h9"/></svg>`;
@@ -3129,7 +3133,7 @@ const REPORT_ICON_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5
 const MEETING_ICON_SVG=`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M2.5 20v-1.8C2.5 15 5.4 13.5 9 13.5s6.5 1.5 6.5 4.7V20"/><circle cx="18" cy="9" r="2.4"/><path d="M17.3 14.4c2.8.2 4.2 1.7 4.2 4V20"/></svg>`;
 function dayGroupsFor(day){
  const scheduled=orderedEvents(filteredEvents().filter(e=>inRange(e,day)));
- const tasks=(window.JariWorkspace?.getItems?.()||[]).filter(x=>workOccursOnDate(x,day));
+ const tasks=dailyWorkItemsOn(day);
  const groups=[{id:'calendar',label:'일정',icon:'📅',items:scheduled},
  {id:'routine',label:'루틴 업무',icon:ROUTINE_ICON_SVG,iconSvg:true,items:tasks.filter(x=>x.kind==='routine')},
  {id:'spending',label:'지출 업무',icon:SPENDING_ICON_SVG,iconSvg:true,items:tasks.filter(x=>x.kind==='spending')},
@@ -7144,7 +7148,7 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
  const all=()=>window.JariWorkspace?.getItems?.()||[];
  const inKind=x=>Boolean(KIND[x?.kind]);
  const dayFor=(item,day)=>inKind(item)&&window.YCalendarRecurrence.matches(item,day);
- const itemsOn=day=>all().filter(item=>dayFor(item,day));
+ const itemsOn=day=>dailyWorkItemsOn(day);
  const completedFor=(item,day)=>Array.isArray(item.completedDates)&&item.completedDates.includes(day);
  const makeDate=(y,m,d)=>{y=Number(y);m=Number(m);d=Number(d);const obj=new Date(y,m-1,d);return y>=2000&&y<=2100&&obj.getFullYear()===y&&obj.getMonth()+1===m&&obj.getDate()===d ? `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';};
  const shownDate=()=>{const day=document.querySelector('.day-cell.selected')?.dataset.day||new Date().toLocaleDateString('en-CA');const x=day.match(/^(\d{4})-(\d{2})-(\d{2})$/);return x?{year:+x[1],month:+x[2],day:+x[3]}:{year:new Date().getFullYear(),month:new Date().getMonth()+1,day:new Date().getDate()};};
@@ -7369,14 +7373,13 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
  // 항목별 실제 내용과 완료 상태는 오른쪽 날짜별 업무 요약에서 확인합니다.
  function draw(){
    const grid=$('calendarGrid');if(!grid)return;
-   const items=all();
    const kinds=[['spending','지출','지'],['report','보고','보'],['meeting','회의','회']];
    for(const cell of grid.querySelectorAll('.day-cell')){
      cell.classList.remove('work-has-tasks');
      cell.querySelectorAll('.work-day-checkbox, .work-date-tags, .work-day-tasklist').forEach(node=>node.remove());
      const day=cell.dataset.day;
      if(!day)continue;
-     const byDay=items.filter(item=>item.kind!=='routine'&&dayFor(item,day));
+     const byDay=itemsOn(day).filter(item=>item.kind!=='routine');
      if(!byDay.length)continue;
      const wrap=document.createElement('div');
      wrap.className='work-date-tags';
@@ -7389,11 +7392,14 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
        badge.className='work-date-tag work-date-tag-button';
        badge.dataset.kind=kind;
        badge.dataset.day=day;
-       badge.title=label+' 업무 '+count+'건 · 클릭하여 완료 체크';
-       badge.setAttribute('aria-label',day+' '+label+' 업무 '+count+'건 완료 체크 창 열기');
+       badge.title=label+' 업무 '+count+'건 · 해당 날짜 선택 후 완료 체크';
+       badge.setAttribute('aria-label',day+' '+label+' 업무 '+count+'건 날짜 선택 및 완료 체크 창 열기');
        badge.innerHTML='<span class="work-tag-full">'+label+'</span><span class="work-tag-short">'+abbrev+'</span>'+(count>1?'<span class="work-tag-count">'+count+'</span>':'');
        badge.addEventListener('click',event=>{
          event.preventDefault();event.stopPropagation();
+         // v108: Badge dates did not change the sidebar's selected date. Keep both views in sync.
+         dailyCollapsedGroups.delete(kind);
+         selectDay(day);
          openWorkBadgeReadPopup(day,kind);
        });
        wrap.appendChild(badge);
