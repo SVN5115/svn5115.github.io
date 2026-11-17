@@ -5699,8 +5699,9 @@ function renderBoard(){
     ...remaining.map((b,i)=>({title:titleParts(b).cat,group:titleParts(b).grp||'기타',full:b.title,color:b.color||colors[(i+presets.length)%colors.length],saved:b,custom:true}))];
   const groups=['전체',...new Set(all.map(x=>x.group||'기타'))];
   if(!groups.includes(activeGroup))activeGroup='전체';
-  const q=lastBoardSearch.toLocaleLowerCase().trim();
-  const list=all.filter(x=>(activeGroup==='전체'||x.group===activeGroup)&&(!q||[x.full,x.group,x.saved?.account].some(v=>String(v||'').toLocaleLowerCase().includes(q))));
+  // Keep the search input mounted while typing: replacing the input breaks Korean IME composition.
+  // Render all cards for the chosen group and filter only their visibility on input.
+  const list=all.filter(x=>(activeGroup==='전체'||x.group===activeGroup));
   const amount=inYear.reduce((n,b)=>n+cleanBudget(b).totalBudget,0);
   const spent=inYear.reduce((n,b)=>n+totals(b).spent,0);
   const balance=amount-spent;
@@ -5741,7 +5742,7 @@ function renderBoard(){
           const totalAmount=p?.totalBudget??0;
           const displayTitle=p?.title||x.title||x.full;
           const displayAccount=p?.account||'';
-          return `<div class="budget-card-wrapper" style="--tile:${primary}"><button type="button" class="budget-tile budget-category-card ${registered?'is-registered':'not-registered'}" data-template="${esc(x.full)}" ${x.custom?`data-budget-id="${esc(x.saved.id)}"`:''} aria-label="${esc(x.full)} 예산 장부 열기">
+          return `<div class="budget-card-wrapper" data-budget-search="${esc([x.full,x.group,x.saved?.account].map(v=>String(v||'')).join(' ').toLocaleLowerCase())}" style="--tile:${primary}"><button type="button" class="budget-tile budget-category-card ${registered?'is-registered':'not-registered'}" data-template="${esc(x.full)}" ${x.custom?`data-budget-id="${esc(x.saved.id)}"`:''} aria-label="${esc(x.full)} 예산 장부 열기">
             <span class="budget-card-top"><span class="budget-card-icon" aria-hidden="true">▤</span><span class="budget-card-state ${registered?'saved':'not-saved'}"><i></i>${registered?'사용 중':'미등록'}</span></span>
             <span class="budget-card-group" title="${esc(displayAccount)}">${esc(displayAccount||'예산목 / 세부사업명 미입력')}</span>
             <span class="budget-card-name">${esc(displayTitle)}</span>
@@ -5749,11 +5750,40 @@ function renderBoard(){
             <span class="budget-card-bottom"><span class="budget-card-amount-label">${registered?'총 예산액':'아직 입력된 예산 없음'}</span><span class="budget-card-amount">${registered?`${fmt(totalAmount)}<small>원</small>`:'설정하기'}</span></span>
             <span class="budget-card-footer"><span>${registered?`집행내역 ${itemCount}건`:'클릭해서 사용 시작'}</span><span class="budget-card-arrow" aria-hidden="true">↗</span></span>
           </button>${registered?`<button type="button" class="budget-card-delete" data-delete-budget="${esc(x.saved.id)}" aria-label="${esc(x.full)} 집행장부 삭제" title="집행장부 삭제"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v6m4-6v6"/></svg><span>삭제</span></button>`:''}</div>`;
-        }).join('')||`<div class="budget-search-empty"><span aria-hidden="true">${all.length?'⌕':'＋'}</span><strong>${all.length?'조건에 맞는 예산 항목이 없습니다.':'등록된 예산 항목이 없습니다.'}</strong><p>${all.length?'검색어나 구분을 변경해 보세요.':'새 예산을 등록하면 이곳에 장부 카드가 나타납니다.'}</p><button type="button" id="${all.length?'budgetFilterReset':'budgetEmptyCreate'}">${all.length?'전체 항목 보기':'＋ 새 예산 추가'}</button></div>`}</div>
+        }).join('')||`<div class="budget-search-empty"><span aria-hidden="true">${all.length?'⌕':'＋'}</span><strong>${all.length?'조건에 맞는 예산 항목이 없습니다.':'등록된 예산 항목이 없습니다.'}</strong><p>${all.length?'구분을 변경해 보세요.':'새 예산을 등록하면 이곳에 장부 카드가 나타납니다.'}</p><button type="button" id="${all.length?'budgetFilterReset':'budgetEmptyCreate'}">${all.length?'전체 항목 보기':'＋ 새 예산 추가'}</button></div>`}<div class="budget-search-empty" id="budgetSearchNoResults" style="display:none"><span aria-hidden="true">⌕</span><strong>검색 결과가 없습니다.</strong><p>다른 검색어를 입력해 보세요.</p><button type="button" id="budgetSearchReset">검색어 지우기</button></div></div>
       <div class="budget-board-footnote"><span class="budget-footnote-dot">i</span> 예산 항목은 자동 생성되지 않습니다. ‘새 예산 추가’ 버튼에서 직접 등록하고 관리하세요.</div>
     </div>
   </section>`;
-  $('budgetSearch').addEventListener('input',e=>{lastBoardSearch=e.target.value;const caret=e.target.selectionStart;renderBoard();const input=$('budgetSearch');input.focus();input.setSelectionRange(caret,caret);});
+  // v107: Korean IME fix. Never replace a focused input during typing or composition.
+  const searchInput=$('budgetSearch');
+  let budgetSearchComposing=false;
+  function filterBudgetTiles(){
+    const term=lastBoardSearch.toLocaleLowerCase().trim();
+    let visible=0;
+    root.querySelectorAll('.budget-card-wrapper[data-budget-search]').forEach(card=>{
+      const match=!term||card.dataset.budgetSearch.includes(term);
+      card.style.display=match?'':'none';
+      if(match)visible++;
+    });
+    const counter=root.querySelector('.budget-count');
+    if(counter)counter.textContent=`${visible}개`;
+    const noResults=root.querySelector('#budgetSearchNoResults');
+    if(noResults)noResults.style.display=term&&visible===0?'flex':'none';
+  }
+  searchInput.addEventListener('compositionstart',()=>{budgetSearchComposing=true;});
+  searchInput.addEventListener('compositionend',()=>{
+    budgetSearchComposing=false;
+    lastBoardSearch=searchInput.value;
+    filterBudgetTiles();
+  });
+  searchInput.addEventListener('input',e=>{
+    lastBoardSearch=searchInput.value;
+    if(!budgetSearchComposing&&!e.isComposing)filterBudgetTiles();
+  });
+  $('budgetSearchReset').addEventListener('click',()=>{
+    lastBoardSearch='';searchInput.value='';filterBudgetTiles();searchInput.focus();
+  });
+  filterBudgetTiles();
   $('budgetYear').addEventListener('change',e=>{activeYear=Number(e.target.value);renderBoard();});
   $('budgetCreate').addEventListener('click',()=>openBudgetForm());
   root.querySelectorAll('[data-budget-group]').forEach(el=>el.addEventListener('click',()=>{activeGroup=el.dataset.budgetGroup;renderBoard();}));
