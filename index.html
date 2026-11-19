@@ -2607,6 +2607,29 @@ body.calendar-focused .yc-inline-error{margin:0;color:#cb5a67;font-size:11px;fon
 @media(max-width:480px){.budget-excel-import-btn{padding:8px 9px;font-size:10.5px}.budget-import-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media print{.budget-excel-import-btn,#budgetExcelModal{display:none!important}}
 </style>
+<style id="ycalender-v109-dual-event-editor">
+/* Legacy v109 quick-editor styles retained for compatibility. v110 replaces quick mode with read-only. */
+body.calendar-focused .yc-inline-calendar-editor.mode-quick{padding:12px 13px 10px;gap:10px}
+body.calendar-focused .yc-inline-calendar-editor.mode-quick .yc-inline-calendar-note{min-height:96px;max-height:220px}
+body.calendar-focused .yc-inline-calendar-editor.mode-quick .yc-inline-calendar-bottom{border-top:1px solid #edf2f9;margin-top:1px;padding-top:9px}
+body.calendar-focused .yc-inline-calendar-editor.mode-quick .yc-inline-actions{margin-left:auto}
+body.calendar-focused .yc-inline-event-row.is-open:has(.mode-quick) .yc-inline-edit-trigger{background:#f2f6fb;color:#7192bd;border-color:transparent}
+body.calendar-focused .yc-inline-event-row.is-open:has(.mode-full) .yc-inline-edit-trigger{background:#e5efff;color:#2d71bf}
+@media(max-width:760px){body.calendar-focused .yc-inline-calendar-editor.mode-quick{padding:11px 10px 10px}}
+</style>
+<style id="ycalender-v110-view-only">
+/* v110: schedule title reveals saved content only; pencil enables all editing controls. */
+body.calendar-focused .yc-inline-readonly{display:flex;flex-direction:column;gap:7px;padding:12px 14px 14px;background:#fff;min-width:0;color:#253e60}
+body.calendar-focused .yc-inline-readonly-label{font-size:11px;font-weight:750;color:#6680a4;margin-top:3px}
+body.calendar-focused .yc-inline-readonly-value{border:1px solid #e0eafa;border-radius:9px;padding:10px 12px;font-size:12px;font-weight:680;background:#f9fbff;overflow-wrap:anywhere}
+body.calendar-focused .yc-inline-readonly-note{border:1px solid #e0eafa;border-radius:9px;padding:11px 12px;min-height:54px;font-size:12px;line-height:1.65;font-weight:520;white-space:pre-wrap;overflow-wrap:anywhere;background:#fbfdff}
+body.calendar-focused .yc-inline-readonly-note.is-empty{color:#99a8bc}
+body.calendar-focused .yc-inline-readonly-images{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+body.calendar-focused .yc-inline-view-image{width:58px;height:58px;border:1px solid #d9e6f7;background:#f6faff;color:#638ab6;border-radius:9px;overflow:hidden;display:grid;place-items:center;cursor:pointer}
+body.calendar-focused .yc-inline-view-image img{width:100%;height:100%;object-fit:cover}
+body.calendar-focused .yc-inline-event-row.is-open:has(.yc-inline-readonly) .yc-inline-edit-trigger{background:#f2f6fb;color:#7192bd;border-color:transparent}
+@media(max-width:760px){body.calendar-focused .yc-inline-readonly{padding:11px 10px 12px}}
+</style>
 </head>
 <body class="calendar-focused">
   <div class="shell">
@@ -2972,6 +2995,90 @@ let personQuery = '';
 let profile = getStored(PROFILE_KEY, {name:'',team:''});
 let events = loadEvents();
 let toastTimer;
+// v113: checking an 일정 task starts a calendar-DATE-based three-day countdown.
+// Example: check a November 15 event on November 18 -> remove from November 21, 00:00 KST.
+// The deadline is stored in the existing event record; no SQL schema change.
+// Use Korea Standard Time rather than each device's clock timezone for consistency.
+function ycCalendarAutoDeleteDeadline(nowMs=Date.now()){
+  const KST_OFFSET_MS=9*60*60*1000;
+  const kstDate=new Date(nowMs+KST_OFFSET_MS);
+  const kstMidnightUtc=Date.UTC(kstDate.getUTCFullYear(),kstDate.getUTCMonth(),kstDate.getUTCDate());
+  return new Date(kstMidnightUtc+3*24*60*60*1000-KST_OFFSET_MS).toISOString();
+}
+let ycCalendarAutoDeleteTimer = 0;
+let ycCalendarAutoDeleteBusy = false;
+function ycCalendarAutoDeleteAt(item){
+  if(!Array.isArray(item?.completedDates)||!item.completedDates.length ||
+      typeof item.autoDeleteAt!=='string')return NaN;
+  const t=Date.parse(item.autoDeleteAt);
+  return Number.isFinite(t)?t:NaN;
+}
+function ycScheduleCalendarAutoDelete(retryAfterMs){
+  clearTimeout(ycCalendarAutoDeleteTimer);
+  ycCalendarAutoDeleteTimer=0;
+  if(ycCalendarAutoDeleteBusy)return;
+  // Never purge an unauthenticated cloud user's saved local backup.
+  if(window.JariCloud?.isConfigured?.()&&!window.JariCloud?.isOnline?.())return;
+  let soonest=Infinity;
+  for(const item of events){const at=ycCalendarAutoDeleteAt(item);if(Number.isFinite(at))soonest=Math.min(soonest,at);}
+  if(!Number.isFinite(soonest))return;
+  const delay=retryAfterMs==null?Math.max(0,soonest-Date.now()+100):Math.max(1000,retryAfterMs);
+  ycCalendarAutoDeleteTimer=setTimeout(()=>{void ycRemoveExpiredCalendarEvents();},Math.min(2147483647,delay));
+}
+async function ycRemoveExpiredCalendarEvents(){
+  if(ycCalendarAutoDeleteBusy)return;
+  clearTimeout(ycCalendarAutoDeleteTimer);ycCalendarAutoDeleteTimer=0;
+  if(window.JariCloud?.isConfigured?.()&&!window.JariCloud?.isOnline?.())return;
+  const due=events.filter(item=>{const at=ycCalendarAutoDeleteAt(item);return Number.isFinite(at)&&at<=Date.now();});
+  if(!due.length){ycScheduleCalendarAutoDelete();return;}
+  ycCalendarAutoDeleteBusy=true;
+  let changed=false,hadError=false;
+  try{
+    for(const snapshot of due){
+      const current=events.find(item=>item.id===snapshot.id);
+      if(!current||current.autoDeleteAt!==snapshot.autoDeleteAt||ycCalendarAutoDeleteAt(current)>Date.now())continue;
+      try{
+        let removedAttachments=current.attachments||[];
+        if(window.JariCloud?.isOnline?.()){
+          // Atomic conditional DELETE: a second device may have unchecked this item.
+          const result=await window.JariCloud.deleteExpiredCalendar(snapshot.id,snapshot.autoDeleteAt);
+          if(!result.deleted){
+            const idx=events.findIndex(item=>item.id===snapshot.id);
+            if(idx>=0){
+              if(result.record&&validEvent(result.record))events.splice(idx,1,result.record);
+              else events.splice(idx,1);
+              changed=true;
+            }
+            continue;
+          }
+          removedAttachments=result.attachments;
+        }
+        const idx=events.findIndex(item=>item.id===snapshot.id);
+        if(idx>=0){events.splice(idx,1);changed=true;}
+        if(ycInlineEventDraft?.id===snapshot.id)ycCloseInlineEvent(false);
+        if(activeDetailEventId===snapshot.id){activeDetailEventId='';$('eventDetailModal')?.close?.();}
+        if(!window.JariCloud?.isOnline?.())store();
+        // Remove every file referenced by the deleted row, not merely its preview.
+        for(const attachment of removedAttachments){
+          try{await window.JariAttachments?.remove(attachment);}catch(error){
+            console.warn('자동 삭제된 일정의 이미지 정리에 실패했습니다.',error);
+          }
+        }
+      }catch(error){
+        hadError=true;
+        console.warn('완료일로부터 3일이 지난 일정 삭제 실패; 재시도합니다.',error);
+      }
+    }
+    if(changed)render();
+  }finally{
+    ycCalendarAutoDeleteBusy=false;
+    ycScheduleCalendarAutoDelete(hadError?60_000:null);
+  }
+}
+// Sleeping browsers resume cleanup on return. If the site was closed entirely,
+// deletion runs upon the next authenticated load (not in a closed browser).
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void ycRemoveExpiredCalendarEvents();});
+window.addEventListener('focus',()=>{void ycRemoveExpiredCalendarEvents();});
 
 function fmt(value) {
   const d = value instanceof Date ? value : new Date(value);
@@ -3104,11 +3211,11 @@ function ycOpenEventFromCalendar(id,day){
  }
  // A collapsed calendar group should not hide the editor opened from the month view.
  dailyCollapsedGroups.delete('calendar');
- if(alreadyOpen)renderDayDetails();
- else ycOpenInlineEvent(id);
+ if(alreadyOpen){ycInlineEventDraft.mode='view';renderDayDetails();}
+ else ycOpenInlineEvent(id,'view');
  renderCalendar();
  requestAnimationFrame(()=>{
-   const editor=$('ycInlineCalendarForm');
+   const editor=$('ycInlineReadOnly')||$('ycInlineCalendarForm');
    if(editor){
      const box=editor.closest('.yc-inline-event-row')||editor;
      box.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -3235,16 +3342,24 @@ function ycCloseInlineEvent(shouldRender=true){
   }
   if(shouldRender)renderDayDetails();
 }
-function ycOpenInlineEvent(id){
-  if(ycInlineEventDraft?.id===id){ycCloseInlineEvent();return;}
-  ycCloseInlineEvent(false);
-  const original=events.find(item=>item.id===id);
-  if(!original)return;
-  ycInlineEventDraft={id:original.id,day:selectedDate,title:original.title||'',note:original.note||'',
-    start:original.start,end:original.end,chief:Boolean(original.chief),director:Boolean(original.director),
-    chiefAt:Number(original.chiefCheckedAt||0),directorAt:Number(original.directorCheckedAt||0),
-    kept:[...(original.attachments||[])],removed:[],pending:[],error:'',busy:false,datesOpen:false};
-  renderDayDetails();
+function ycOpenInlineEvent(id,mode='view'){
+  const targetMode=mode==='full'?'full':'view';
+  if(ycInlineEventDraft?.id===id && ycInlineEventDraft.day===selectedDate){
+    if(ycInlineEventDraft.mode===targetMode){ycCloseInlineEvent();return;}
+    // Preserve unsaved title, note, flags and attachments when toggling editor types.
+    ycInlineEventDraft.mode=targetMode;
+    ycInlineEventDraft.error='';
+    renderDayDetails();
+  }else{
+    ycCloseInlineEvent(false);
+    const original=events.find(item=>item.id===id);
+    if(!original)return;
+    ycInlineEventDraft={id:original.id,day:selectedDate,mode:targetMode,title:original.title||'',note:original.note||'',
+      start:original.start,end:original.end,chief:Boolean(original.chief),director:Boolean(original.director),
+      chiefAt:Number(original.chiefCheckedAt||0),directorAt:Number(original.directorCheckedAt||0),
+      kept:[...(original.attachments||[])],removed:[],pending:[],error:'',busy:false,datesOpen:false};
+    renderDayDetails();
+  }
   requestAnimationFrame(()=>{
     const input=$('ycInlineEventTitle');
     if(input){input.focus({preventScroll:true});input.setSelectionRange(input.value.length,input.value.length);}
@@ -3253,16 +3368,29 @@ function ycOpenInlineEvent(id){
 function ycInlineEventHtml(item){
   const draft=ycInlineEventDraft;
   if(!draft||draft.id!==item.id||draft.day!==selectedDate)return '';
-  const images=[...draft.kept.map(a=>`<div class="yc-inline-image-tile"><button type="button" class="yc-inline-image-view" data-yc-image-saved="${escapeHtml(a.id)}" aria-label="첨부 이미지 보기">▧</button><button type="button" class="yc-inline-image-remove" data-yc-remove-saved="${escapeHtml(a.id)}" aria-label="첨부 이미지 제거">×</button></div>`),
-    ...draft.pending.map(p=>`<div class="yc-inline-image-tile"><button type="button" class="yc-inline-image-view" data-yc-image-pending="${escapeHtml(p.id)}" aria-label="첨부 이미지 보기"><img src="${escapeHtml(p.url)}" alt="첨부 이미지 미리보기"></button><button type="button" class="yc-inline-image-remove" data-yc-remove-pending="${escapeHtml(p.id)}" aria-label="첨부 이미지 제거">×</button></div>`)].join('');
+  const isFull=draft.mode==='full';
+  // The event title and calendar bar are read-only. Only the pencil opens the editor.
+  if(!isFull){
+    const savedImages=(item.attachments||[]).map((attachment,index)=>
+      `<button type="button" class="yc-inline-view-image" data-yc-view-image="${escapeHtml(attachment.id)}" aria-label="첨부 이미지 ${index+1} 보기" title="첨부 이미지 보기">▧</button>`).join('');
+    return `<section class="yc-inline-readonly" id="ycInlineReadOnly" aria-label="${escapeHtml(item.title||'일정')} 내용 보기">
+      <div class="yc-inline-readonly-label">일정 제목</div>
+      <div class="yc-inline-readonly-value">${escapeHtml(item.title||'제목 없음')}</div>
+      <div class="yc-inline-readonly-label">세부 내용</div>
+      <div class="yc-inline-readonly-note ${item.note?'':'is-empty'}">${escapeHtml(item.note||'등록된 세부 내용이 없습니다.')}</div>
+      ${savedImages?`<div class="yc-inline-readonly-images" aria-label="첨부 이미지">${savedImages}</div>`:''}
+    </section>`;
+  }
+  const images=isFull?[...draft.kept.map(a=>`<div class="yc-inline-image-tile"><button type="button" class="yc-inline-image-view" data-yc-image-saved="${escapeHtml(a.id)}" aria-label="첨부 이미지 보기">▧</button><button type="button" class="yc-inline-image-remove" data-yc-remove-saved="${escapeHtml(a.id)}" aria-label="첨부 이미지 제거">×</button></div>`),
+    ...draft.pending.map(p=>`<div class="yc-inline-image-tile"><button type="button" class="yc-inline-image-view" data-yc-image-pending="${escapeHtml(p.id)}" aria-label="첨부 이미지 보기"><img src="${escapeHtml(p.url)}" alt="첨부 이미지 미리보기"></button><button type="button" class="yc-inline-image-remove" data-yc-remove-pending="${escapeHtml(p.id)}" aria-label="첨부 이미지 제거">×</button></div>`)].join(''):'';
   const dateInfo=draft.start===draft.end?draft.start:`${draft.start} ~ ${draft.end}`;
-  return `<form class="yc-inline-calendar-editor" id="ycInlineCalendarForm" aria-label="${escapeHtml(item.title||'일정')} 바로 수정">
+  return `<form class="yc-inline-calendar-editor ${isFull?'mode-full':'mode-quick'}" id="ycInlineCalendarForm" aria-label="${escapeHtml(item.title||'일정')} ${isFull?'전체':'간편'} 수정">
    <label class="yc-inline-calendar-label">일정 제목<input id="ycInlineEventTitle" class="yc-inline-calendar-title" maxlength="100" required value="${escapeHtml(draft.title)}" placeholder="일정 제목"></label>
-   <label class="yc-inline-calendar-label">세부 내용<textarea id="ycInlineEventNote" class="yc-inline-calendar-note" maxlength="3000" rows="4" placeholder="세부 내용을 입력하세요... (이미지는 Ctrl+V로 붙여넣기)">${escapeHtml(draft.note)}</textarea></label>
-   <div class="yc-inline-calendar-tools"><label class="yc-inline-file-pick">📎 이미지 첨부<input id="ycInlineImageFiles" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label><span class="yc-inline-paste-hint">이미지는 Ctrl+V로 붙여넣을 수 있습니다.</span></div>
+   <label class="yc-inline-calendar-label">세부 내용<textarea id="ycInlineEventNote" class="yc-inline-calendar-note" maxlength="3000" rows="4" placeholder="${isFull?'세부 내용을 입력하세요... (이미지는 Ctrl+V로 붙여넣기)':'세부 내용을 입력하세요...'}">${escapeHtml(draft.note)}</textarea></label>
+   ${isFull?`<div class="yc-inline-calendar-tools"><label class="yc-inline-file-pick">📎 이미지 첨부<input id="ycInlineImageFiles" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></label><span class="yc-inline-paste-hint">이미지는 Ctrl+V로 붙여넣을 수 있습니다.</span></div>
    <div class="yc-inline-image-grid" id="ycInlineImageGrid">${images}</div>
-   <details class="yc-inline-date-details" id="ycInlineDates" ${draft.datesOpen?'open':''}><summary>📅 ${escapeHtml(dateInfo)} · 날짜 변경</summary><div class="yc-inline-date-row"><label>시작일<input type="date" id="ycInlineStart" value="${escapeHtml(draft.start)}" required></label><label>종료일<input type="date" id="ycInlineEnd" value="${escapeHtml(draft.end)}" required></label></div></details>
-   <div class="yc-inline-calendar-bottom"><div class="yc-inline-flags"><label class="yc-inline-flag"><input type="checkbox" id="ycInlineChief" ${draft.chief?'checked':''}> 본부장</label><label class="yc-inline-flag"><input type="checkbox" id="ycInlineDirector" ${draft.director?'checked':''}> 행정과장</label></div><div class="yc-inline-actions"><button type="button" class="yc-inline-btn delete" id="ycInlineDelete">삭제</button><button type="button" class="yc-inline-btn" id="ycInlineCancel">취소</button><button type="submit" class="yc-inline-btn save" id="ycInlineSave" ${draft.busy?'disabled':''}>${draft.busy?'저장 중…':'저장'}</button></div></div>
+   <details class="yc-inline-date-details" id="ycInlineDates" ${draft.datesOpen?'open':''}><summary>📅 ${escapeHtml(dateInfo)} · 날짜 변경</summary><div class="yc-inline-date-row"><label>시작일<input type="date" id="ycInlineStart" value="${escapeHtml(draft.start)}" required></label><label>종료일<input type="date" id="ycInlineEnd" value="${escapeHtml(draft.end)}" required></label></div></details>`:''}
+   <div class="yc-inline-calendar-bottom ${isFull?'':'quick-actions'}">${isFull?`<div class="yc-inline-flags"><label class="yc-inline-flag"><input type="checkbox" id="ycInlineChief" ${draft.chief?'checked':''}> 본부장</label><label class="yc-inline-flag"><input type="checkbox" id="ycInlineDirector" ${draft.director?'checked':''}> 행정과장</label></div>`:''}<div class="yc-inline-actions">${isFull?'<button type="button" class="yc-inline-btn delete" id="ycInlineDelete">삭제</button>':''}<button type="button" class="yc-inline-btn" id="ycInlineCancel">취소</button><button type="submit" class="yc-inline-btn save" id="ycInlineSave" ${draft.busy?'disabled':''}>${draft.busy?'저장 중…':'저장'}</button></div></div>
    <p class="yc-inline-error" id="ycInlineError" role="alert" ${draft.error?'':'hidden'}>${escapeHtml(draft.error)}</p>
   </form>`;
 }
@@ -3280,7 +3408,21 @@ function ycAppendInlineImages(files){
   renderDayDetails();
 }
 function ycBindInlineEvent(){
-  const draft=ycInlineEventDraft,form=$('ycInlineCalendarForm');
+  const draft=ycInlineEventDraft;
+  const view=$('ycInlineReadOnly');
+  if(draft?.mode==='view'&&view){
+    const item=events.find(event=>event.id===draft.id);
+    view.querySelectorAll('[data-yc-view-image]').forEach(button=>{
+      const attachment=(item?.attachments||[]).find(image=>image.id===button.dataset.ycViewImage);
+      if(!attachment)return;
+      button.addEventListener('click',()=>window.JariAttachments?.open(attachment));
+      window.JariAttachments?.url(attachment).then(url=>{
+        if(button.isConnected){const img=document.createElement('img');img.src=url;img.alt='첨부 이미지';button.replaceChildren(img);}
+      }).catch(()=>{});
+    });
+    return;
+  }
+  const form=$('ycInlineCalendarForm');
   if(!draft||!form)return;
   for(const [key,id] of [['title','ycInlineEventTitle'],['note','ycInlineEventNote'],['start','ycInlineStart'],['end','ycInlineEnd']]){
     const input=$(id);
@@ -3293,7 +3435,7 @@ function ycBindInlineEvent(){
   $('ycInlineImageFiles')?.addEventListener('change',e=>{ycAppendInlineImages(e.target.files);e.target.value='';});
   $('ycInlineEventNote')?.addEventListener('paste',e=>{
     const files=[...e.clipboardData?.items||[]].filter(item=>item.kind==='file'&&item.type.startsWith('image/')).map(item=>item.getAsFile()).filter(Boolean);
-    if(files.length){e.preventDefault();ycAppendInlineImages(files);}
+    if(files.length){e.preventDefault();draft.mode='full';ycAppendInlineImages(files);}
   });
   $('ycInlineCancel')?.addEventListener('click',()=>ycCloseInlineEvent());
   $('ycInlineDelete')?.addEventListener('click',()=>{
@@ -3387,7 +3529,7 @@ function renderDayDetails(){
       const quickDelete=isWorkItem?`<button type="button" class="daily-quick-delete" data-daily-quick-delete="${id}" data-daily-delete-kind="${group.id}" title="${group.label} 빠른 삭제" aria-label="${escapeHtml(item.title||'제목 없음')} 빠른 삭제">×</button>`:'';
       if(group.id==='calendar'){
         const editing=ycInlineEventDraft?.id===item.id&&ycInlineEventDraft.day===selectedDate;
-        return `<div class="yc-inline-event-row ${editing?'is-open':''}"><div class="daily-check-line ${complete?'is-checked':''}"><input type="checkbox" class="daily-check-input" aria-label="${escapeHtml(item.title||'일정')} 완료" data-daily-kind="calendar" data-daily-id="${id}" ${complete?'checked':''}><button type="button" class="daily-item-title" data-daily-open="calendar" data-daily-id="${id}" aria-expanded="${Boolean(editing)}" title="클릭하여 바로 아래에서 일정 수정">${escapeHtml(eventDisplayTitle(item))}</button><button type="button" class="yc-inline-edit-trigger" data-daily-open="calendar" data-daily-id="${id}" title="바로 수정" aria-label="${escapeHtml(item.title||'일정')} 바로 수정">✎</button></div>${editing?ycInlineEventHtml(item):''}</div>`;
+        return `<div class="yc-inline-event-row ${editing?'is-open':''}"><div class="daily-check-line ${complete?'is-checked':''}"><input type="checkbox" class="daily-check-input" aria-label="${escapeHtml(item.title||'일정')} 완료" data-daily-kind="calendar" data-daily-id="${id}" ${complete?'checked':''}><button type="button" class="daily-item-title" data-daily-open="calendar" data-daily-mode="view" data-daily-id="${id}" aria-expanded="${Boolean(editing&&ycInlineEventDraft.mode==='view')}" title="일정 내용 보기(읽기 전용)">${escapeHtml(eventDisplayTitle(item))}</button><button type="button" class="yc-inline-edit-trigger" data-daily-open="calendar" data-daily-mode="full" data-daily-id="${id}" aria-expanded="${Boolean(editing&&ycInlineEventDraft.mode==='full')}" title="이미지·날짜 등을 포함한 전체 수정" aria-label="${escapeHtml(item.title||'일정')} 전체 수정">✎</button></div>${editing?ycInlineEventHtml(item):''}</div>`;
       }
       return `<div class="daily-check-line ${complete?'is-checked':''}"><input type="checkbox" class="daily-check-input" aria-label="${escapeHtml(item.title||'업무')} 완료" data-daily-kind="${group.id}" data-daily-id="${id}" ${complete?'checked':''}><button type="button" class="daily-item-title" data-daily-open="${group.id}" data-daily-id="${id}" title="클릭하여 내용 확인 및 수정">${escapeHtml(item.title||'제목 없음')}</button>${quickDelete}</div>`;
     }).join('');
@@ -3417,7 +3559,7 @@ function renderDayDetails(){
  }));
  el.querySelectorAll('[data-daily-open]').forEach(btn=>btn.addEventListener('click',()=>{
    const id=btn.dataset.dailyId,kind=btn.dataset.dailyOpen;
-   if(kind==='calendar')ycOpenInlineEvent(id);
+   if(kind==='calendar')ycOpenInlineEvent(id,btn.dataset.dailyMode||'view');
    else {const item=window.JariWorkspace?.getItem?.(id);if(item)window.YWorkQuick?.open?.(kind,item);}
  }));
  ycBindInlineEvent();
@@ -3445,10 +3587,20 @@ function renderDayDetails(){
      const idx=events.findIndex(item=>item.id===id);if(idx<0)return;
      const record={...events[idx]};const days=new Set(record.completedDates||[]);
      complete?days.add(selectedDate):days.delete(selectedDate);
-     record.completedDates=[...days];record.updatedAt=new Date().toISOString();
+     record.completedDates=[...days];
+     if(complete){
+       // First completion sets the deadline; other checked days do not extend it.
+       if(!Number.isFinite(Date.parse(record.autoDeleteAt)))
+         record.autoDeleteAt=ycCalendarAutoDeleteDeadline();
+     }else if(!days.size){
+       // Unchecking every completed date cancels pending auto deletion.
+       delete record.autoDeleteAt;
+     }
+     record.updatedAt=new Date().toISOString();
      events.splice(idx,1,record);store();
      window.dispatchEvent(new CustomEvent('jari:entry-save',{detail:{kind:'calendar',record}}));
      renderCalendar();renderDayDetails();
+     ycScheduleCalendarAutoDelete();
    }else{
      const item=window.JariWorkspace?.getItem?.(id);if(!item)return;
      const days=new Set(item.completedDates||[]);
@@ -3588,7 +3740,7 @@ function deleteEventById(id, dialogToClose){
  window.dispatchEvent(new CustomEvent('jari:entry-delete',{detail:{kind:'calendar',id}}));
  dialogToClose?.close();
  activeDetailEventId='';
- render();toast('일정이 삭제되었습니다.');
+ render();ycScheduleCalendarAutoDelete();toast('일정이 삭제되었습니다.');
  for(const attachment of original.attachments||[])window.JariAttachments?.remove(attachment).catch(()=>{});
 }
 function deleteCurrentEvent(){const id=$('eventId').value;if(id)deleteEventById(id,$('eventModal'));}
@@ -3614,6 +3766,7 @@ async function importData(file){
 }
 function init(){
  initModal();
+ ycScheduleCalendarAutoDelete();
  $('addButton').addEventListener('click',()=>openNewEvent());
  $('addForDay').addEventListener('click',()=>openNewEvent(selectedDate));
  // Click the visible month heading to jump straight to another year/month.
@@ -3885,7 +4038,7 @@ init();
       const src=await url(record);
       if(token!==previewVersion||!viewer.open)return;
       image.onload=()=>{if(token!==previewVersion)return;status.hidden=true;image.hidden=false;};
-      image.onerror=()=>{if(token!==previewVersion)return;image.hidden=true;status.hidden=false;status.textContent='이미지를 표시할 수 없습니다. 연결 상태를 확인해 주세요.';};
+      image.onerror=()=>{if(token!==previewVersion)return;if(record?.path)window.JariCloud?.invalidateSignedAttachmentUrl?.(record.path);image.hidden=true;status.hidden=false;status.textContent='이미지를 표시할 수 없습니다. 연결 상태를 확인해 주세요.';};
       image.src=src;
       if(image.complete&&image.naturalWidth>0)image.onload();
     }catch(err){
@@ -6710,6 +6863,66 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
   let client=null,user=null,loaded=false,authMode='login',authBusy=false;
   let createClientFactory=null, signedInUsername='', passwordChanging=false;
   const ACCOUNT_NAME_CACHE='ycallender:auth-username:v80';
+  // v111: keep the SAME short-lived signed URL for repeat views so the browser
+  // can reuse its HTTP image cache. Only this tab's session is reused on reload.
+  // Never store image bytes, or a service/secret key, in page storage.
+  const PHOTO_URL_SESSION_KEY='ycalender:photo-signed-urls:v111';
+  const PHOTO_URL_REUSE_MS=12*60*1000; // Signed URL is valid for 15 minutes.
+  const PHOTO_URL_LIMIT=100;
+  const photoSignedUrls=new Map(), photoUrlRequests=new Map();
+  let photoCacheOwner='';
+  function photoUrlIsTrusted(url){
+    try{
+      const parsed=new URL(url);
+      const api=new URL(cfg.supabaseUrl);
+      return parsed.origin===api.origin &&
+        parsed.pathname.startsWith('/storage/v1/object/sign/personal-attachments/') &&
+        Boolean(parsed.searchParams.get('token'));
+    }catch{return false;}
+  }
+  function clearPhotoUrlCache(){
+    photoSignedUrls.clear();photoUrlRequests.clear();photoCacheOwner='';
+    try{sessionStorage.removeItem(PHOTO_URL_SESSION_KEY);}catch{}
+  }
+  function syncPhotoUrlCacheOwner(){
+    const owner=user?.id||'';
+    if(owner===photoCacheOwner)return;
+    photoSignedUrls.clear();photoUrlRequests.clear();photoCacheOwner=owner;
+    if(!owner)return;
+    try{
+      const stored=JSON.parse(sessionStorage.getItem(PHOTO_URL_SESSION_KEY)||'null');
+      if(stored?.userId!==owner||!Array.isArray(stored.entries)){
+        sessionStorage.removeItem(PHOTO_URL_SESSION_KEY);return;
+      }
+      const now=Date.now();
+      for(const [path,entry] of stored.entries.slice(-PHOTO_URL_LIMIT)){
+        if(typeof path==='string'&&path.startsWith(`${owner}/`)&&
+           Number.isFinite(entry?.expiresAt)&&entry.expiresAt>now+5000&&
+           typeof entry.url==='string'&&photoUrlIsTrusted(entry.url)){
+          photoSignedUrls.set(path,{url:entry.url,expiresAt:entry.expiresAt});
+        }
+      }
+    }catch{try{sessionStorage.removeItem(PHOTO_URL_SESSION_KEY);}catch{}}
+  }
+  function savePhotoUrlCache(){
+    if(!photoCacheOwner)return;
+    const now=Date.now();
+    for(const [path,entry] of photoSignedUrls){
+      if(entry.expiresAt<=now+5000)photoSignedUrls.delete(path);
+    }
+    while(photoSignedUrls.size>PHOTO_URL_LIMIT){
+      photoSignedUrls.delete(photoSignedUrls.keys().next().value);
+    }
+    try{sessionStorage.setItem(PHOTO_URL_SESSION_KEY,JSON.stringify({
+      userId:photoCacheOwner,entries:[...photoSignedUrls]
+    }));}catch{} // Browser privacy/storage restrictions must not prevent opening images.
+  }
+  function invalidateSignedAttachmentUrl(path){
+    if(typeof path!=='string')return;
+    syncPhotoUrlCacheOwner();
+    photoSignedUrls.delete(path);
+    savePhotoUrlCache();
+  }
   function rememberAccountUsername(name){
     signedInUsername=name;
     try{sessionStorage.setItem(ACCOUNT_NAME_CACHE,JSON.stringify({userId:user.id,name}));}catch{}
@@ -6857,6 +7070,8 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
     window.JariWorkspace.setCloudRows(all);
     // Keep pre-cloud local data until the owner explicitly chooses to import it.
     loaded=true;void window.JariWorkspace.cleanupOrphanGuideRecords?.();render();
+    // A closed browser cannot run timers: purge due records after the next login.
+    void ycRemoveExpiredCalendarEvents();
     $('authOverlay').hidden=true;$('logoutButton').hidden=false;
     display('☁ Supabase 동기화');
     updateLocalImportButton();
@@ -6923,9 +7138,9 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
     if(!confirm('로그아웃하시겠습니까?'))return;
     const {error}=await client.auth.signOut();if(error){notice('로그아웃 실패: '+error.message);return;}
     window.dispatchEvent(new Event('ycallender:account-signed-out'));
-    clearAccountUsername();user=null;loaded=false;events=[];
+    clearPhotoUrlCache();clearAccountUsername();user=null;loaded=false;events=[];
     // v73: logout clears visible cloud rows, but preserves the older local backup.
-    window.JariWorkspace.setCloudRows([]);render();
+    window.JariWorkspace.setCloudRows([]);render();ycScheduleCalendarAutoDelete();
     $('authOverlay').hidden=false;$('logoutButton').hidden=true;display('로그인 필요');
   }
   async function upsert(kind,record){
@@ -6944,6 +7159,27 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
     const {error}=await client.from('personal_entries').delete().eq('id',id).eq('user_id',user.id);
     if(error)throw error;
     display('☁ 동기화 완료');
+  }
+  // v113: only remove an expired calendar entry if its deadline is still the
+  // same on the server. Another device may have unchecked and canceled it.
+  async function deleteExpiredCalendar(id,expectedDeadline){
+    if(!active())throw Error('자동 삭제 시 로그인이 필요합니다.');
+    await writeQueue; // preserve write order with the completion checkbox save.
+    if(!active())throw Error('계정이 변경되어 삭제를 중단했습니다.');
+    const {data,error}=await client.from('personal_entries').delete()
+      .eq('id',id).eq('user_id',user.id).eq('kind','calendar')
+      .eq('data->>autoDeleteAt',expectedDeadline)
+      .select('data');
+    if(error)throw error;
+    if(data?.length){
+      display('☁ 완료 일정 자동 정리');
+      return {deleted:true,attachments:data[0].data?.attachments||[]};
+    }
+    // Conditional delete was skipped: reconcile instead of deleting a newer edit.
+    const {data:latest,error:readError}=await client.from('personal_entries')
+      .select('id,kind,data').eq('id',id).eq('user_id',user.id).maybeSingle();
+    if(readError)throw readError;
+    return {deleted:false,record:latest?.kind==='calendar'?{...latest.data,id:latest.id}:null};
   }
   // v46: await pending writes, then cascade-delete guide rows before removing
   // attachment objects. The UI commits the local change only after DB success.
@@ -6979,15 +7215,39 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
   async function signedAttachmentUrl(path){
     if(!active())throw Error('이미지 열람 전에 로그인해주세요.');
     if(typeof path!=='string'||!path.startsWith(`${user.id}/`))throw Error('본인 소유 이미지만 열람할 수 있습니다.');
-    const {data,error}=await client.storage.from('personal-attachments').createSignedUrl(path,900);
-    if(error)throw error;
-    return data.signedUrl;
+    syncPhotoUrlCacheOwner();
+    const found=photoSignedUrls.get(path);
+    if(found?.expiresAt>Date.now()+5000){
+      // Refresh LRU order: reusing an identical URL lets the HTTP cache hit.
+      photoSignedUrls.delete(path);photoSignedUrls.set(path,found);
+      return found.url;
+    }
+    if(found)photoSignedUrls.delete(path);
+    if(photoUrlRequests.has(path))return photoUrlRequests.get(path);
+    const owner=user.id;
+    const request=(async()=>{
+      const issuedAt=Date.now();
+      const {data,error}=await client.storage.from('personal-attachments').createSignedUrl(path,900);
+      if(error)throw error;
+      if(!data?.signedUrl||!photoUrlIsTrusted(data.signedUrl))throw Error('안전한 이미지 접근 주소를 받지 못했습니다.');
+      if(user?.id!==owner)throw Error('계정이 변경되어 이미지 요청을 취소했습니다. 다시 열어주세요.');
+      if(photoCacheOwner===owner){
+        photoSignedUrls.delete(path);
+        photoSignedUrls.set(path,{url:data.signedUrl,expiresAt:issuedAt+PHOTO_URL_REUSE_MS});
+        savePhotoUrlCache();
+      }
+      return data.signedUrl;
+    })();
+    photoUrlRequests.set(path,request);
+    try{return await request;}
+    finally{if(photoUrlRequests.get(path)===request)photoUrlRequests.delete(path);}
   }
   async function removeAttachment(path){
     if(!active())return;
     if(typeof path!=='string'||!path.startsWith(`${user.id}/`))throw Error('본인 이미지가 아닙니다.');
     const {error}=await client.storage.from('personal-attachments').remove([path]);
     if(error)throw error;
+    invalidateSignedAttachmentUrl(path); // Deleted images must never reuse a cached signed URL.
   }
   // Explicit offline migration: local data is never removed automatically.
   // Existing cloud rows are preserved. Only conflicting IDs are overwritten after confirmation.
@@ -7048,7 +7308,7 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
     finally{importBusy=false;button.disabled=false;updateLocalImportButton();}
   }
   $('cloudImportButton').addEventListener('click',importLocalRecords);
-  window.JariCloud={isConfigured:()=>configured,isOnline:active,replaceAll,deleteGuideRecords,uploadAttachment,signedAttachmentUrl,removeAttachment};
+  window.JariCloud={isConfigured:()=>configured,isOnline:active,replaceAll,deleteGuideRecords,deleteExpiredCalendar,uploadAttachment,signedAttachmentUrl,invalidateSignedAttachmentUrl,removeAttachment};
   window.JariAccount={hasUsername:()=>Boolean(signedInUsername),changePassword:changeAccountPassword};
   // Always show the account gate first; no authenticated content is displayed until loadRows succeeds.
   $('authOverlay').hidden=false;
@@ -7074,7 +7334,7 @@ injectDialogs();window.JariBudget={render,presets,totals,normalizeDate,showBoard
       const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.119.0?bundle');
       createClientFactory=createClient;
       client=createClient(cfg.supabaseUrl.replace(/\/$/,''),cfg.supabasePublishableKey,{auth:{autoRefreshToken:true,persistSession:true,storage:window.sessionStorage,detectSessionInUrl:false}});
-      client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'&&user){window.dispatchEvent(new Event('ycallender:account-signed-out'));clearAccountUsername();user=null;loaded=false;events=[];window.JariWorkspace.setCloudRows([]);render();$('authOverlay').hidden=false;$('logoutButton').hidden=true;display('로그인 필요');}});
+      client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'&&user){window.dispatchEvent(new Event('ycallender:account-signed-out'));clearPhotoUrlCache();clearAccountUsername();user=null;loaded=false;events=[];window.JariWorkspace.setCloudRows([]);render();$('authOverlay').hidden=false;$('logoutButton').hidden=true;display('로그인 필요');}});
       const {data,error}=await client.auth.getUser();
       if(error||!data.user){display('로그인 필요');return;}
       user=data.user;await restoreAccountUsername();await loadRows();
